@@ -1,26 +1,25 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
-    <id>TauCode.Mq</id>
-    <version>1.0.0.0-dev-2019-12-22-21-39</version>
+    <id>TauCode.Working</id>
+    <version>1.0.0.0-dev-2019-12-26-17-04</version>
     <authors>TauCode</authors>
     <owners>TauCode</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="file">LICENSE.txt</license>
     <projectUrl>https://github.com/taucode/taucode.mq</projectUrl>
-    <description>Basic functionality for message queue support</description>
+    <description>TauCode workers implementation library</description>
     <releaseNotes>
-      Moving to nuget.org
+      Initial version
     </releaseNotes>
-    <tags>taucode message queue</tags>
+    <tags>taucode working workers</tags>
     <dependencies>
-      <dependency id="Newtonsoft.Json" version="12.0.3" />
       <dependency id="Serilog" version="2.9.0" />
     </dependencies>
   </metadata>
   <files>
     <file src="..\LICENSE.txt" target="" />
-    <file src="..\src\TauCode.Mq\bin\Release\netstandard2.0\TauCode.Mq.dll" target="lib\netstandard2.0" />
-    <file src="..\src\TauCode.Mq\bin\Release\netstandard2.0\TauCode.Mq.pdb" target="lib\netstandard2.0" />
+    <file src="..\src\TauCode.Working\bin\Release\netstandard2.0\TauCode.Working.dll" target="lib\netstandard2.0" />
+    <file src="..\src\TauCode.Working\bin\Release\netstandard2.0\TauCode.Working.pdb" target="lib\netstandard2.0" />
   </files>
 </package>
