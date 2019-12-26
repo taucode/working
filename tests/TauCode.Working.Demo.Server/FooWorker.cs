@@ -1,9 +1,6 @@
-﻿using Serilog;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace TauCode.Working.Lab.Tests.Server
+﻿namespace TauCode.Working.Demo.Server
 {
+    // todo: clean up
     public class FooWorker : QueueWorkerBase<string>
     {
         public FooWorker()

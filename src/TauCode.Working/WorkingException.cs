@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TauCode.Working.Lab
+namespace TauCode.Working
 {
     [Serializable]
     public class WorkingException : Exception

@@ -1,4 +1,4 @@
-﻿namespace TauCode.Working.Lab.Tests.All
+﻿namespace TauCode.Working.Demo.All
 {
     public class StateRequest
     {

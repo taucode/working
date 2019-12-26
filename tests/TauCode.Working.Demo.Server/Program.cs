@@ -3,9 +3,9 @@ using Serilog;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using TauCode.Working.Lab.Tests.All;
+using TauCode.Working.Demo.All;
 
-namespace TauCode.Working.Lab.Tests.Server
+namespace TauCode.Working.Demo.Server
 {
     internal class Program
     {

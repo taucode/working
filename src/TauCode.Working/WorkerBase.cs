@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace TauCode.Working.Lab
+namespace TauCode.Working
 {
     public abstract class WorkerBase : IWorker
     {

@@ -1,7 +1,8 @@
 ﻿using System;
 
-namespace TauCode.Working.Lab
+namespace TauCode.Working
 {
+    // todo: clean up
     public abstract class OnDemandWorkerBase : WorkerBase
     {
         //protected void CheckCanDoJob()

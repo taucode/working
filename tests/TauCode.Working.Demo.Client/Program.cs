@@ -2,9 +2,9 @@
 using Serilog;
 using System;
 using System.Linq;
-using TauCode.Working.Lab.Tests.All;
+using TauCode.Working.Demo.All;
 
-namespace TauCode.Working.Lab.Tests.Client
+namespace TauCode.Working.Demo.Client
 {
     internal class Program
     {
