@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>TauCode.Working</id>
+    <version>1.0.0.0-dev-2019-12-26-17-04</version>
+    <authors>TauCode</authors>
+    <owners>TauCode</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="file">LICENSE.txt</license>
+    <projectUrl>https://github.com/taucode/taucode.mq</projectUrl>
+    <description>TauCode workers implementation library</description>
+    <releaseNotes>
+      Initial version
+    </releaseNotes>
+    <tags>taucode working workers</tags>
+    <dependencies>
+      <dependency id="Serilog" version="2.9.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="..\LICENSE.txt" target="" />
+    <file src="..\src\TauCode.Working\bin\Release\netstandard2.0\TauCode.Working.dll" target="lib\netstandard2.0" />
+    <file src="..\src\TauCode.Working\bin\Release\netstandard2.0\TauCode.Working.pdb" target="lib\netstandard2.0" />
+  </files>
+</package>
