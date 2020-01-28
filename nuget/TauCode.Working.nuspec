@@ -7,7 +7,7 @@
     <owners>TauCode</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="file">LICENSE.txt</license>
-    <projectUrl>https://github.com/taucode/taucode.mq</projectUrl>
+    <projectUrl>https://github.com/taucode/taucode.working</projectUrl>
     <description>TauCode workers implementation library</description>
     <releaseNotes>
       Initial version
