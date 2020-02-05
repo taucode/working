@@ -102,6 +102,7 @@ namespace TauCode.Working
             }
         }
 
+// todo: CheckStateForOperation and CheckState are almost copy/paste.
         protected void CheckState(params WorkerState[] acceptedStates)
         {
             var state = this.State;
