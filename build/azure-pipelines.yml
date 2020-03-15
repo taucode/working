@@ -32,3 +32,8 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+
+- task: NuGetCommand@2
+  inputs:
+    command: 'custom'
+    arguments: 'push src\TauCode.Db\bin\Release\TauCode.Db.1.0.0 -ApiKey $(NUGET_API_KEY) -Source https://api.nuget.org/v3/index.json'
