@@ -26,7 +26,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.Demo.Client
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.Demo.Server", "tests\TauCode.Working.Demo.Server\TauCode.Working.Demo.Server.csproj", "{24BF9371-AE6C-4757-88DA-2BBC5518C2C8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TauCode.Working.Tests", "tests\TauCode.Working.Tests\TauCode.Working.Tests.csproj", "{CBFE60C5-12C3-4FF6-ACC7-DF2D7B92884B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.Tests", "tests\TauCode.Working.Tests\TauCode.Working.Tests.csproj", "{CBFE60C5-12C3-4FF6-ACC7-DF2D7B92884B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{3E73BEB2-788C-4C98-9785-CED6C0990391}"
+	ProjectSection(SolutionItems) = preProject
+		build\azure-pipelines-dev.yml = build\azure-pipelines-dev.yml
+		build\azure-pipelines.yml = build\azure-pipelines.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
