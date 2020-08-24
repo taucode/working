@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,7 +43,12 @@ namespace TauCode.Working
 
         //protected AutoResetEvent ControlSignal { get; private set; }
         //protected AutoResetEvent RoutineSignal { get; private set; }
-        protected Task LoopTask { get; private set; }
+        protected Task LoopTask { get; private set; } // todo: private?
+
+        protected bool WaitControlSignal(int millisecondsTimeout)
+        {
+            return _controlSignal.WaitOne(millisecondsTimeout);
+        }
 
         #endregion
 
@@ -72,22 +76,92 @@ namespace TauCode.Working
 
         protected override void PauseImpl()
         {
-            throw new System.NotImplementedException();
+            this.LogVerbose("Pause requested");
+            this.ChangeState(WorkerState.Pausing);
+            _controlSignal.Set();
+            _routineSignal.WaitOne();
+            this.ChangeState(WorkerState.Paused);
+            _controlSignal.Set();
+
         }
 
         protected override void ResumeImpl()
         {
-            throw new System.NotImplementedException();
+            this.LogVerbose("Resume requested");
+            this.ChangeState(WorkerState.Resuming);
+            _controlSignal.Set();
+            _routineSignal.WaitOne();
+            this.ChangeState(WorkerState.Running);
+            _controlSignal.Set();
         }
 
         protected override void StopImpl()
         {
-            throw new System.NotImplementedException();
+            this.LogVerbose("Stop requested");
+            this.ChangeState(WorkerState.Stopping);
+            _controlSignal.Set();
+            _routineSignal.WaitOne();
+            this.ChangeState(WorkerState.Stopped);
+            _controlSignal.Set();
+
+            this.LogVerbose("Waiting task to terminate.");
+            this.LoopTask.Wait();
+            this.LogVerbose("Task terminated.");
+
+            this.LoopTask.Dispose();
+            this.LoopTask = null;
+
+            _controlSignal.Dispose();
+            _controlSignal = null;
+
+            //_dataSignal.Dispose();
+            //_dataSignal = null;
+
+            _routineSignal.Dispose();
+            _routineSignal = null;
+
+            //_handles = null;
+
+            this.LogVerbose("OS Resources disposed.");
         }
 
         protected override void DisposeImpl()
         {
-            throw new System.NotImplementedException();
+            this.LogVerbose("Dispose requested");
+            var previousState = this.State;
+            this.ChangeState(WorkerState.Disposing);
+
+            if (previousState == WorkerState.Stopped)
+            {
+                this.LogVerbose("Worker was stopped, nothing to dispose");
+                this.ChangeState(WorkerState.Disposed);
+                return;
+            }
+
+            _controlSignal.Set();
+            _routineSignal.WaitOne();
+            this.ChangeState(WorkerState.Disposed);
+            _controlSignal.Set();
+
+            this.LogVerbose("Waiting task to terminate.");
+            this.LoopTask.Wait();
+            this.LogVerbose("Task terminated.");
+
+            this.LoopTask.Dispose();
+            this.LoopTask = null;
+
+            _controlSignal.Dispose();
+            _controlSignal = null;
+
+            //_dataSignal.Dispose();
+            //_dataSignal = null;
+
+            _routineSignal.Dispose();
+            _routineSignal = null;
+
+            //_handles = null;
+
+            this.LogVerbose("OS Resources disposed.");
         }
 
         #endregion
@@ -216,15 +290,15 @@ namespace TauCode.Working
 
         private bool ContinueAfterControlSignal(params WorkerState[] expectedStates)
         {
-            if (expectedStates.Length == 0)
-            {
-                throw new NotImplementedException(); // todo
-            }
+            //if (expectedStates.Length == 0)
+            //{
+            //    throw new NotImplementedException(); // todo
+            //}
 
-            if (!expectedStates.All(x => x.IsTransitionWorkerState()))
-            {
-                throw new NotImplementedException(); // todo
-            }
+            //if (!expectedStates.All(x => x.IsTransitionWorkerState()))
+            //{
+            //    throw new NotImplementedException(); // todo
+            //}
 
             //this.CheckState(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
             this.CheckState(expectedStates);
