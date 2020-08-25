@@ -67,7 +67,7 @@ namespace TauCode.Working
 
         protected override VacationFinishedReason TakeVacation()
         {
-            this.LogVerbose("Entered idle routine");
+            this.LogDebug("Entered idle routine");
 
             while (true)
             {

@@ -1,6 +1,5 @@
 ﻿using EasyNetQ;
 using Microsoft.Extensions.Configuration;
-using Serilog;
 using System;
 using System.IO;
 using TauCode.Cli;
@@ -12,10 +11,10 @@ namespace TauCode.Working.TestDemo.Client
     {
         private static int Main(string[] args)
         {
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Verbose()
-                .WriteTo.Console()
-                .CreateLogger();
+            //Log.Logger = new LoggerConfiguration()
+            //    .MinimumLevel.Information()
+            //    .WriteTo.Console()
+            //    .CreateLogger();
 
             var configuration = CreateConfiguration();
             var connectionString = configuration["ConnectionStrings:RabbitMQ"];

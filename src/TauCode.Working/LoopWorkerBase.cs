@@ -147,7 +147,7 @@ namespace TauCode.Working
 
         protected override void PauseImpl()
         {
-            this.LogVerbose("Pause requested");
+            this.LogDebug("Pause requested");
             this.ChangeState(WorkerState.Pausing);
             _controlSignal.Set();
             _routineSignal.WaitOne();
@@ -158,7 +158,7 @@ namespace TauCode.Working
 
         protected override void ResumeImpl()
         {
-            this.LogVerbose("Resume requested");
+            this.LogDebug("Resume requested");
             this.ChangeState(WorkerState.Resuming);
             _controlSignal.Set();
             _routineSignal.WaitOne();
@@ -168,16 +168,16 @@ namespace TauCode.Working
 
         protected override void StopImpl()
         {
-            this.LogVerbose("Stop requested");
+            this.LogDebug("Stop requested");
             this.ChangeState(WorkerState.Stopping);
             _controlSignal.Set();
             _routineSignal.WaitOne();
             this.ChangeState(WorkerState.Stopped);
             _controlSignal.Set();
 
-            this.LogVerbose("Waiting task to terminate.");
+            this.LogDebug("Waiting task to terminate.");
             this.LoopTask.Wait();
-            this.LogVerbose("Task terminated.");
+            this.LogDebug("Task terminated.");
 
             this.LoopTask.Dispose();
             this.LoopTask = null;
@@ -193,18 +193,18 @@ namespace TauCode.Working
 
             //_handles = null;
 
-            this.LogVerbose("OS Resources disposed.");
+            this.LogDebug("OS Resources disposed.");
         }
 
         protected override void DisposeImpl()
         {
-            this.LogVerbose("Dispose requested");
+            this.LogDebug("Dispose requested");
             var previousState = this.State;
             this.ChangeState(WorkerState.Disposing);
 
             if (previousState == WorkerState.Stopped)
             {
-                this.LogVerbose("Worker was stopped, nothing to dispose");
+                this.LogDebug("Worker was stopped, nothing to dispose");
                 this.ChangeState(WorkerState.Disposed);
                 return;
             }
@@ -214,9 +214,9 @@ namespace TauCode.Working
             this.ChangeState(WorkerState.Disposed);
             _controlSignal.Set();
 
-            this.LogVerbose("Waiting task to terminate.");
+            this.LogDebug("Waiting task to terminate.");
             this.LoopTask.Wait();
-            this.LogVerbose("Task terminated.");
+            this.LogDebug("Task terminated.");
 
             this.LoopTask.Dispose();
             this.LoopTask = null;
@@ -232,7 +232,7 @@ namespace TauCode.Working
 
             //_handles = null;
 
-            this.LogVerbose("OS Resources disposed.");
+            this.LogDebug("OS Resources disposed.");
         }
 
         #endregion
@@ -339,7 +339,7 @@ namespace TauCode.Working
 
         private void PauseRoutine()
         {
-            this.LogVerbose("Entered pause routine");
+            this.LogDebug("Entered pause routine");
 
             while (true)
             {

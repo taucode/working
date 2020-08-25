@@ -11,7 +11,8 @@ namespace TauCode.Working.TestDemo.Server
         private static void Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Verbose()
+                .Filter.ByIncludingOnly(x => x.Properties.ContainsKey("taucode.working"))
+                .MinimumLevel.Debug()
                 .WriteTo.Console()
                 .CreateLogger();
 

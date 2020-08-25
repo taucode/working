@@ -23,6 +23,7 @@ namespace TauCode.Working.TestDemo.Client
             return new ICliExecutor[]
             {
                 new StartWorkerExecutor(),
+                new StopWorkerExecutor(),
             };
         }
     }

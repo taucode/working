@@ -51,14 +51,16 @@ namespace TauCode.Working
 
         #region Protected
 
-        protected void LogVerbose(string message, int shiftFromCaller = 0)
+        protected void LogDebug(string message, int shiftFromCaller = 0)
         {
             StackTrace stackTrace = new StackTrace();
             var frame = stackTrace.GetFrame(1 + shiftFromCaller);
             var method = frame.GetMethod();
 
-            var information = $"[{this.Name}][{this.GetType().Name}.{method.Name}] {message}";
-            Log.Verbose(information);
+            var debugMessage = $"[{this.Name}][{this.GetType().Name}.{method.Name}] {message}";
+            Log.Debug(debugMessage);
+
+            Log.ForContext("taucode.working", true).Debug(debugMessage);
         }
 
         protected void LogError(string message, int shiftFromCaller = 0)
@@ -77,7 +79,7 @@ namespace TauCode.Working
             {
                 _state = state;
 
-                this.LogVerbose($"State changed to '{_state}'");
+                this.LogDebug($"State changed to '{_state}'");
 
                 _stateSignals[_state].Set();
             }
@@ -193,7 +195,7 @@ namespace TauCode.Working
 
         public void Start()
         {
-            this.LogVerbose("Start requested");
+            this.LogDebug("Start requested");
 
             lock (_controlLock)
             {

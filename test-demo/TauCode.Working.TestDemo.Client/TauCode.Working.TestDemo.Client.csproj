@@ -7,9 +7,11 @@
 
   <ItemGroup>
     <None Remove="Resources\StartWorkerExecutor.lisp" />
+    <None Remove="Resources\StopWorkerExecutor.lisp" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\StopWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\StartWorkerExecutor.lisp" />
   </ItemGroup>
 
