@@ -6,11 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TauCode.Cli" Version="1.0.1" />
+    <None Remove="Resources\StartWorkerExecutor.lisp" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Workers\" />
+    <EmbeddedResource Include="Resources\StartWorkerExecutor.lisp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TauCode.Cli" Version="1.2.0" />
   </ItemGroup>
 
 </Project>

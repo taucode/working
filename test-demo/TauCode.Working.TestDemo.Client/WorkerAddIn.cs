@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TauCode.Cli;
+using TauCode.Working.TestDemo.Client.Executors;
 
 namespace TauCode.Working.TestDemo.Client
 {
@@ -10,22 +10,20 @@ namespace TauCode.Working.TestDemo.Client
     public class WorkerAddIn : CliAddInBase
     {
         public WorkerAddIn()
-            : base(null, null, false)
+            : base("wrk", null, false)
         {
         }
 
         protected override void OnNodeCreated()
-        {   
+        {
         }
 
-        protected override IReadOnlyList<ICliWorker> CreateWorkers()
+        protected override IReadOnlyList<ICliExecutor> CreateExecutors()
         {
-            throw new NotImplementedException();
-
-            //return new ICliWorker[]
-            //{
-            //    new StartWorkerWorker(),
-            //};
+            return new ICliExecutor[]
+            {
+                new StartWorkerExecutor(),
+            };
         }
     }
 }
