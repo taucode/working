@@ -18,7 +18,16 @@ namespace TauCode.Working.TestDemo.Server
         public void Run()
         {
             var bus = RabbitHutch.CreateBus(_connectionString);
-            bus.Respond<InvokeMethodRequest, InvokeMethodResponse>(this.ProcessMethodInvocation);
+
+            var rpcHandle1 = bus.Respond<InvokeMethodRequest, InvokeMethodResponse>(
+                this.ProcessMethodInvocation,
+                configuration => configuration.WithQueueName(_worker.Name));
+
+            _worker.WaitForStateChange(System.Threading.Timeout.Infinite, WorkerState.Disposed);
+
+            rpcHandle1.Dispose();
+
+            bus.Dispose();
         }
 
         private InvokeMethodResponse ProcessMethodInvocation(InvokeMethodRequest request)
