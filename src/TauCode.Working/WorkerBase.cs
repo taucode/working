@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace TauCode.Working
 {
+    // todo clean
     public abstract class WorkerBase : IWorker
     {
         #region Fields
@@ -56,7 +57,7 @@ namespace TauCode.Working
             var frame = stackTrace.GetFrame(1 + shiftFromCaller);
             var method = frame.GetMethod();
 
-            var information = $"[{this.Name}][{method.Name}] {message}";
+            var information = $"[{this.Name}][{this.GetType().Name}.{method.Name}] {message}";
             Log.Verbose(information);
         }
 
@@ -75,6 +76,20 @@ namespace TauCode.Working
             lock (_stateLock)
             {
                 _state = state;
+
+                this.LogVerbose($"State changed to '{_state}'");
+
+                _stateSignals[_state].Set();
+            }
+        }
+
+        protected WorkingException CreateInternalErrorException() => new WorkingException("Internal error.");
+
+        protected void CheckInternalIntegrity(bool condition)
+        {
+            if (!condition)
+            {
+                throw this.CreateInternalErrorException();
             }
         }
 
@@ -253,7 +268,15 @@ namespace TauCode.Working
                 .ToDictionary(x => x, x => Tuple.Create(x, distinctStates[x], _stateSignals[distinctStates[x]]));
 
             var handleIndex = WaitHandle.WaitAny(handles, millisecondsTimeout);
-            throw new NotImplementedException();
+
+            if (handleIndex == WaitHandle.WaitTimeout)
+            {
+                // timeout.
+                return null;
+            }
+
+            var gotState = tuples[handleIndex].Item2;
+            return gotState;
         }
 
         #endregion

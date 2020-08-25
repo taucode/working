@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,12 @@ namespace TauCode.Working
 {
     public abstract class LoopWorkerBase : WorkerBase
     {
+        #region Constants
+
+        protected const int ControlSignalIndex = 0;
+
+        #endregion
+
         #region Nested
 
         protected enum WorkFinishReason
@@ -29,6 +36,8 @@ namespace TauCode.Working
 
         private AutoResetEvent _controlSignal;
         private AutoResetEvent _routineSignal;
+
+        private WaitHandle[] _controlSignalWithExtraSignals;
 
         #endregion
 
@@ -63,9 +72,28 @@ namespace TauCode.Working
         //    throw new NotImplementedException();
         //}
 
-        protected int WaitForControlSignalWithExtraSignals(int ms) // todo rename
+        protected int WaitForControlSignalWithExtraSignals(int millisecondsTimeout) =>
+            this.WaitForControlSignalWithExtraSignals(TimeSpan.FromMilliseconds(millisecondsTimeout));
+        //{
+        //    if (_controlSignalWithExtraSignals == null)
+        //    {
+        //        throw new InvalidOperationException(); // todo
+        //    }
+
+        //    Task todo;
+        //    var index = WaitHandle.WaitAny(_controlSignalWithExtraSignals, millisecondsTimeout);
+        //    return index;
+        //}
+
+        protected int WaitForControlSignalWithExtraSignals(TimeSpan timeout) // todo rename
         {
-            throw new NotImplementedException();
+            if (_controlSignalWithExtraSignals == null)
+            {
+                throw new InvalidOperationException(); // todo
+            }
+
+            var index = WaitHandle.WaitAny(_controlSignalWithExtraSignals, timeout);
+            return index;
         }
 
         #endregion
@@ -79,9 +107,34 @@ namespace TauCode.Working
             _controlSignal = new AutoResetEvent(false);
             _routineSignal = new AutoResetEvent(false);
 
+            var extraSignals = this.GetExtraSignals();
+            if (extraSignals == null)
+            {
+                this.CheckInternalIntegrity(_controlSignalWithExtraSignals == null);
+            }
+            else
+            {
+                if (extraSignals.Length == 0)
+                {
+                    throw new NotImplementedException(); // todo. if you don't need extra signals, return null instead of empty array.
+                }
+
+                var distinctExtraSignals = extraSignals.Distinct().ToArray();
+                if (extraSignals.Length != distinctExtraSignals.Length)
+                {
+                    throw new NotImplementedException(); // must be different.
+                }
+
+                var list = new List<WaitHandle>();
+                list.Add(_controlSignal); // always has index #0
+                list.AddRange(distinctExtraSignals);
+
+                _controlSignalWithExtraSignals = list.ToArray();
+            }
+
             //this.LoopTask = new Task(this.Routine);
             this.LoopTask = Task.Factory.StartNew(this.Routine);
-            this.LoopTask.Start();
+            //this.LoopTask.Start();
 
             // wait signal from routine that routine has started
             _routineSignal.WaitOne();
@@ -274,12 +327,12 @@ namespace TauCode.Working
                             break;
 
                         default:
-                            throw new WorkingException("Internal error."); // should never happen
+                            throw this.CreateInternalErrorException(); // should never happen
                     }
                 }
                 else
                 {
-                    throw new WorkingException("Internal error."); // should never happen
+                    throw this.CreateInternalErrorException(); // should never happen
                 }
             }
         }
@@ -363,7 +416,7 @@ namespace TauCode.Working
                     break;
 
                 default:
-                    throw new WorkingException("Internal error."); // should never happen
+                    throw this.CreateInternalErrorException(); // should never happen
             }
 
             return result;

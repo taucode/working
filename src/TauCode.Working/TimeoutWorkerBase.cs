@@ -6,6 +6,13 @@ namespace TauCode.Working
 {
     public abstract class TimeoutWorkerBase : LoopWorkerBase, ITimeoutWorker
     {
+        #region Constants
+
+        private const int ChangeTimeoutSignalIndex = 1;
+
+        #endregion
+
+
         #region Fields
 
         private readonly object _timeoutLock;
@@ -25,8 +32,8 @@ namespace TauCode.Working
             _changeTimeoutSignal = new AutoResetEvent(false);
         }
 
-        protected TimeoutWorkerBase(int initialTimeoutMilliseconds)
-            : this(TimeSpan.FromMilliseconds(initialTimeoutMilliseconds))
+        protected TimeoutWorkerBase(int initialMillisecondsTimeout)
+            : this(TimeSpan.FromMilliseconds(initialMillisecondsTimeout))
         {
         }
 
@@ -40,6 +47,11 @@ namespace TauCode.Working
 
         #region Overridden
 
+        protected override AutoResetEvent[] GetExtraSignals()
+        {
+            return new[] { _changeTimeoutSignal };
+        }
+
         protected override async Task<WorkFinishReason> DoWorkAsync()
         {
             await this.DoRealWorkAsync();
@@ -48,8 +60,23 @@ namespace TauCode.Working
 
         protected override VacationFinishedReason TakeVacation()
         {
-            this.WaitForControlSignalWithExtraSignals(11); // todo
-            throw new NotImplementedException();
+            var index = this.WaitForControlSignalWithExtraSignals(this.Timeout); // todo
+
+            switch (index)
+            {
+                case ControlSignalIndex:
+                    return VacationFinishedReason.GotControlSignal;
+
+                case ChangeTimeoutSignalIndex:
+                    throw new NotImplementedException();
+                    return VacationFinishedReason.NewWorkArrived;
+
+                case WaitHandle.WaitTimeout:
+                    return VacationFinishedReason.VacationTimeElapsed;
+
+                default:
+                    throw this.CreateInternalErrorException();
+            }
         }
 
         #endregion
@@ -58,9 +85,11 @@ namespace TauCode.Working
 
         private void CheckTimeoutArgument(in TimeSpan timeout)
         {
-            throw new NotImplementedException();
+            if (timeout <= TimeSpan.Zero)
+            {
+                throw new ArgumentException($"'{timeout}' must be positive.");
+            }
         }
-
 
         #endregion
 
