@@ -9,4 +9,9 @@
     <PackageReference Include="EasyNetQ" Version="5.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TauCode.Working\TauCode.Working.csproj" />
+    <ProjectReference Include="..\TauCode.Working.TestDemo.Common\TauCode.Working.TestDemo.Common.csproj" />
+  </ItemGroup>
+
 </Project>
