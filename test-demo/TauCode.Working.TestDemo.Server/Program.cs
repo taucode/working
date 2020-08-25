@@ -47,7 +47,7 @@ namespace TauCode.Working.TestDemo.Server
             wrapper.Run();
         }
 
-        public static IConfiguration CreateConfiguration()
+        private static IConfiguration CreateConfiguration()
         {
             var confFileName = "appsettings.json";
             var defaultConfFileName = "appsettings.Development.json";
@@ -77,6 +77,5 @@ namespace TauCode.Working.TestDemo.Server
                 return configuration;
             }
         }
-
     }
 }

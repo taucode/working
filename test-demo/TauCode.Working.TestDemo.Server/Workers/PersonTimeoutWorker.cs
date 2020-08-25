@@ -14,7 +14,8 @@ namespace TauCode.Working.TestDemo.Server.Workers
 
         protected override Task DoRealWorkAsync()
         {
-            throw new NotImplementedException();
+            Console.WriteLine($"My name is {this.Name}.");
+            return Task.CompletedTask;
         }
     }
 }

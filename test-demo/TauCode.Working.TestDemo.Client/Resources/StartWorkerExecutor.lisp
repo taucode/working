@@ -2,7 +2,7 @@
 	(executor
 		:executor-name start-worker
 		:verb "start"
-		:description "Stops the publisher."
+		:description "Starts worker with the given name."
 		:usage-samples (
 			"wrk start my-good-worker"))
 
