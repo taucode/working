@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,6 +38,8 @@ namespace TauCode.Working
 
         protected abstract VacationFinishedReason TakeVacation();
 
+        protected abstract AutoResetEvent[] GetExtraSignals();
+
         #endregion
 
         #region Protected
@@ -48,6 +51,21 @@ namespace TauCode.Working
         protected bool WaitControlSignal(int millisecondsTimeout)
         {
             return _controlSignal.WaitOne(millisecondsTimeout);
+        }
+
+        //protected void RegisterAdditionalHandles(WaitHandle[] additionalHandles)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        //protected void DeregisterAdditionalHandles()
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        protected int WaitForControlSignalWithExtraSignals(int ms) // todo rename
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

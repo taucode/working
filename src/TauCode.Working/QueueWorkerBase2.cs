@@ -69,27 +69,32 @@ namespace TauCode.Working
         {
             this.LogVerbose("Entered idle routine");
 
-            throw new NotImplementedException(); // continue here.
+            while (true)
+            {
+                //var signalIndex = WaitHandle.WaitAny(_handles, Timeout);
 
-            //while (true)
-            //{
-            //    var signalIndex = WaitHandle.WaitAny(_handles, Timeout);
-            //    switch (signalIndex)
-            //    {
-            //        case ControlSignalIndex:
-            //            this.LogVerbose("Got control signal");
-            //            this.CheckState(WorkerState.Stopping, WorkerState.Pausing, WorkerState.Disposing);
-            //            _controlRequestAcknowledgedSignal.Set();
-            //            _controlSignal.WaitOne();
-            //            this.CheckState(WorkerState.Stopped, WorkerState.Paused, WorkerState.Disposed);
-            //            return IdleStateInterruptionReason.GotControlSignal;
+                var signalIndex = this.WaitForControlSignalWithExtraSignals(11); // todo
 
-            //        case DataSignalIndex:
-            //            this.LogVerbose("Got data");
-            //            return IdleStateInterruptionReason.GotAssignment;
-            //    }
-            //}
+                throw new NotImplementedException();
 
+                //switch (signalIndex)
+                //{
+                //    case 0: // todo const
+                //        this.LogVerbose("Got control signal");
+                //        //this.CheckState(WorkerState.Stopping, WorkerState.Pausing, WorkerState.Disposing);
+                //        //_controlRequestAcknowledgedSignal.Set();
+                //        //_controlSignal.WaitOne();
+                //        //this.CheckState(WorkerState.Stopped, WorkerState.Paused, WorkerState.Disposed);
+                //        //return IdleStateInterruptionReason.GotControlSignal;
+
+                //        return VacationFinishedReason.GotControlSignal;
+
+                //    case 1: // todo constant
+                //        this.LogVerbose("Got data");
+                //        //return IdleStateInterruptionReason.GotAssignment;
+                //        return VacationFinishedReason.NewWorkArrived;
+                //}
+            }
         }
 
         private bool TryGetAssignment(out TAssignment assignment)

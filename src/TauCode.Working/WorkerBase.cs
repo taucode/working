@@ -1,7 +1,10 @@
 ﻿using Serilog;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace TauCode.Working
 {
@@ -14,6 +17,8 @@ namespace TauCode.Working
         private readonly object _stateLock;
         private readonly object _controlLock;
 
+        private readonly Dictionary<WorkerState, AutoResetEvent> _stateSignals;
+
         #endregion
 
         #region Constructor
@@ -24,6 +29,11 @@ namespace TauCode.Working
             _controlLock = new object();
 
             _state = WorkerState.Stopped;
+
+            _stateSignals = Enum
+                .GetValues(typeof(WorkerState))
+                .Cast<WorkerState>()
+                .ToDictionary(x => x, x => new AutoResetEvent(false));
         }
 
         #endregion
@@ -102,7 +112,7 @@ namespace TauCode.Working
             }
         }
 
-// todo: CheckStateForOperation and CheckState are almost copy/paste.
+        // todo: CheckStateForOperation and CheckState are almost copy/paste.
         protected void CheckState(params WorkerState[] acceptedStates)
         {
             var state = this.State;
@@ -208,6 +218,44 @@ namespace TauCode.Working
             }
         }
 
+        public WorkerState? WaitForStateChange(int millisecondsTimeout, params WorkerState[] states)
+        {
+            if (states.Length == 0)
+            {
+                throw new ArgumentException($"'{nameof(states)}' cannot be empty.");
+            }
+
+            var state = this.State;
+            if (state == WorkerState.Disposed || state == WorkerState.Disposing)
+            {
+                var objectName = $"{this.GetType()} Name: {this.Name ?? "null"}";
+
+                throw new ObjectDisposedException(objectName,
+                    $"Cannot wait for state change of a worker which has state '{state}'.");
+            }
+
+            // Between previous check and following code 'State' might be changed to 'Disposed' or 'Disposing'.
+            // Therefore, handles might be disposed.
+            // But that's not our problem anymore. We've tried to warn!
+
+
+            var distinctStates = states
+                .Distinct()
+                .ToArray();
+
+            var handles = distinctStates
+                .Select(x => _stateSignals[x])
+                .Cast<WaitHandle>()
+                .ToArray();
+
+            var tuples = Enumerable
+                .Range(0, distinctStates.Length)
+                .ToDictionary(x => x, x => Tuple.Create(x, distinctStates[x], _stateSignals[distinctStates[x]]));
+
+            var handleIndex = WaitHandle.WaitAny(handles, millisecondsTimeout);
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region IDisposable Members
@@ -219,6 +267,13 @@ namespace TauCode.Working
                 this.CheckStateForOperation(WorkerState.Stopped, WorkerState.Running, WorkerState.Paused);
                 this.DisposeImpl();
                 this.CheckState(WorkerState.Disposed);
+
+                foreach (var signal in _stateSignals.Values)
+                {
+                    signal.Dispose();
+                }
+
+                _stateSignals.Clear();
             }
         }
 
