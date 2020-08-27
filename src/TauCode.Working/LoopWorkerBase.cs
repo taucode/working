@@ -43,11 +43,164 @@ namespace TauCode.Working
 
         #region Abstract
 
-        protected abstract Task<WorkFinishReason> DoWorkAsync();
+        protected abstract Task<WorkFinishReason> DoWorkAsyncImpl();
 
-        protected abstract VacationFinishedReason TakeVacation();
+        protected abstract Task<VacationFinishedReason> TakeVacationAsyncImpl();
 
         protected abstract AutoResetEvent[] GetExtraSignals();
+
+        #endregion
+
+        #region Private
+
+        private async Task Routine()
+        {
+            this.LogDebug("Routine started", 3);
+
+            this.CheckState(WorkerState.Starting);
+            WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
+
+            //_routineSignal.Set();
+            //_controlSignal.WaitOne();
+
+            this.CheckState(WorkerState.Running);
+
+            var goOn = true;
+
+            while (goOn)
+            {
+                var workFinishReason = await this.DoWorkAsync();
+                this.LogDebug($"{nameof(DoWorkAsync)} result: {workFinishReason}", 3);
+
+                if (workFinishReason == WorkFinishReason.GotControlSignal)
+                {
+                    goOn = this.ContinueAfterControlSignal(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
+                }
+                else if (workFinishReason == WorkFinishReason.WorkIsDone)
+                {
+                    var vacationFinishedReason = await this.TakeVacationAsync();
+                    this.LogDebug($"{nameof(TakeVacationAsync)} result: {vacationFinishedReason}", 3);
+
+                    switch (vacationFinishedReason)
+                    {
+                        case VacationFinishedReason.GotControlSignal:
+                            goOn = this.ContinueAfterControlSignal(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
+                            break;
+
+                        case VacationFinishedReason.VacationTimeElapsed:
+                        case VacationFinishedReason.NewWorkArrived:
+                            // let's get back to work.
+                            break;
+
+                        default:
+                            throw this.CreateInternalErrorException(); // should never happen
+                    }
+                }
+                else
+                {
+                    throw this.CreateInternalErrorException(); // should never happen
+                }
+            }
+        }
+
+        private Task<WorkFinishReason> DoWorkAsync()
+        {
+            this.LogDebug($"Entered");
+            return this.DoWorkAsyncImpl();
+        }
+
+        private Task<VacationFinishedReason> TakeVacationAsync()
+        {
+            this.LogDebug($"Entered {nameof(TakeVacationAsync)}");
+            return this.TakeVacationAsyncImpl();
+        }
+
+        private void PauseRoutine()
+        {
+            this.LogDebug($"Entered {nameof(PauseRoutine)}");
+
+            while (true)
+            {
+                var gotControlSignal = _controlSignal.WaitOne(11); // todo
+                if (gotControlSignal)
+                {
+                    this.LogDebug("Got control signal");
+
+                    //this.LogVerbose("Got control signal");
+
+                    //this.CheckState(WorkerState.Stopping, WorkerState.Resuming, WorkerState.Disposing);
+
+                    //this.RoutineSignal.Set();
+                    //this.ControlSignal.WaitOne();
+
+                    //this.CheckState(WorkerState.Stopped, WorkerState.Running, WorkerState.Disposed);
+                    return;
+                }
+            }
+        }
+
+        private bool ContinueAfterControlSignal(params WorkerState[] expectedStates)
+        {
+            //if (expectedStates.Length == 0)
+            //{
+            //    throw new NotImplementedException(); // todo
+            //}
+
+            //if (!expectedStates.All(x => x.IsTransitionWorkerState()))
+            //{
+            //    throw new NotImplementedException(); // todo
+            //}
+
+            //this.CheckState(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
+            this.CheckState(expectedStates);
+
+            _routineSignal.Set();
+            _controlSignal.WaitOne();
+
+            var stableStates = expectedStates
+                .Select(WorkingExtensions.GetStableWorkerState)
+                .ToArray();
+
+            this.CheckState(stableStates);
+
+            var state = this.State;
+
+            bool result;
+
+            switch (state)
+            {
+                case WorkerState.Disposed:
+                case WorkerState.Stopped:
+                    result = false;
+                    break;
+
+                case WorkerState.Paused:
+                    this.PauseRoutine();
+                    //state = this.State;
+                    //if (state == WorkerState.Stopped || state == WorkerState.Disposed)
+                    //{
+                    //    result = false;
+                    //}
+                    //else
+                    //{
+                    //    this.CheckState(WorkerState.Running);
+                    //    result = true;
+                    //}
+
+                    // After exit from 'PauseRoutine()', state cannot be 'Pausing', therefore recursion is never endless.
+                    result = ContinueAfterControlSignal(WorkerState.Stopping, WorkerState.Resuming, WorkerState.Disposing);
+                    break;
+
+                case WorkerState.Running:
+                    result = true;
+                    break;
+
+                default:
+                    throw this.CreateInternalErrorException(); // should never happen
+            }
+
+            return result;
+        }
 
         #endregion
 
@@ -149,11 +302,13 @@ namespace TauCode.Working
         {
             this.LogDebug("Pause requested");
             this.ChangeState(WorkerState.Pausing);
+
+
             _controlSignal.Set();
             _routineSignal.WaitOne();
+
             this.ChangeState(WorkerState.Paused);
             _controlSignal.Set();
-
         }
 
         protected override void ResumeImpl()
@@ -237,189 +392,5 @@ namespace TauCode.Working
 
         #endregion
 
-        private async Task Routine()
-        {
-            this.CheckState(WorkerState.Starting);
-
-            _routineSignal.Set();
-
-            _controlSignal.WaitOne();
-            this.CheckState(WorkerState.Running);
-
-            var goOn = true;
-
-            while (goOn)
-            {
-                var workFinishReason = await this.DoWorkAsync();
-
-                if (workFinishReason == WorkFinishReason.GotControlSignal)
-                {
-                    goOn = this.ContinueAfterControlSignal(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
-
-                    //this.CheckState(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
-
-                    //this.RoutineSignal.Set();
-                    //this.ControlSignal.WaitOne();
-
-                    //var state = this.State;
-
-                    //this.CheckState(WorkerState.Paused, WorkerState.Stopped, WorkerState.Disposed);
-                    //switch (state)
-                    //{
-                    //    case WorkerState.Disposed:
-                    //    case WorkerState.Stopped:
-                    //        goOn = false;
-                    //        break;
-
-                    //    case WorkerState.Paused:
-                    //        this.PauseRoutine();
-                    //        state = this.State;
-                    //        if (state == WorkerState.Stopped || state == WorkerState.Disposed)
-                    //        {
-                    //            goOn = false;
-                    //        }
-                    //        else
-                    //        {
-                    //            this.CheckState(WorkerState.Running);
-                    //            // simply go on.
-                    //        }
-                    //        break;
-
-                    //    default:
-                    //        throw new WorkingException("Internal error."); // should never happen
-                    //}
-                }
-                else if (workFinishReason == WorkFinishReason.WorkIsDone)
-                {
-                    var vacationFinishedReason = this.TakeVacation();
-
-                    switch (vacationFinishedReason)
-                    {
-                        case VacationFinishedReason.GotControlSignal:
-                            goOn = this.ContinueAfterControlSignal(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
-
-                            //this.CheckState(WorkerState.Stopped, WorkerState.Paused, WorkerState.Disposed);
-                            //var state = this.State;
-                            //if (state == WorkerState.Stopped || state == WorkerState.Disposed)
-                            //{
-                            //    goOn = false;
-                            //}
-                            //else
-                            //{
-                            //    // state is 'Paused'
-                            //    this.PauseRoutine();
-                            //    state = this.State;
-                            //    if (state == WorkerState.Stopped || state == WorkerState.Disposed)
-                            //    {
-                            //        goOn = false;
-                            //    }
-                            //    else
-                            //    {
-                            //        // simply go on.
-                            //    }
-                            //}
-
-                            break;
-
-                        case VacationFinishedReason.VacationTimeElapsed:
-                        case VacationFinishedReason.NewWorkArrived:
-                            // let's get back to work.
-                            break;
-
-                        default:
-                            throw this.CreateInternalErrorException(); // should never happen
-                    }
-                }
-                else
-                {
-                    throw this.CreateInternalErrorException(); // should never happen
-                }
-            }
-        }
-
-        private void PauseRoutine()
-        {
-            this.LogDebug("Entered pause routine");
-
-            while (true)
-            {
-                var gotControlSignal = _controlSignal.WaitOne(11); // todo
-                if (gotControlSignal)
-                {
-                    //this.LogVerbose("Got control signal");
-
-                    //this.CheckState(WorkerState.Stopping, WorkerState.Resuming, WorkerState.Disposing);
-
-                    //this.RoutineSignal.Set();
-                    //this.ControlSignal.WaitOne();
-
-                    //this.CheckState(WorkerState.Stopped, WorkerState.Running, WorkerState.Disposed);
-                    return;
-                }
-            }
-        }
-
-        private bool ContinueAfterControlSignal(params WorkerState[] expectedStates)
-        {
-            //if (expectedStates.Length == 0)
-            //{
-            //    throw new NotImplementedException(); // todo
-            //}
-
-            //if (!expectedStates.All(x => x.IsTransitionWorkerState()))
-            //{
-            //    throw new NotImplementedException(); // todo
-            //}
-
-            //this.CheckState(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
-            this.CheckState(expectedStates);
-
-            _routineSignal.Set();
-            _controlSignal.WaitOne();
-
-            var stableStates = expectedStates
-                .Select(WorkingExtensions.GetStableWorkerState)
-                .ToArray();
-
-            this.CheckState(stableStates);
-
-            var state = this.State;
-
-            bool result;
-
-            switch (state)
-            {
-                case WorkerState.Disposed:
-                case WorkerState.Stopped:
-                    result = false;
-                    break;
-
-                case WorkerState.Paused:
-                    this.PauseRoutine();
-                    //state = this.State;
-                    //if (state == WorkerState.Stopped || state == WorkerState.Disposed)
-                    //{
-                    //    result = false;
-                    //}
-                    //else
-                    //{
-                    //    this.CheckState(WorkerState.Running);
-                    //    result = true;
-                    //}
-
-                    // After exit from 'PauseRoutine()', state cannot be 'Pausing', therefore recursion is never endless.
-                    result = ContinueAfterControlSignal(WorkerState.Stopping, WorkerState.Resuming, WorkerState.Disposing);
-                    break;
-
-                case WorkerState.Running:
-                    result = true;
-                    break;
-
-                default:
-                    throw this.CreateInternalErrorException(); // should never happen
-            }
-
-            return result;
-        }
     }
 }

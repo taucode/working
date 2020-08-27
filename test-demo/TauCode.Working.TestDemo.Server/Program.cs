@@ -1,14 +1,19 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using EasyNetQ;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using TauCode.Extensions;
 using TauCode.Working.TestDemo.Server.Workers;
 
 namespace TauCode.Working.TestDemo.Server
 {
     public class Program
     {
+        private readonly IConfiguration _configuration;
+        private IBus _bus;
+
         private static async Task Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
@@ -17,40 +22,93 @@ namespace TauCode.Working.TestDemo.Server
                 .WriteTo.Console()
                 .CreateLogger();
 
+            var configuration = CreateConfiguration();
+            //
 
+            var program = new Program(configuration);
+            await program.Run();
+        }
+
+        
+
+        public Program(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
+        public async Task Run()
+        {
+            var connectionString = _configuration["ConnectionStrings:RabbitMQ"];
+            _bus = RabbitHutch.CreateBus(connectionString);
+
+            while (true)
+            {
+                this.WritePrompt();
+                var input = Console.ReadLine();
+
+                var name = this.ReadName();
+
+                if (!this.IsValidInput(input))
+                {
+                    continue;
+                }
+
+                if (input == "0")
+                {
+                    break;
+                }
+
+                var worker = this.CreateWorker(input, name);
+                var wrapper = new WorkerWrapper(worker, _bus);
+                await wrapper.Run();
+            }
+
+            _bus.Dispose();
+        }
+
+        private string ReadName()
+        {
+            while (true)
+            {
+                Console.Write("Worker name: ");
+                var name = Console.ReadLine()?.Trim();
+
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                return name;
+            }
+        }
+
+        private IRabbitWorker CreateWorker(string workerType, string workerName)
+        {
+            switch (workerType)
+            {
+                case "1":
+                    return new SimpleTimeoutWorker(_bus)
+                    {
+                        Name = workerName,
+                    };
+
+                default:
+                    throw new ArgumentException();
+            }
+        }
+
+        private bool IsValidInput(string input)
+        {
+            return input.IsIn("0", "1");
+        }
+
+        private void WritePrompt()
+        {
             Console.Write(@"
 Choose worker type or exit
 0 - Exit
 1 - Timeout Worker
->");
-            var workerType = Console.ReadLine();
-
-            IWorker worker;
-
-            switch (workerType)
-            {
-                case "1":
-                    worker = new PersonTimeoutWorker();
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-            Console.Write("Worker name: ");
-            var workerName = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(workerName))
-            {
-                throw new NotImplementedException();
-            }
-
-            worker.Name = workerName;
-
-            var configuration = CreateConfiguration();
-            var connectionString = configuration["ConnectionStrings:RabbitMQ"];
-
-            var wrapper = new WorkerWrapper(worker, connectionString);
-            await wrapper.Run();
+: ");
         }
 
         private static IConfiguration CreateConfiguration()

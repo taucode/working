@@ -1,6 +1,5 @@
 ﻿using EasyNetQ;
 using System;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using TauCode.Working.TestDemo.Common;
@@ -10,22 +9,24 @@ namespace TauCode.Working.TestDemo.Server
 {
     public class WorkerWrapper
     {
-        private readonly IWorker _worker;
-        private readonly string _connectionString;
+        private readonly IRabbitWorker _worker;
+        //private readonly string _connectionString;
 
-        public WorkerWrapper(IWorker worker, string connectionString)
+        private readonly IBus _bus;
+
+        public WorkerWrapper(IRabbitWorker worker, IBus bus)
         {
             _worker = worker;
-            _connectionString = connectionString;
+            _bus = bus;
         }
 
         public async Task Run()
         {
-            var bus = RabbitHutch.CreateBus(_connectionString);
-
-            var rpcHandle1 = bus.Respond<WorkerCommandRequest, WorkerCommandResponse>(
+            var rpcHandle1 = _bus.Respond<WorkerCommandRequest, WorkerCommandResponse>(
                 this.ProcessMethodInvocation,
                 configuration => configuration.WithQueueName(_worker.Name));
+
+            var workerRpcHandles = _worker.RegisterHandlers();
 
             _worker.WaitForStateChange(System.Threading.Timeout.Infinite, WorkerState.Disposed);
 
@@ -34,7 +35,11 @@ namespace TauCode.Working.TestDemo.Server
             await Task.Delay(100);
 
             rpcHandle1.Dispose();
-            bus.Dispose();
+
+            foreach (var handle in workerRpcHandles)
+            {
+                handle.Dispose();
+            }
         }
 
         private WorkerCommandResponse ProcessMethodInvocation(WorkerCommandRequest request)
@@ -105,37 +110,12 @@ namespace TauCode.Working.TestDemo.Server
         private string GetInfo()
         {
             var sb = new StringBuilder();
-            sb.Append($"Type: {_worker.GetType().FullName}; ");
-            sb.Append($"Name: {_worker.Name}; ");
-            sb.Append($"State: {_worker.State}");
+            sb.AppendLine($"Type: {_worker.GetType().FullName}; ");
+            sb.AppendLine($"Name: {_worker.Name}; ");
+            sb.AppendLine($"State: {_worker.State}");
+            sb.AppendLine();
 
             return sb.ToString();
-        }
-
-        private static string GetResultString(MethodInfo method, object result)
-        {
-            var returnType = method.ReturnType;
-            if (returnType == typeof(void))
-            {
-                return null;
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        private static object[] BuildParameters(MethodInfo method, string[] arguments)
-        {
-            var parameters = method.GetParameters();
-            if (parameters.Length == 0)
-            {
-                return new object[] { };
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
         }
     }
 }

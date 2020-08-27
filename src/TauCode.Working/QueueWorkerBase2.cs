@@ -28,17 +28,17 @@ namespace TauCode.Working
 
         protected abstract Task DoAssignmentAsync(TAssignment assignment);
 
-        protected override async Task<WorkFinishReason> DoWorkAsync()
+        protected override async Task<WorkFinishReason> DoWorkAsyncImpl()
         {
             WorkFinishReason reason;
 
             while (true)
             {
-                //var gotControlSignal = _controlSignal.WaitOne(0);
                 var gotControlSignal = this.WaitControlSignal(0);
 
                 if (gotControlSignal)
                 {
+                    this.LogDebug("Got control signal.");
                     reason = WorkFinishReason.GotControlSignal;
                     break;
                 }
@@ -65,10 +65,8 @@ namespace TauCode.Working
             return reason;
         }
 
-        protected override VacationFinishedReason TakeVacation()
+        protected override Task<VacationFinishedReason> TakeVacationAsyncImpl()
         {
-            this.LogDebug("Entered idle routine");
-
             while (true)
             {
                 //var signalIndex = WaitHandle.WaitAny(_handles, Timeout);

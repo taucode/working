@@ -19,7 +19,7 @@ namespace TauCode.Working.TestDemo.Client
         {
             if (exception == null)
             {
-                Console.WriteLine($"Result from server: '{result}'");
+                Console.WriteLine(result);
             }
 
             if (exception != null)
