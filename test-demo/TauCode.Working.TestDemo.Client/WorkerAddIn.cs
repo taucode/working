@@ -23,9 +23,10 @@ namespace TauCode.Working.TestDemo.Client
             return new ICliExecutor[]
             {
                 new StartWorkerExecutor(),
+                new PauseWorkerExecutor(),
+                new ResumeWorkerExecutor(),
                 new StopWorkerExecutor(),
-                new GetWorkerNameExecutor(),
-                new GetWorkerStateExecutor(),
+                new GetWorkerInfoExecutor(),
             };
         }
     }

@@ -1,6 +1,7 @@
 ﻿using EasyNetQ;
 using System;
 using System.Reflection;
+using System.Text;
 using TauCode.Working.TestDemo.Common;
 
 // todo clean up
@@ -87,12 +88,8 @@ namespace TauCode.Working.TestDemo.Server
 
             switch (command)
             {
-                case WorkerCommand.GetName:
-                    result = _worker.Name;
-                    break;
-
-                case WorkerCommand.GetState:
-                    result = _worker.State.ToString();
+                case WorkerCommand.GetInfo:
+                    result = this.GetInfo();
                     break;
 
                 case WorkerCommand.Start:
@@ -125,6 +122,16 @@ namespace TauCode.Working.TestDemo.Server
             }
 
             return result;
+        }
+
+        private string GetInfo()
+        {
+            var sb = new StringBuilder();
+            sb.Append($"Type: {_worker.GetType().FullName}; ");
+            sb.Append($"Name: {_worker.Name}; ");
+            sb.Append($"State: {_worker.State}");
+
+            return sb.ToString();
         }
 
         private static string GetResultString(MethodInfo method, object result)

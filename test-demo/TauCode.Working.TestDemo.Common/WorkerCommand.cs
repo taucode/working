@@ -2,8 +2,7 @@
 {
     public enum WorkerCommand
     {
-        GetName = 1,
-        GetState,
+        GetInfo = 1,
         Start,
         Pause,
         Resume,

@@ -8,10 +8,10 @@ using TauCode.Working.TestDemo.Common;
 namespace TauCode.Working.TestDemo.Client.Executors
 {
     // todo clean up
-    public class GetWorkerStateExecutor : WorkerExecutorBase
+    public class PauseWorkerExecutor : WorkerExecutorBase
     {
-        public GetWorkerStateExecutor()
-            : base(typeof(Program).Assembly.GetResourceText($".{nameof(GetWorkerStateExecutor)}.lisp", true))
+        public PauseWorkerExecutor()
+            : base(typeof(Program).Assembly.GetResourceText($".{nameof(PauseWorkerExecutor)}.lisp", true))
         {
         }
 
@@ -27,7 +27,7 @@ namespace TauCode.Working.TestDemo.Client.Executors
 
             var request = new WorkerCommandRequest
             {
-                Command = WorkerCommand.GetState,
+                Command = WorkerCommand.Pause,
             };
 
             var summary = (new CliCommandSummaryBuilder()).Build(this.Descriptor, entries);

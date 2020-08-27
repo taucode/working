@@ -6,15 +6,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Resources\GetWorkerNameExecutor.lisp" />
-    <None Remove="Resources\GetWorkerStateExecutor.lisp" />
+    <None Remove="Resources\GetWorkerInfoExecutor.lisp" />
+    <None Remove="Resources\PauseWorkerExecutor.lisp" />
+    <None Remove="Resources\ResumeWorkerExecutor.lisp" />
     <None Remove="Resources\StartWorkerExecutor.lisp" />
     <None Remove="Resources\StopWorkerExecutor.lisp" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\GetWorkerStateExecutor.lisp" />
-    <EmbeddedResource Include="Resources\GetWorkerNameExecutor.lisp" />
+    <EmbeddedResource Include="Resources\GetWorkerInfoExecutor.lisp" />
+    <EmbeddedResource Include="Resources\ResumeWorkerExecutor.lisp" />
+    <EmbeddedResource Include="Resources\PauseWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\StopWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\StartWorkerExecutor.lisp" />
   </ItemGroup>

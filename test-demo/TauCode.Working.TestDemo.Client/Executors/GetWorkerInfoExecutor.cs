@@ -8,10 +8,10 @@ using TauCode.Working.TestDemo.Common;
 namespace TauCode.Working.TestDemo.Client.Executors
 {
     // todo clean up
-    public class GetWorkerNameExecutor : WorkerExecutorBase
+    public class GetWorkerInfoExecutor : WorkerExecutorBase
     {
-        public GetWorkerNameExecutor()
-            : base(typeof(Program).Assembly.GetResourceText($".{nameof(GetWorkerNameExecutor)}.lisp", true))
+        public GetWorkerInfoExecutor()
+            : base(typeof(Program).Assembly.GetResourceText($".{nameof(GetWorkerInfoExecutor)}.lisp", true))
         {
         }
 
@@ -27,7 +27,7 @@ namespace TauCode.Working.TestDemo.Client.Executors
 
             var request = new WorkerCommandRequest
             {
-                Command = WorkerCommand.GetName,
+                Command = WorkerCommand.GetInfo,
             };
 
             var summary = (new CliCommandSummaryBuilder()).Build(this.Descriptor, entries);
