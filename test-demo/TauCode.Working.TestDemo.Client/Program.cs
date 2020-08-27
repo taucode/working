@@ -2,8 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
-using TauCode.Cli;
-using TauCode.Cli.HostRunners;
 
 namespace TauCode.Working.TestDemo.Client
 {
@@ -21,14 +19,11 @@ namespace TauCode.Working.TestDemo.Client
 
             var bus = RabbitHutch.CreateBus(connectionString);
 
-            var runner = new DemoHostRunner(
-                "idle",
-                new ICliHost[]
-                {
-                    new WorkerHost(bus),
-                });
-
+            var runner = new WorkerHostRunner(bus);
             var res = runner.Run(args);
+
+            bus.Dispose();
+
             return res;
         }
 

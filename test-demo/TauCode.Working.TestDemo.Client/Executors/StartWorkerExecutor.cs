@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using TauCode.Cli.CommandSummary;
 using TauCode.Cli.Data;
@@ -8,6 +7,7 @@ using TauCode.Working.TestDemo.Common;
 
 namespace TauCode.Working.TestDemo.Client.Executors
 {
+    // todo clean up
     public class StartWorkerExecutor : WorkerExecutorBase
     {
         public StartWorkerExecutor()
@@ -19,28 +19,40 @@ namespace TauCode.Working.TestDemo.Client.Executors
         {
             var bus = this.GetBus();
 
-            var request = new InvokeMethodRequest
+            //var request = new InvokeMethodRequest
+            //{
+            //    MethodName = "Start",
+            //    Arguments = new string[] { },
+            //};
+
+            var request = new WorkerCommandRequest
             {
-                MethodName = "Start",
-                Arguments = new string[] { },
+                Command = WorkerCommand.Start,
             };
 
             var summary = (new CliCommandSummaryBuilder()).Build(this.Descriptor, entries);
             var workerName = summary.Arguments["worker-name"].Single();
 
             // todo: try/catch
-            var response = bus.Request<InvokeMethodRequest, InvokeMethodResponse>(request, conf => conf.WithQueueName(workerName));
+            var response = bus.Request<WorkerCommandRequest, WorkerCommandResponse>(
+                request,
+                conf => conf.WithQueueName(workerName));
 
-            if (response.Exception == null)
-            {
-                Console.WriteLine($"Worker {workerName} was started.");
-            }
-            else
-            {
-                Console.WriteLine("Server returned exception:");
-                Console.WriteLine(response.Exception.TypeName);
-                Console.WriteLine(response.Exception.Message);
-            }
+            this.ShowResult(response.Result, response.Exception);
+
+
+
+            //if (response.Exception == null)
+            //{
+            //    Console.WriteLine($"Worker {workerName} was started.");
+            //}
+            //else
+            //{
+            //    Console.WriteLine("Server returned exception:");
+            //    Console.WriteLine(response.Exception.TypeName);
+            //    Console.WriteLine(response.Exception.Message);
+            //}
         }
+
     }
 }

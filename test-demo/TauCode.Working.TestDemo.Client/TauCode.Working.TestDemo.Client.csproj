@@ -6,11 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\GetWorkerNameExecutor.lisp" />
+    <None Remove="Resources\GetWorkerStateExecutor.lisp" />
     <None Remove="Resources\StartWorkerExecutor.lisp" />
     <None Remove="Resources\StopWorkerExecutor.lisp" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\GetWorkerStateExecutor.lisp" />
+    <EmbeddedResource Include="Resources\GetWorkerNameExecutor.lisp" />
     <EmbeddedResource Include="Resources\StopWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\StartWorkerExecutor.lisp" />
   </ItemGroup>
@@ -19,7 +23,7 @@
     <PackageReference Include="EasyNetQ" Version="5.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.7" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
-    <PackageReference Include="TauCode.Cli" Version="1.2.0" />
+    <PackageReference Include="TauCode.Cli" Version="1.2.1-dev-2020-08-26-15-32" />
   </ItemGroup>
 
   <ItemGroup>

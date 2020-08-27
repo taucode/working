@@ -3,6 +3,7 @@ using System;
 using System.Reflection;
 using TauCode.Working.TestDemo.Common;
 
+// todo clean up
 namespace TauCode.Working.TestDemo.Server
 {
     public class WorkerWrapper
@@ -20,7 +21,7 @@ namespace TauCode.Working.TestDemo.Server
         {
             var bus = RabbitHutch.CreateBus(_connectionString);
 
-            var rpcHandle1 = bus.Respond<InvokeMethodRequest, InvokeMethodResponse>(
+            var rpcHandle1 = bus.Respond<WorkerCommandRequest, WorkerCommandResponse>(
                 this.ProcessMethodInvocation,
                 configuration => configuration.WithQueueName(_worker.Name));
 
@@ -31,45 +32,99 @@ namespace TauCode.Working.TestDemo.Server
             bus.Dispose();
         }
 
-        private InvokeMethodResponse ProcessMethodInvocation(InvokeMethodRequest request)
+        private WorkerCommandResponse ProcessMethodInvocation(WorkerCommandRequest request)
         {
             try
             {
-                var method = _worker.GetType().GetMethod(request.MethodName);
-                if (method == null)
+                var result = this.ExecuteCommand(request.Command);
+                var response = new WorkerCommandResponse
                 {
-                    throw new Exception($"Method '{request.MethodName}' not found.");
-                }
-
-                var parameters = BuildParameters(method, request.Arguments);
-                var result = method.Invoke(_worker, parameters);
-                var resultString = GetResultString(method, result);
-
-                var response = new InvokeMethodResponse
-                {
-                    Result = resultString,
+                    Result = result,
                 };
 
                 return response;
-            }
-            catch (TargetInvocationException ex)
-            {
-                var errorResponse = new InvokeMethodResponse
-                {
-                    Exception = ExceptionInfo.FromException(ex.InnerException),
-                };
 
-                return errorResponse;
+                //var method = _worker.GetType().GetMethod(request.MethodName);
+                //if (method == null)
+                //{
+                //    throw new Exception($"Method '{request.MethodName}' not found.");
+                //}
+
+                //var parameters = BuildParameters(method, request.Arguments);
+                //var result = method.Invoke(_worker, parameters);
+                //var resultString = GetResultString(method, result);
+
+                //var response = new InvokeMethodResponse
+                //{
+                //    Result = resultString,
+                //};
+
+                //return response;
             }
+            //catch (TargetInvocationException ex)
+            //{
+            //    var errorResponse = new InvokeMethodResponse
+            //    {
+            //        Exception = ExceptionInfo.FromException(ex.InnerException),
+            //    };
+
+            //    return errorResponse;
+            //}
             catch (Exception ex)
             {
-                var errorResponse = new InvokeMethodResponse
+                var errorResponse = new WorkerCommandResponse
                 {
                     Exception = ExceptionInfo.FromException(ex),
                 };
 
                 return errorResponse;
             }
+        }
+
+        private string ExecuteCommand(WorkerCommand command)
+        {
+            string result;
+
+            switch (command)
+            {
+                case WorkerCommand.GetName:
+                    result = _worker.Name;
+                    break;
+
+                case WorkerCommand.GetState:
+                    result = _worker.State.ToString();
+                    break;
+
+                case WorkerCommand.Start:
+                    _worker.Start();
+                    result = _worker.State.ToString();
+                    break;
+
+                case WorkerCommand.Pause:
+                    _worker.Pause();
+                    result = _worker.State.ToString();
+                    break;
+
+                case WorkerCommand.Resume:
+                    _worker.Resume();
+                    result = _worker.State.ToString();
+                    break;
+
+                case WorkerCommand.Stop:
+                    _worker.Stop();
+                    result = _worker.State.ToString();
+                    break;
+
+                case WorkerCommand.Dispose:
+                    _worker.Dispose();
+                    result = _worker.State.ToString();
+                    break;
+
+                default:
+                    throw new NotImplementedException(); // todo
+            }
+
+            return result;
         }
 
         private static string GetResultString(MethodInfo method, object result)

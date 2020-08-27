@@ -7,10 +7,11 @@ using TauCode.Working.TestDemo.Common;
 
 namespace TauCode.Working.TestDemo.Client.Executors
 {
-    public class StopWorkerExecutor : WorkerExecutorBase
+    // todo clean up
+    public class GetWorkerStateExecutor : WorkerExecutorBase
     {
-        public StopWorkerExecutor()
-            : base(typeof(Program).Assembly.GetResourceText($".{nameof(StopWorkerExecutor)}.lisp", true))
+        public GetWorkerStateExecutor()
+            : base(typeof(Program).Assembly.GetResourceText($".{nameof(GetWorkerStateExecutor)}.lisp", true))
         {
         }
 
@@ -18,9 +19,15 @@ namespace TauCode.Working.TestDemo.Client.Executors
         {
             var bus = this.GetBus();
 
+            //var request = new InvokeMethodRequest
+            //{
+            //    MethodName = "Start",
+            //    Arguments = new string[] { },
+            //};
+
             var request = new WorkerCommandRequest
             {
-                Command = WorkerCommand.Stop,
+                Command = WorkerCommand.GetState,
             };
 
             var summary = (new CliCommandSummaryBuilder()).Build(this.Descriptor, entries);
@@ -32,6 +39,20 @@ namespace TauCode.Working.TestDemo.Client.Executors
                 conf => conf.WithQueueName(workerName));
 
             this.ShowResult(response.Result, response.Exception);
+
+
+
+            //if (response.Exception == null)
+            //{
+            //    Console.WriteLine($"Worker {workerName} was started.");
+            //}
+            //else
+            //{
+            //    Console.WriteLine("Server returned exception:");
+            //    Console.WriteLine(response.Exception.TypeName);
+            //    Console.WriteLine(response.Exception.Message);
+            //}
         }
+
     }
 }

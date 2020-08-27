@@ -10,7 +10,7 @@ namespace TauCode.Working.TestDemo.Client
     public class WorkerAddIn : CliAddInBase
     {
         public WorkerAddIn()
-            : base("wrk", null, false)
+            : base(null, null, false)
         {
         }
 
@@ -24,6 +24,8 @@ namespace TauCode.Working.TestDemo.Client
             {
                 new StartWorkerExecutor(),
                 new StopWorkerExecutor(),
+                new GetWorkerNameExecutor(),
+                new GetWorkerStateExecutor(),
             };
         }
     }

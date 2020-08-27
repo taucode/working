@@ -1,8 +1,10 @@
-﻿namespace TauCode.Working.TestDemo.Common
-{
-    public class InvokeMethodRequest
-    {
-        public string MethodName { get; set; }
-        public string[] Arguments { get; set; }
-    }
-}
+﻿// todo clean up
+
+//namespace TauCode.Working.TestDemo.Common
+//{
+//    public class InvokeMethodRequest
+//    {
+//        public string MethodName { get; set; }
+//        public string[] Arguments { get; set; }
+//    }
+//}

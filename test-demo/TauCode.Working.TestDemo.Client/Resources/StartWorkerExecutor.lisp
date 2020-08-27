@@ -4,7 +4,7 @@
 		:verb "start"
 		:description "Starts worker with the given name."
 		:usage-samples (
-			"wrk start my-good-worker"))
+			"start my-good-worker"))
 
 	(some-text
 		:classes term string

@@ -4,7 +4,7 @@
 		:verb "stop"
 		:description "Stops worker with the given name."
 		:usage-samples (
-			"wrk stop my-good-worker"))
+			"stop my-good-worker"))
 
 	(some-text
 		:classes term string
