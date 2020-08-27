@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\DisposeWorkerExecutor.lisp" />
     <None Remove="Resources\GetWorkerInfoExecutor.lisp" />
     <None Remove="Resources\PauseWorkerExecutor.lisp" />
     <None Remove="Resources\ResumeWorkerExecutor.lisp" />
@@ -15,6 +16,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\GetWorkerInfoExecutor.lisp" />
+    <EmbeddedResource Include="Resources\DisposeWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\ResumeWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\PauseWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\StopWorkerExecutor.lisp" />

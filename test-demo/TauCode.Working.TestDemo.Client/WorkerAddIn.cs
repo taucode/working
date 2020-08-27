@@ -22,11 +22,12 @@ namespace TauCode.Working.TestDemo.Client
         {
             return new ICliExecutor[]
             {
+                new GetWorkerInfoExecutor(),
                 new StartWorkerExecutor(),
                 new PauseWorkerExecutor(),
                 new ResumeWorkerExecutor(),
                 new StopWorkerExecutor(),
-                new GetWorkerInfoExecutor(),
+                new DisposeWorkerExecutor(),
             };
         }
     }

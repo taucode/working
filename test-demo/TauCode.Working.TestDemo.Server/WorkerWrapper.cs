@@ -2,6 +2,7 @@
 using System;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using TauCode.Working.TestDemo.Common;
 
 // todo clean up
@@ -18,7 +19,7 @@ namespace TauCode.Working.TestDemo.Server
             _connectionString = connectionString;
         }
 
-        public void Run()
+        public async Task Run()
         {
             var bus = RabbitHutch.CreateBus(_connectionString);
 
@@ -28,8 +29,11 @@ namespace TauCode.Working.TestDemo.Server
 
             _worker.WaitForStateChange(System.Threading.Timeout.Infinite, WorkerState.Disposed);
 
-            rpcHandle1.Dispose();
+            // wait a bit. let RabbitMQ send farewell response.
+            Console.WriteLine("Worker disposed. Waiting 100 ms and exiting Run routine.");
+            await Task.Delay(100);
 
+            rpcHandle1.Dispose();
             bus.Dispose();
         }
 
@@ -44,33 +48,7 @@ namespace TauCode.Working.TestDemo.Server
                 };
 
                 return response;
-
-                //var method = _worker.GetType().GetMethod(request.MethodName);
-                //if (method == null)
-                //{
-                //    throw new Exception($"Method '{request.MethodName}' not found.");
-                //}
-
-                //var parameters = BuildParameters(method, request.Arguments);
-                //var result = method.Invoke(_worker, parameters);
-                //var resultString = GetResultString(method, result);
-
-                //var response = new InvokeMethodResponse
-                //{
-                //    Result = resultString,
-                //};
-
-                //return response;
             }
-            //catch (TargetInvocationException ex)
-            //{
-            //    var errorResponse = new InvokeMethodResponse
-            //    {
-            //        Exception = ExceptionInfo.FromException(ex.InnerException),
-            //    };
-
-            //    return errorResponse;
-            //}
             catch (Exception ex)
             {
                 var errorResponse = new WorkerCommandResponse

@@ -2,13 +2,14 @@
 using Serilog;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using TauCode.Working.TestDemo.Server.Workers;
 
 namespace TauCode.Working.TestDemo.Server
 {
     public class Program
     {
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
                 .Filter.ByIncludingOnly(x => x.Properties.ContainsKey("taucode.working"))
@@ -17,7 +18,11 @@ namespace TauCode.Working.TestDemo.Server
                 .CreateLogger();
 
 
-            Console.Write("Worker type (1 - Timeout Worker): ");
+            Console.Write(@"
+Choose worker type or exit
+0 - Exit
+1 - Timeout Worker
+>");
             var workerType = Console.ReadLine();
 
             IWorker worker;
@@ -45,7 +50,7 @@ namespace TauCode.Working.TestDemo.Server
             var connectionString = configuration["ConnectionStrings:RabbitMQ"];
 
             var wrapper = new WorkerWrapper(worker, connectionString);
-            wrapper.Run();
+            await wrapper.Run();
         }
 
         private static IConfiguration CreateConfiguration()
