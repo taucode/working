@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TauCode.Working.TestDemo.Server": {
+      "commandName": "Project",
+      "commandLineArgs": "1 a"
+    }
+  }
+}

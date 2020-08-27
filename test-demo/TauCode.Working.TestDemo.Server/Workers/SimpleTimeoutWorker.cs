@@ -7,7 +7,7 @@ namespace TauCode.Working.TestDemo.Server.Workers
 {
     public class SimpleTimeoutWorker : TimeoutWorkerBase, IRabbitWorker
     {
-        public const string InitialTimeoutString = "00:00:02";
+        public const string InitialTimeoutString = "00:00:05";
 
         private readonly IBus _bus;
         private int _index;

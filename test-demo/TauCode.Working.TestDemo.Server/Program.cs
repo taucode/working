@@ -26,27 +26,39 @@ namespace TauCode.Working.TestDemo.Server
             //
 
             var program = new Program(configuration);
-            await program.Run();
+            await program.Run(args);
         }
-
-        
 
         public Program(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
-        public async Task Run()
+        public async Task Run(string[] args)
         {
             var connectionString = _configuration["ConnectionStrings:RabbitMQ"];
             _bus = RabbitHutch.CreateBus(connectionString);
 
+            var firstIteration = true;
+
             while (true)
             {
-                this.WritePrompt();
-                var input = Console.ReadLine();
+                string input;
+                string name;
 
-                var name = this.ReadName();
+                if (firstIteration && args.Length == 2)
+                {
+                    input = "1";
+                    name = "a";
+                }
+                else
+                {
+                    this.WritePrompt();
+                    input = Console.ReadLine();
+                    name = this.ReadName();
+                }
+
+                firstIteration = false;
 
                 if (!this.IsValidInput(input))
                 {
@@ -60,6 +72,9 @@ namespace TauCode.Working.TestDemo.Server
 
                 var worker = this.CreateWorker(input, name);
                 var wrapper = new WorkerWrapper(worker, _bus);
+
+                Console.WriteLine($"Starting worker with type {worker.GetType().FullName} and name '{worker.Name}'.");
+
                 await wrapper.Run();
             }
 

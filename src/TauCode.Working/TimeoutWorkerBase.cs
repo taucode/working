@@ -58,21 +58,21 @@ namespace TauCode.Working
             return WorkFinishReason.WorkIsDone;
         }
 
-        protected override Task<VacationFinishedReason> TakeVacationAsyncImpl()
+        protected override Task<VacationFinishReason> TakeVacationAsyncImpl()
         {
             var index = this.WaitForControlSignalWithExtraSignals(this.Timeout); // todo
 
             switch (index)
             {
                 case ControlSignalIndex:
-                    return Task.FromResult(VacationFinishedReason.GotControlSignal);
+                    return Task.FromResult(VacationFinishReason.GotControlSignal);
 
                 case ChangeTimeoutSignalIndex:
                     throw new NotImplementedException();
                     //return VacationFinishedReason.NewWorkArrived;
 
                 case WaitHandle.WaitTimeout:
-                    return Task.FromResult(VacationFinishedReason.VacationTimeElapsed);
+                    return Task.FromResult(VacationFinishReason.VacationTimeElapsed);
 
                 default:
                     throw this.CreateInternalErrorException();

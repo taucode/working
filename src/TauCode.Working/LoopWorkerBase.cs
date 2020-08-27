@@ -23,7 +23,7 @@ namespace TauCode.Working
             WorkIsDone,
         }
 
-        protected enum VacationFinishedReason
+        protected enum VacationFinishReason
         {
             GotControlSignal = 1,
             VacationTimeElapsed,
@@ -45,7 +45,7 @@ namespace TauCode.Working
 
         protected abstract Task<WorkFinishReason> DoWorkAsyncImpl();
 
-        protected abstract Task<VacationFinishedReason> TakeVacationAsyncImpl();
+        protected abstract Task<VacationFinishReason> TakeVacationAsyncImpl();
 
         protected abstract AutoResetEvent[] GetExtraSignals();
 
@@ -59,10 +59,6 @@ namespace TauCode.Working
 
             this.CheckState(WorkerState.Starting);
             WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
-
-            //_routineSignal.Set();
-            //_controlSignal.WaitOne();
-
             this.CheckState(WorkerState.Running);
 
             var goOn = true;
@@ -83,12 +79,12 @@ namespace TauCode.Working
 
                     switch (vacationFinishedReason)
                     {
-                        case VacationFinishedReason.GotControlSignal:
+                        case VacationFinishReason.GotControlSignal:
                             goOn = this.ContinueAfterControlSignal(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
                             break;
 
-                        case VacationFinishedReason.VacationTimeElapsed:
-                        case VacationFinishedReason.NewWorkArrived:
+                        case VacationFinishReason.VacationTimeElapsed:
+                        case VacationFinishReason.NewWorkArrived:
                             // let's get back to work.
                             break;
 
@@ -109,15 +105,15 @@ namespace TauCode.Working
             return this.DoWorkAsyncImpl();
         }
 
-        private Task<VacationFinishedReason> TakeVacationAsync()
+        private Task<VacationFinishReason> TakeVacationAsync()
         {
-            this.LogDebug($"Entered {nameof(TakeVacationAsync)}");
+            this.LogDebug($"Entered");
             return this.TakeVacationAsyncImpl();
         }
 
         private void PauseRoutine()
         {
-            this.LogDebug($"Entered {nameof(PauseRoutine)}");
+            this.LogDebug($"Entered");
 
             while (true)
             {
@@ -125,15 +121,6 @@ namespace TauCode.Working
                 if (gotControlSignal)
                 {
                     this.LogDebug("Got control signal");
-
-                    //this.LogVerbose("Got control signal");
-
-                    //this.CheckState(WorkerState.Stopping, WorkerState.Resuming, WorkerState.Disposing);
-
-                    //this.RoutineSignal.Set();
-                    //this.ControlSignal.WaitOne();
-
-                    //this.CheckState(WorkerState.Stopped, WorkerState.Running, WorkerState.Disposed);
                     return;
                 }
             }
@@ -206,8 +193,6 @@ namespace TauCode.Working
 
         #region Protected
 
-        //protected AutoResetEvent ControlSignal { get; private set; }
-        //protected AutoResetEvent RoutineSignal { get; private set; }
         protected Task LoopTask { get; private set; } // todo: private?
 
         protected bool WaitControlSignal(int millisecondsTimeout)
@@ -215,29 +200,9 @@ namespace TauCode.Working
             return _controlSignal.WaitOne(millisecondsTimeout);
         }
 
-        //protected void RegisterAdditionalHandles(WaitHandle[] additionalHandles)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //protected void DeregisterAdditionalHandles()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
         protected int WaitForControlSignalWithExtraSignals(int millisecondsTimeout) =>
             this.WaitForControlSignalWithExtraSignals(TimeSpan.FromMilliseconds(millisecondsTimeout));
-        //{
-        //    if (_controlSignalWithExtraSignals == null)
-        //    {
-        //        throw new InvalidOperationException(); // todo
-        //    }
-
-        //    Task todo;
-        //    var index = WaitHandle.WaitAny(_controlSignalWithExtraSignals, millisecondsTimeout);
-        //    return index;
-        //}
-
+        
         protected int WaitForControlSignalWithExtraSignals(TimeSpan timeout) // todo rename
         {
             if (_controlSignalWithExtraSignals == null)
@@ -285,9 +250,7 @@ namespace TauCode.Working
                 _controlSignalWithExtraSignals = list.ToArray();
             }
 
-            //this.LoopTask = new Task(this.Routine);
             this.LoopTask = Task.Factory.StartNew(this.Routine);
-            //this.LoopTask.Start();
 
             // wait signal from routine that routine has started
             _routineSignal.WaitOne();
@@ -340,13 +303,8 @@ namespace TauCode.Working
             _controlSignal.Dispose();
             _controlSignal = null;
 
-            //_dataSignal.Dispose();
-            //_dataSignal = null;
-
             _routineSignal.Dispose();
             _routineSignal = null;
-
-            //_handles = null;
 
             this.LogDebug("OS Resources disposed.");
         }
@@ -364,14 +322,15 @@ namespace TauCode.Working
                 return;
             }
 
-            _controlSignal.Set();
-            _routineSignal.WaitOne();
+            this.LogDebug($"Sending signal to {nameof(Routine)}");
+            WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
+
             this.ChangeState(WorkerState.Disposed);
             _controlSignal.Set();
 
-            this.LogDebug("Waiting task to terminate.");
+            this.LogDebug($"Waiting {nameof(Routine)} to terminate");
             this.LoopTask.Wait();
-            this.LogDebug("Task terminated.");
+            this.LogDebug($"{nameof(Routine)} terminated");
 
             this.LoopTask.Dispose();
             this.LoopTask = null;
@@ -379,13 +338,8 @@ namespace TauCode.Working
             _controlSignal.Dispose();
             _controlSignal = null;
 
-            //_dataSignal.Dispose();
-            //_dataSignal = null;
-
             _routineSignal.Dispose();
             _routineSignal = null;
-
-            //_handles = null;
 
             this.LogDebug("OS Resources disposed.");
         }

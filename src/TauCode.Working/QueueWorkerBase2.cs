@@ -65,7 +65,7 @@ namespace TauCode.Working
             return reason;
         }
 
-        protected override Task<VacationFinishedReason> TakeVacationAsyncImpl()
+        protected override Task<VacationFinishReason> TakeVacationAsyncImpl()
         {
             while (true)
             {
