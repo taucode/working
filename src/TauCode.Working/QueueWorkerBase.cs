@@ -72,21 +72,20 @@ namespace TauCode.Working
 
             _handles = new WaitHandle[] { _controlSignal, _dataSignal };
 
-            this.LogVerbose("Creating task");
+            this.LogDebug("Creating task");
 
             _task = new Task(this.Routine);
             _task.Start();
 
-            this.LogVerbose("Task started");
+            this.LogDebug("Task started");
             _controlRequestAcknowledgedSignal.WaitOne();
-            this.LogVerbose("Got acknowledge signal from routine");
+            this.LogDebug("Got acknowledge signal from routine");
             this.ChangeState(WorkerState.Running);
             _controlSignal.Set();
         }
 
         protected override void PauseImpl()
-        {
-            this.LogVerbose("Pause requested");
+        {   
             this.ChangeState(WorkerState.Pausing);
             _controlSignal.Set();
             _controlRequestAcknowledgedSignal.WaitOne();
@@ -96,7 +95,6 @@ namespace TauCode.Working
 
         protected override void ResumeImpl()
         {
-            this.LogVerbose("Resume requested");
             this.ChangeState(WorkerState.Resuming);
             _controlSignal.Set();
             _controlRequestAcknowledgedSignal.WaitOne();
@@ -106,16 +104,15 @@ namespace TauCode.Working
 
         protected override void StopImpl()
         {
-            this.LogVerbose("Stop requested");
             this.ChangeState(WorkerState.Stopping);
             _controlSignal.Set();
             _controlRequestAcknowledgedSignal.WaitOne();
             this.ChangeState(WorkerState.Stopped);
             _controlSignal.Set();
 
-            this.LogVerbose("Waiting task to terminate.");
+            this.LogDebug("Waiting task to terminate.");
             _task.Wait();
-            this.LogVerbose("Task terminated.");
+            this.LogDebug("Task terminated.");
 
             _task.Dispose();
             _task = null;
@@ -131,18 +128,17 @@ namespace TauCode.Working
 
             _handles = null;
 
-            this.LogVerbose("OS Resources disposed.");
+            this.LogDebug("OS Resources disposed.");
         }
 
         protected override void DisposeImpl()
         {
-            this.LogVerbose("Dispose requested");
             var previousState = this.State;
             this.ChangeState(WorkerState.Disposing);
 
             if (previousState == WorkerState.Stopped)
             {
-                this.LogVerbose("Worker was stopped, nothing to dispose");
+                this.LogDebug("Worker was stopped, nothing to dispose");
                 this.ChangeState(WorkerState.Disposed);
                 return;
             }
@@ -152,9 +148,9 @@ namespace TauCode.Working
             this.ChangeState(WorkerState.Disposed);
             _controlSignal.Set();
 
-            this.LogVerbose("Waiting task to terminate.");
+            this.LogDebug("Waiting task to terminate.");
             _task.Wait();
-            this.LogVerbose("Task terminated.");
+            this.LogDebug("Task terminated.");
 
             _task.Dispose();
             _task = null;
@@ -170,7 +166,7 @@ namespace TauCode.Working
 
             _handles = null;
 
-            this.LogVerbose("OS Resources disposed.");
+            this.LogDebug("OS Resources disposed.");
         }
 
         #endregion
@@ -236,7 +232,7 @@ namespace TauCode.Working
             _controlRequestAcknowledgedSignal.Set(); // inform control thread that routine has started.
             _controlSignal.WaitOne();
 
-            this.LogVerbose("Got control signal from control thread");
+            this.LogDebug("Got control signal from control thread");
             this.CheckState(WorkerState.Running);
 
             var goOn = true;
@@ -324,12 +320,12 @@ namespace TauCode.Working
                 }
             }
 
-            this.LogVerbose($"Exiting task. State is '{this.State}'.");
+            this.LogDebug($"Exiting task. State is '{this.State}'.");
         }
 
         private IdleStateInterruptionReason IdleRoutine()
         {
-            this.LogVerbose("Entered idle routine");
+            this.LogDebug("Entered idle routine");
 
             while (true)
             {
@@ -337,7 +333,7 @@ namespace TauCode.Working
                 switch (signalIndex)
                 {
                     case ControlSignalIndex:
-                        this.LogVerbose("Got control signal");
+                        this.LogDebug("Got control signal");
                         this.CheckState(WorkerState.Stopping, WorkerState.Pausing, WorkerState.Disposing);
                         _controlRequestAcknowledgedSignal.Set();
                         _controlSignal.WaitOne();
@@ -345,7 +341,7 @@ namespace TauCode.Working
                         return IdleStateInterruptionReason.GotControlSignal;
 
                     case DataSignalIndex:
-                        this.LogVerbose("Got data");
+                        this.LogDebug("Got data");
                         return IdleStateInterruptionReason.GotAssignment;
                 }
             }
@@ -353,14 +349,14 @@ namespace TauCode.Working
 
         private void PauseRoutine()
         {
-            this.LogVerbose("Entered pause routine");
+            this.LogDebug("Entered pause routine");
 
             while (true)
             {
                 var gotControlSignal = _controlSignal.WaitOne(Timeout);
                 if (gotControlSignal)
                 {
-                    this.LogVerbose("Got control signal");
+                    this.LogDebug("Got control signal");
                     this.CheckState(WorkerState.Stopping, WorkerState.Resuming, WorkerState.Disposing);
                     _controlRequestAcknowledgedSignal.Set();
                     _controlSignal.WaitOne();

@@ -10,5 +10,6 @@ namespace TauCode.Working
         void Pause();
         void Resume();
         void Stop();
+        WorkerState? WaitForStateChange(int millisecondsTimeout, params WorkerState[] states);
     }
 }
