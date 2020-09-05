@@ -263,9 +263,7 @@ namespace TauCode.Working
 
         protected override void PauseImpl()
         {
-            this.LogDebug("Pause requested");
             this.ChangeState(WorkerState.Pausing);
-
 
             _controlSignal.Set();
             _routineSignal.WaitOne();
@@ -275,8 +273,7 @@ namespace TauCode.Working
         }
 
         protected override void ResumeImpl()
-        {
-            this.LogDebug("Resume requested");
+        {   
             this.ChangeState(WorkerState.Resuming);
             _controlSignal.Set();
             _routineSignal.WaitOne();
@@ -286,7 +283,6 @@ namespace TauCode.Working
 
         protected override void StopImpl()
         {
-            this.LogDebug("Stop requested");
             this.ChangeState(WorkerState.Stopping);
             _controlSignal.Set();
             _routineSignal.WaitOne();
@@ -310,8 +306,7 @@ namespace TauCode.Working
         }
 
         protected override void DisposeImpl()
-        {
-            this.LogDebug("Dispose requested");
+        {   
             var previousState = this.State;
             this.ChangeState(WorkerState.Disposing);
 

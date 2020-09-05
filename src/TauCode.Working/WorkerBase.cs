@@ -207,6 +207,8 @@ namespace TauCode.Working
 
         public void Pause()
         {
+            this.LogDebug("Pause requested");
+
             lock (_controlLock)
             {
                 this.CheckStateForOperation(WorkerState.Running);
@@ -217,6 +219,8 @@ namespace TauCode.Working
 
         public void Resume()
         {
+            this.LogDebug("Resume requested");
+
             lock (_controlLock)
             {
                 this.CheckStateForOperation(WorkerState.Paused);
@@ -227,6 +231,8 @@ namespace TauCode.Working
 
         public void Stop()
         {
+            this.LogDebug("Stop requested");
+
             lock (_controlLock)
             {
                 this.CheckStateForOperation(WorkerState.Running, WorkerState.Paused);
@@ -287,6 +293,8 @@ namespace TauCode.Working
 
         public void Dispose()
         {
+            this.LogDebug("Dispose requested");
+
             lock (_controlLock)
             {
                 this.CheckStateForOperation(WorkerState.Stopped, WorkerState.Running, WorkerState.Paused);

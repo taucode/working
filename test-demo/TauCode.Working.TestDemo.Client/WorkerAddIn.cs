@@ -28,6 +28,8 @@ namespace TauCode.Working.TestDemo.Client
                 new ResumeWorkerExecutor(),
                 new StopWorkerExecutor(),
                 new DisposeWorkerExecutor(),
+
+                new TimeoutWorkerExecutor(),
             };
         }
     }

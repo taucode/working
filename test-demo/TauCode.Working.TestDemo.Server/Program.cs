@@ -73,7 +73,7 @@ namespace TauCode.Working.TestDemo.Server
                 var worker = this.CreateWorker(input, name);
                 var wrapper = new WorkerWrapper(worker, _bus);
 
-                Console.WriteLine($"Starting worker with type {worker.GetType().FullName} and name '{worker.Name}'.");
+                Console.WriteLine($"Initializing worker with type {worker.GetType().FullName} and name '{worker.Name}'.");
 
                 await wrapper.Run();
             }

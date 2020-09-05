@@ -28,6 +28,8 @@ namespace TauCode.Working.TestDemo.Server
 
             var workerRpcHandles = _worker.RegisterHandlers();
 
+            Console.WriteLine($"{_worker.GetType().FullName} '{_worker.Name}' is ready to work.");
+
             _worker.WaitForStateChange(System.Threading.Timeout.Infinite, WorkerState.Disposed);
 
             // wait a bit. let RabbitMQ send farewell response.

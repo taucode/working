@@ -12,11 +12,13 @@
     <None Remove="Resources\ResumeWorkerExecutor.lisp" />
     <None Remove="Resources\StartWorkerExecutor.lisp" />
     <None Remove="Resources\StopWorkerExecutor.lisp" />
+    <None Remove="Resources\TimeoutWorkerExecutor.lisp" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\GetWorkerInfoExecutor.lisp" />
     <EmbeddedResource Include="Resources\DisposeWorkerExecutor.lisp" />
+    <EmbeddedResource Include="Resources\TimeoutWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\ResumeWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\PauseWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\StopWorkerExecutor.lisp" />

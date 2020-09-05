@@ -28,7 +28,6 @@ namespace TauCode.Working.TestDemo.Client
             var summary = (new CliCommandSummaryBuilder()).Build(this.Descriptor, entries);
             var workerName = summary.Arguments["worker-name"].Single();
 
-            // todo: try/catch
             var response = bus.Request<WorkerCommandRequest, WorkerCommandResponse>(
                 request,
                 conf => conf.WithQueueName(workerName));
