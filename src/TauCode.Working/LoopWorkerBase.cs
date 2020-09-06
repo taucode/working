@@ -75,7 +75,7 @@ namespace TauCode.Working
             while (goOn)
             {
                 var workFinishReason = await this.DoWorkAsync();
-                this.LogDebug($"{nameof(DoWorkAsync)} result: {workFinishReason}", 3);
+                this.LogDebug($"{nameof(DoWorkAsync)} result: {workFinishReason}.", 3);
 
                 if (workFinishReason == WorkFinishReason.GotControlSignal)
                 {
@@ -84,7 +84,7 @@ namespace TauCode.Working
                 else if (workFinishReason == WorkFinishReason.WorkIsDone)
                 {
                     var vacationFinishedReason = await this.TakeVacationAsync();
-                    this.LogDebug($"{nameof(TakeVacationAsync)} result: {vacationFinishedReason}", 3);
+                    this.LogDebug($"{nameof(TakeVacationAsync)} result: {vacationFinishedReason}.", 3);
 
                     switch (vacationFinishedReason)
                     {
