@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace TauCode.Working
 {
+    // todo clean up
     public abstract class QueueWorkerBase2<TAssignment> : LoopWorkerBase, IQueueWorker<TAssignment>
     {
         private readonly Queue<TAssignment> _assignments;
@@ -114,7 +115,8 @@ namespace TauCode.Working
 
         public void Enqueue(TAssignment assignment)
         {
-            this.CheckStateForOperation(
+            this.CheckState2(
+                $"'{nameof(Enqueue)}' requested.",
                 WorkerState.Starting,
                 WorkerState.Running,
 
@@ -129,7 +131,6 @@ namespace TauCode.Working
                 _dataSignal.Set();
             }
         }
-
 
         public int Backlog
         {

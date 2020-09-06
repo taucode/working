@@ -1,4 +1,4 @@
-﻿namespace TauCode.Working.Schedules
+﻿namespace TauCode.Working.Scheduling
 {
     public class ScheduledWorkerRegistration
     {

@@ -1,6 +1,7 @@
 ﻿using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -79,7 +80,7 @@ namespace TauCode.Working
             {
                 _state = state;
 
-                this.LogDebug($"State changed to '{_state}'");
+                this.LogDebug($"State changed to '{_state}'.");
 
                 _stateSignals[_state].Set();
             }
@@ -95,66 +96,87 @@ namespace TauCode.Working
             }
         }
 
-        #endregion
+        //protected void CheckStateForOperation(params WorkerState[] acceptedStates)
+        //{
+        //    var state = this.State;
 
-        #region Private
+        //    if (!acceptedStates.Contains(state))
+        //    {
+        //        var sb = new StringBuilder();
+        //        sb.Append($"To perform this operation, '{nameof(State)}' must be ");
 
-        protected void CheckStateForOperation(params WorkerState[] acceptedStates)
+        //        for (var i = 0; i < acceptedStates.Length; i++)
+        //        {
+        //            var acceptedState = acceptedStates[i];
+        //            sb.Append($"'{acceptedState}'");
+
+        //            if (i < acceptedStates.Length - 2)
+        //            {
+        //                sb.Append(", ");
+        //            }
+        //            else if (i < acceptedStates.Length - 1)
+        //            {
+        //                sb.Append(" or ");
+        //            }
+        //        }
+
+        //        sb.Append($" while actually it is '{state}'.");
+
+        //        throw new WorkingException(sb.ToString());
+        //    }
+        //}
+
+        //// todo: CheckStateForOperation and CheckState are almost copy/paste.
+        //protected void CheckState(params WorkerState[] acceptedStates)
+        //{
+        //    var state = this.State;
+
+        //    if (!acceptedStates.Contains(state))
+        //    {
+        //        var sb = new StringBuilder();
+        //        sb.Append($"'{nameof(State)}' is expected to be ");
+
+        //        for (var i = 0; i < acceptedStates.Length; i++)
+        //        {
+        //            var acceptedState = acceptedStates[i];
+        //            sb.Append($"'{acceptedState}'");
+
+        //            if (i < acceptedStates.Length - 2)
+        //            {
+        //                sb.Append(", ");
+        //            }
+        //            else if (i < acceptedStates.Length - 1)
+        //            {
+        //                sb.Append(" or ");
+        //            }
+        //        }
+
+        //        sb.Append($" while actually it is '{state}'.");
+
+        //        throw new WorkingException(sb.ToString());
+        //    }
+        //}
+
+        // todo rename and get rid of two others.
+        protected void CheckState2(string preamble, params WorkerState[] acceptedStates)
         {
             var state = this.State;
-
-            if (!acceptedStates.Contains(state))
+            if (acceptedStates.Contains(state))
             {
-                var sb = new StringBuilder();
-                sb.Append($"To perform this operation, '{nameof(State)}' must be ");
-
-                for (var i = 0; i < acceptedStates.Length; i++)
-                {
-                    var acceptedState = acceptedStates[i];
-                    sb.Append($"'{acceptedState}'");
-
-                    if (i < acceptedStates.Length - 2)
-                    {
-                        sb.Append(", ");
-                    }
-                    else if (i < acceptedStates.Length - 1)
-                    {
-                        sb.Append(" or ");
-                    }
-                }
-
-                sb.Append($" while actually it is '{state}'.");
-
-                throw new WorkingException(sb.ToString());
+                // ok.
             }
-        }
-
-        // todo: CheckStateForOperation and CheckState are almost copy/paste.
-        protected void CheckState(params WorkerState[] acceptedStates)
-        {
-            var state = this.State;
-
-            if (!acceptedStates.Contains(state))
+            else
             {
                 var sb = new StringBuilder();
-                sb.Append($"'{nameof(State)}' is expected to be ");
 
-                for (var i = 0; i < acceptedStates.Length; i++)
+                if (!string.IsNullOrWhiteSpace(preamble))
                 {
-                    var acceptedState = acceptedStates[i];
-                    sb.Append($"'{acceptedState}'");
-
-                    if (i < acceptedStates.Length - 2)
-                    {
-                        sb.Append(", ");
-                    }
-                    else if (i < acceptedStates.Length - 1)
-                    {
-                        sb.Append(" or ");
-                    }
+                    sb.AppendLine(preamble);
                 }
 
-                sb.Append($" while actually it is '{state}'.");
+                var acceptedStatesString = string.Join(", ", acceptedStates);
+                sb.AppendLine($"'{nameof(this.State)}' is expected to be one of the following: [{acceptedStatesString}].");
+                sb.Append($"Actual value: {state}");
 
                 throw new WorkingException(sb.ToString());
             }
@@ -195,49 +217,66 @@ namespace TauCode.Working
 
         public void Start()
         {
-            this.LogDebug("Start requested");
-
             lock (_controlLock)
             {
-                this.CheckStateForOperation(WorkerState.Stopped);
+                var message = $"'{nameof(Start)}' requested.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Stopped);
+
                 this.StartImpl();
-                this.CheckState(WorkerState.Running);
+
+                message = $"'{nameof(StartImpl)}' executed.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Running);
             }
         }
 
         public void Pause()
         {
-            this.LogDebug("Pause requested");
 
             lock (_controlLock)
             {
-                this.CheckStateForOperation(WorkerState.Running);
+                var message = $"'{nameof(Pause)}' requested.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Running);
+
                 this.PauseImpl();
-                this.CheckState(WorkerState.Paused);
+
+                message = $"'{nameof(PauseImpl)}' executed.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Paused);
             }
         }
 
         public void Resume()
         {
-            this.LogDebug("Resume requested");
-
             lock (_controlLock)
             {
-                this.CheckStateForOperation(WorkerState.Paused);
+                var message = $"'{nameof(Resume)}' requested.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Paused);
+
                 this.ResumeImpl();
-                this.CheckState(WorkerState.Running);
+
+                message = $"'{nameof(ResumeImpl)}' executed.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Running);
             }
         }
 
         public void Stop()
         {
-            this.LogDebug("Stop requested");
-
             lock (_controlLock)
             {
-                this.CheckStateForOperation(WorkerState.Running, WorkerState.Paused);
+                var message = $"'{nameof(Stop)}' requested.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Running, WorkerState.Paused);
+
                 this.StopImpl();
-                this.CheckState(WorkerState.Stopped);
+
+                message = $"'{nameof(StopImpl)}' executed.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Stopped);
             }
         }
 
@@ -297,9 +336,15 @@ namespace TauCode.Working
 
             lock (_controlLock)
             {
-                this.CheckStateForOperation(WorkerState.Stopped, WorkerState.Running, WorkerState.Paused);
+                var message = $"'{nameof(Dispose)}' requested.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Stopped, WorkerState.Running, WorkerState.Paused);
+                
                 this.DisposeImpl();
-                this.CheckState(WorkerState.Disposed);
+
+                message = $"'{nameof(DisposeImpl)}' executed.";
+                this.LogDebug(message);
+                this.CheckState2(message, WorkerState.Disposed);
 
                 foreach (var signal in _stateSignals.Values)
                 {

@@ -2,13 +2,17 @@
 
 namespace TauCode.Working
 {
-    // todo: clean up
-    public abstract class OnDemandWorkerBase : WorkerBase
+    public class OnDemandWorkerBase : WorkerBase
     {
-        //protected void CheckCanDoJob()
-        //{
-        //    this.CheckStateForOperation(WorkerState.Running);
-        //}
+        /// <summary>
+        /// Call this method as one of the first methods (right after argument checks) in the descendant class's job-doing methods.
+        /// </summary>
+        protected void CheckCanDoJob()
+        {
+            var message = "Check before doing the job.";
+            this.LogDebug(message);
+            this.CheckState2(message, WorkerState.Running);
+        }
 
         protected override void StartImpl()
         {

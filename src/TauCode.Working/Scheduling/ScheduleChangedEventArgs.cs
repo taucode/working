@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TauCode.Working.Schedules
+namespace TauCode.Working.Scheduling
 {
     public class ScheduleChangedEventArgs : EventArgs
     {

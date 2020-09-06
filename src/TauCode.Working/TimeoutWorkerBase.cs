@@ -17,7 +17,7 @@ namespace TauCode.Working
 
         private readonly object _timeoutLock;
         private TimeSpan _timeout;
-        private readonly AutoResetEvent _changeTimeoutSignal;
+        private readonly AutoResetEvent _changeTimeoutSignal; // todo: where is it disposed, in base class or in this class?!
 
         #endregion
 
@@ -106,6 +106,7 @@ namespace TauCode.Working
             }
             set
             {
+                // todo: set signal?!
                 this.CheckTimeoutArgument(value);
                 lock (_timeoutLock)
                 {

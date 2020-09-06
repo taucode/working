@@ -227,13 +227,13 @@ namespace TauCode.Working
 
         private void Routine()
         {
-            this.CheckState(WorkerState.Starting);
+            this.CheckState2("todo", WorkerState.Starting);
 
             _controlRequestAcknowledgedSignal.Set(); // inform control thread that routine has started.
             _controlSignal.WaitOne();
 
             this.LogDebug("Got control signal from control thread");
-            this.CheckState(WorkerState.Running);
+            this.CheckState2("todo", WorkerState.Running);
 
             var goOn = true;
 
@@ -243,14 +243,14 @@ namespace TauCode.Working
 
                 if (reason == NoProcessingReason.GotControlSignal)
                 {
-                    this.CheckState(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
+                    this.CheckState2("todo", WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
 
                     _controlRequestAcknowledgedSignal.Set();
                     _controlSignal.WaitOne();
 
                     var state = this.State;
 
-                    this.CheckState(WorkerState.Paused, WorkerState.Stopped, WorkerState.Disposed);
+                    this.CheckState2("todo", WorkerState.Paused, WorkerState.Stopped, WorkerState.Disposed);
 
                     switch (state)
                     {
@@ -283,7 +283,7 @@ namespace TauCode.Working
                     switch (interruptionReason)
                     {
                         case IdleStateInterruptionReason.GotControlSignal:
-                            this.CheckState(WorkerState.Stopped, WorkerState.Paused, WorkerState.Disposed);
+                            this.CheckState2("todo", WorkerState.Stopped, WorkerState.Paused, WorkerState.Disposed);
                             var state = this.State;
                             if (state == WorkerState.Stopped || state == WorkerState.Disposed)
                             {
@@ -334,10 +334,10 @@ namespace TauCode.Working
                 {
                     case ControlSignalIndex:
                         this.LogDebug("Got control signal");
-                        this.CheckState(WorkerState.Stopping, WorkerState.Pausing, WorkerState.Disposing);
+                        this.CheckState2("todo", WorkerState.Stopping, WorkerState.Pausing, WorkerState.Disposing);
                         _controlRequestAcknowledgedSignal.Set();
                         _controlSignal.WaitOne();
-                        this.CheckState(WorkerState.Stopped, WorkerState.Paused, WorkerState.Disposed);
+                        this.CheckState2("todo", WorkerState.Stopped, WorkerState.Paused, WorkerState.Disposed);
                         return IdleStateInterruptionReason.GotControlSignal;
 
                     case DataSignalIndex:
@@ -357,10 +357,10 @@ namespace TauCode.Working
                 if (gotControlSignal)
                 {
                     this.LogDebug("Got control signal");
-                    this.CheckState(WorkerState.Stopping, WorkerState.Resuming, WorkerState.Disposing);
+                    this.CheckState2("todo", WorkerState.Stopping, WorkerState.Resuming, WorkerState.Disposing);
                     _controlRequestAcknowledgedSignal.Set();
                     _controlSignal.WaitOne();
-                    this.CheckState(WorkerState.Stopped, WorkerState.Running, WorkerState.Disposed);
+                    this.CheckState2("todo", WorkerState.Stopped, WorkerState.Running, WorkerState.Disposed);
                     return;
                 }
             }
@@ -372,7 +372,8 @@ namespace TauCode.Working
 
         public void Enqueue(TAssignment assignment)
         {
-            this.CheckStateForOperation(
+            this.CheckState2(
+                "todo",
                 WorkerState.Starting,
                 WorkerState.Running,
 

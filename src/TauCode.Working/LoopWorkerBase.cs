@@ -55,13 +55,22 @@ namespace TauCode.Working
 
         private async Task Routine()
         {
-            this.LogDebug("Routine started", 3);
+            string message;
 
-            this.CheckState(WorkerState.Starting);
+            message = $"'{nameof(Routine)}' started.";
+            this.LogDebug(message, 3);
+            this.CheckState2(message, WorkerState.Starting);
+
+            message = $"Acknowledging control thread that {nameof(Routine)} is ready to go.";
+            this.LogDebug(message, 3);
             WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
-            this.CheckState(WorkerState.Running);
+            this.CheckState2(message, WorkerState.Running);
 
             var goOn = true;
+
+            message = $"Entering '{nameof(Routine)}' loop.";
+            this.LogDebug(message, 3);
+
 
             while (goOn)
             {
@@ -101,26 +110,26 @@ namespace TauCode.Working
 
         private Task<WorkFinishReason> DoWorkAsync()
         {
-            this.LogDebug($"Entered");
+            this.LogDebug($"Entered.");
             return this.DoWorkAsyncImpl();
         }
 
         private Task<VacationFinishReason> TakeVacationAsync()
         {
-            this.LogDebug($"Entered");
+            this.LogDebug($"Entered.");
             return this.TakeVacationAsyncImpl();
         }
 
         private void PauseRoutine()
         {
-            this.LogDebug($"Entered");
+            this.LogDebug($"Entered.");
 
             while (true)
             {
                 var gotControlSignal = _controlSignal.WaitOne(11); // todo
                 if (gotControlSignal)
                 {
-                    this.LogDebug("Got control signal");
+                    this.LogDebug("Got control signal.");
                     return;
                 }
             }
@@ -128,27 +137,24 @@ namespace TauCode.Working
 
         private bool ContinueAfterControlSignal(params WorkerState[] expectedStates)
         {
-            //if (expectedStates.Length == 0)
-            //{
-            //    throw new NotImplementedException(); // todo
-            //}
+            var message = "Continuing after control signal.";
+            this.LogDebug(message);
+            this.CheckState2(message, expectedStates);
 
-            //if (!expectedStates.All(x => x.IsTransitionWorkerState()))
-            //{
-            //    throw new NotImplementedException(); // todo
-            //}
 
-            //this.CheckState(WorkerState.Pausing, WorkerState.Stopping, WorkerState.Disposing);
-            this.CheckState(expectedStates);
 
-            _routineSignal.Set();
-            _controlSignal.WaitOne();
+            //_routineSignal.Set();
+            //_controlSignal.WaitOne();
+            this.LogDebug("Sending signal to control thread and awaiting response signal.");
+            WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
 
+            message = "Got response signal from control thread.";
+            this.LogDebug(message);
             var stableStates = expectedStates
                 .Select(WorkingExtensions.GetStableWorkerState)
                 .ToArray();
 
-            this.CheckState(stableStates);
+            this.CheckState2(message, stableStates);
 
             var state = this.State;
 
@@ -163,16 +169,6 @@ namespace TauCode.Working
 
                 case WorkerState.Paused:
                     this.PauseRoutine();
-                    //state = this.State;
-                    //if (state == WorkerState.Stopped || state == WorkerState.Disposed)
-                    //{
-                    //    result = false;
-                    //}
-                    //else
-                    //{
-                    //    this.CheckState(WorkerState.Running);
-                    //    result = true;
-                    //}
 
                     // After exit from 'PauseRoutine()', state cannot be 'Pausing', therefore recursion is never endless.
                     result = ContinueAfterControlSignal(WorkerState.Stopping, WorkerState.Resuming, WorkerState.Disposing);

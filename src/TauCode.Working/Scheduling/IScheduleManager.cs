@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace TauCode.Working.Schedules
+namespace TauCode.Working.Scheduling
 {
     public interface IScheduleManager
     {
