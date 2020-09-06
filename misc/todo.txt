@@ -2,3 +2,10 @@
 ==========
     1. Consider this: https://github.com/msgpack/msgpack-cli
     2. Consider this: https://github.com/ElectronNET/Electron.NET/
+
+2020-09-06
+==========
+    1. Get rid of old Wokrer Bases
+    2. UT-s.
+    3. Plug UT-s into Azure Pipelines
+    4. Local .bat files for building and deploying
