@@ -1,13 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace TauCode.Working.Scheduling
 {
-    public interface IScheduleManager
+    public interface IScheduleManager : IDisposable
     {
+        void Start();
         string RegisterWorker(IScheduledWorker scheduledWorker);
         void UnregisterWorker(IScheduledWorker scheduledWorker);
         void UnregisterWorker(string registrationId);
-        IReadOnlyDictionary<string, IScheduledWorker> GetWorkers();
+        IReadOnlyDictionary<string, ScheduledWorkerRegistration> GetWorkers();
         void EnableSchedule(string registrationId);
         void DisableSchedule(string registrationId);
     }

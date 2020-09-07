@@ -5,14 +5,11 @@ using System.Threading.Tasks;
 using TauCode.Working.TestDemo.Common;
 using TauCode.Working.TestDemo.EasyNetQ;
 
-// todo clean up
 namespace TauCode.Working.TestDemo.Server
 {
     public class WorkerWrapper
     {
         private readonly IRabbitWorker _worker;
-        //private readonly string _connectionString;
-
         private readonly IBus _bus;
 
         public WorkerWrapper(IRabbitWorker worker, IBus bus)
@@ -104,7 +101,7 @@ namespace TauCode.Working.TestDemo.Server
                     break;
 
                 default:
-                    throw new NotImplementedException(); // todo
+                    throw new InvalidOperationException();
             }
 
             return result;

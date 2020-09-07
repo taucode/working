@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace TauCode.Working
 {
+    // todo remove
     public abstract class QueueWorkerBaseOld<TAssignment> : WorkerBase, IQueueWorker<TAssignment>
     {
         #region Nested
