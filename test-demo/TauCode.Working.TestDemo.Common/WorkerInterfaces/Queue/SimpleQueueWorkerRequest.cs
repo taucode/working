@@ -4,6 +4,6 @@
     {
         public int? From { get; set; }
         public int? To { get; set; }
-        public int? WorkDelay { get; set; }
+        public int? JobDelay { get; set; }
     }
 }

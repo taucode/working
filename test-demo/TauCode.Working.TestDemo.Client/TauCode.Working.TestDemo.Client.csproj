@@ -9,6 +9,7 @@
     <None Remove="Resources\DisposeWorkerExecutor.lisp" />
     <None Remove="Resources\GetWorkerInfoExecutor.lisp" />
     <None Remove="Resources\PauseWorkerExecutor.lisp" />
+    <None Remove="Resources\QueueWorkerExecutor.lisp" />
     <None Remove="Resources\ResumeWorkerExecutor.lisp" />
     <None Remove="Resources\StartWorkerExecutor.lisp" />
     <None Remove="Resources\StopWorkerExecutor.lisp" />
@@ -18,6 +19,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\GetWorkerInfoExecutor.lisp" />
     <EmbeddedResource Include="Resources\DisposeWorkerExecutor.lisp" />
+    <EmbeddedResource Include="Resources\QueueWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\TimeoutWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\ResumeWorkerExecutor.lisp" />
     <EmbeddedResource Include="Resources\PauseWorkerExecutor.lisp" />

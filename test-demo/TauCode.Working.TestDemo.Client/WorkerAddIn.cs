@@ -45,6 +45,8 @@ namespace TauCode.Working.TestDemo.Client
                 new DisposeWorkerExecutor(),
 
                 new TimeoutWorkerExecutor(),
+
+                new QueueWorkerExecutor(),
             };
         }
     }

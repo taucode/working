@@ -1,6 +1,7 @@
 ﻿using EasyNetQ;
 using System;
 using System.Threading.Tasks;
+using TauCode.Working.TestDemo.Common;
 using TauCode.Working.TestDemo.Common.WorkerInterfaces.Queue;
 using TauCode.Working.TestDemo.EasyNetQ;
 
@@ -15,9 +16,12 @@ namespace TauCode.Working.TestDemo.Server.Workers
             _bus = bus;
         }
 
-        protected override Task DoAssignmentAsync(int assignment)
+        protected override async Task DoAssignmentAsync(int assignment)
         {
-            throw new NotImplementedException();
+            Console.WriteLine($"Assignment: {assignment}");
+            Console.WriteLine($"Will delay for: {this.JobDelay} ms.");
+
+            await Task.Delay(this.JobDelay);
         }
 
         public IDisposable[] RegisterHandlers()
@@ -30,7 +34,37 @@ namespace TauCode.Working.TestDemo.Server.Workers
 
         private SimpleQueueWorkerResponse Respond(SimpleQueueWorkerRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (request.JobDelay.HasValue)
+                {
+                    this.JobDelay = request.JobDelay.Value;
+                }
+
+                if (request.From.HasValue)
+                {
+                    for (var i = request.From.Value; i <= request.To.Value; i++)
+                    {
+                        this.Enqueue(i);
+                    }
+                }
+
+                return new SimpleQueueWorkerResponse
+                {
+                    Backlog = this.Backlog,
+                    JobDelay = this.JobDelay,
+                };
+            }
+            catch (Exception ex)
+            {
+                return new SimpleQueueWorkerResponse
+                {
+                    Exception = ExceptionInfo.FromException(ex),
+                };
+            }
+
         }
+
+        public int JobDelay { get; set; }
     }
 }

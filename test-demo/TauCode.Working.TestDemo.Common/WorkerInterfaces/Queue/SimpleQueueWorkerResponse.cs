@@ -2,6 +2,8 @@
 {
     public class SimpleQueueWorkerResponse
     {
-        public int Backlog { get; set; }
+        public int? Backlog { get; set; }
+        public int? JobDelay { get; set; }
+        public ExceptionInfo Exception { get; set; }
     }
 }

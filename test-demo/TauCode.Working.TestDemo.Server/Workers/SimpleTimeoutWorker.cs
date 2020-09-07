@@ -35,8 +35,7 @@ namespace TauCode.Working.TestDemo.Server.Workers
             return new[] { handle };
         }
 
-        private SimpleTimeoutWorkerResponse Respond(
-            SimpleTimeoutWorkerRequest request)
+        private SimpleTimeoutWorkerResponse Respond(SimpleTimeoutWorkerRequest request)
         {
             try
             {

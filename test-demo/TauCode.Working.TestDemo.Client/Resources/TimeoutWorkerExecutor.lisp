@@ -16,7 +16,6 @@
 
 	(opt
 		(some-integer
-			:classes term
 			:action argument
 			:alias timeout-value
 			:description "Timeout value."
