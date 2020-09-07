@@ -185,6 +185,30 @@ namespace TauCode.Working
             return result;
         }
 
+        private void Shutdown(WorkerState shutdownState)
+        {
+            this.LogDebug($"Sending signal to {nameof(Routine)}.");
+            WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
+
+            this.ChangeState(shutdownState);
+            _controlSignal.Set();
+
+            this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
+            this.LoopTask.Wait();
+            this.LogDebug($"{nameof(Routine)} terminated.");
+
+            this.LoopTask.Dispose();
+            this.LoopTask = null;
+
+            _controlSignal.Dispose();
+            _controlSignal = null;
+
+            _routineSignal.Dispose();
+            _routineSignal = null;
+
+            this.LogDebug("OS Resources disposed.");
+        }
+
         #endregion
 
         #region Protected
@@ -198,7 +222,7 @@ namespace TauCode.Working
 
         protected int WaitForControlSignalWithExtraSignals(int millisecondsTimeout) =>
             this.WaitForControlSignalWithExtraSignals(TimeSpan.FromMilliseconds(millisecondsTimeout));
-        
+
         protected int WaitForControlSignalWithExtraSignals(TimeSpan timeout) // todo rename
         {
             if (_controlSignalWithExtraSignals == null)
@@ -268,7 +292,7 @@ namespace TauCode.Working
         }
 
         protected override void ResumeImpl()
-        {   
+        {
             this.ChangeState(WorkerState.Resuming);
 
             WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
@@ -281,29 +305,32 @@ namespace TauCode.Working
         {
             this.ChangeState(WorkerState.Stopping);
 
-            WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
+            this.Shutdown(WorkerState.Stopped);
 
-            this.ChangeState(WorkerState.Stopped);
-            _controlSignal.Set();
+            //this.LogDebug($"Sending signal to {nameof(Routine)}.");
+            //WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
 
-            this.LogDebug("Waiting task to terminate.");
-            this.LoopTask.Wait();
-            this.LogDebug("Task terminated.");
+            //this.ChangeState(WorkerState.Stopped);
+            //_controlSignal.Set();
 
-            this.LoopTask.Dispose();
-            this.LoopTask = null;
+            //this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
+            //this.LoopTask.Wait();
+            //this.LogDebug($"{nameof(Routine)} terminated.");
 
-            _controlSignal.Dispose();
-            _controlSignal = null;
+            //this.LoopTask.Dispose();
+            //this.LoopTask = null;
 
-            _routineSignal.Dispose();
-            _routineSignal = null;
+            //_controlSignal.Dispose();
+            //_controlSignal = null;
 
-            this.LogDebug("OS Resources disposed.");
+            //_routineSignal.Dispose();
+            //_routineSignal = null;
+
+            //this.LogDebug("OS Resources disposed.");
         }
 
         protected override void DisposeImpl()
-        {   
+        {
             var previousState = this.State;
             this.ChangeState(WorkerState.Disposing);
 
@@ -314,26 +341,28 @@ namespace TauCode.Working
                 return;
             }
 
-            this.LogDebug($"Sending signal to {nameof(Routine)}.");
-            WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
+            this.Shutdown(WorkerState.Disposed);
 
-            this.ChangeState(WorkerState.Disposed);
-            _controlSignal.Set();
+            //this.LogDebug($"Sending signal to {nameof(Routine)}.");
+            //WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
 
-            this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
-            this.LoopTask.Wait();
-            this.LogDebug($"{nameof(Routine)} terminated.");
+            //this.ChangeState(WorkerState.Disposed);
+            //_controlSignal.Set();
 
-            this.LoopTask.Dispose();
-            this.LoopTask = null;
+            //this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
+            //this.LoopTask.Wait();
+            //this.LogDebug($"{nameof(Routine)} terminated.");
 
-            _controlSignal.Dispose();
-            _controlSignal = null;
+            //this.LoopTask.Dispose();
+            //this.LoopTask = null;
 
-            _routineSignal.Dispose();
-            _routineSignal = null;
+            //_controlSignal.Dispose();
+            //_controlSignal = null;
 
-            this.LogDebug("OS Resources disposed.");
+            //_routineSignal.Dispose();
+            //_routineSignal = null;
+
+            //this.LogDebug("OS Resources disposed.");
         }
 
         #endregion
