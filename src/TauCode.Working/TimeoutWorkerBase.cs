@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
+// todo clean up
 namespace TauCode.Working
 {
     public abstract class TimeoutWorkerBase : LoopWorkerBase, ITimeoutWorker
@@ -11,11 +12,10 @@ namespace TauCode.Working
         private const int ChangeTimeoutSignalIndex = 1;
 
         #endregion
-
-
+        
         #region Fields
 
-        private readonly object _timeoutLock;
+        //private readonly object _timeoutLock;
         private TimeSpan _timeout;
         private readonly AutoResetEvent _changeTimeoutSignal; // todo: where is it disposed, in base class or in this class?!
 
@@ -28,7 +28,7 @@ namespace TauCode.Working
             this.CheckTimeoutArgument(initialTimeout);
             _timeout = initialTimeout;
 
-            _timeoutLock = new object();
+            //_timeoutLock = new object();
             _changeTimeoutSignal = new AutoResetEvent(false);
         }
 
@@ -99,19 +99,26 @@ namespace TauCode.Working
         {
             get
             {
-                lock (_timeoutLock)
+                TimeSpan? result = null;
+
+                this.RequestControlLock(() =>
                 {
-                    return _timeout;
-                }
+                    this.CheckState2("Timeout value 'get' is requested.", WorkingExtensions.NonDisposedStates);
+                    result = _timeout;
+                });
+
+                return result ?? throw this.CreateInternalErrorException();
             }
             set
             {
-                // todo: set signal?!
                 this.CheckTimeoutArgument(value);
-                lock (_timeoutLock)
+
+                this.RequestControlLock(() =>
                 {
+                    this.CheckState2("Timeout value 'set' is requested.", WorkingExtensions.NonDisposedStates);
                     _timeout = value;
-                }
+                    _changeTimeoutSignal.Set();
+                });
             }
         }
 

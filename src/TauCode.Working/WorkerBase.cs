@@ -86,6 +86,14 @@ namespace TauCode.Working
             }
         }
 
+        protected void RequestControlLock(Action action)
+        {
+            lock (_controlLock)
+            {
+                action();
+            }
+        }
+
         protected WorkingException CreateInternalErrorException() => new WorkingException("Internal error.");
 
         protected void CheckInternalIntegrity(bool condition)
@@ -176,7 +184,7 @@ namespace TauCode.Working
 
                 var acceptedStatesString = string.Join(", ", acceptedStates);
                 sb.AppendLine($"'{nameof(this.State)}' is expected to be one of the following: [{acceptedStatesString}].");
-                sb.Append($"Actual value: {state}");
+                sb.Append($"Actual value: {state}.");
 
                 throw new WorkingException(sb.ToString());
             }
@@ -332,8 +340,6 @@ namespace TauCode.Working
 
         public void Dispose()
         {
-            this.LogDebug("Dispose requested");
-
             lock (_controlLock)
             {
                 var message = $"'{nameof(Dispose)}' requested.";

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TauCode.Working
 {
@@ -33,6 +34,17 @@ namespace TauCode.Working
                 { WorkerState.Resuming, WorkerState.Running },
                 { WorkerState.Disposing, WorkerState.Disposed },
             };
+
+        internal static WorkerState[] NonDisposedStates = Enum
+            .GetValues(typeof(WorkerState))
+            .Cast<WorkerState>()
+            .Except(new[]
+            {
+                WorkerState.Disposed,
+                WorkerState.Disposing
+            })
+            .ToArray();
+
 
         public static bool IsTransitionWorkerState(this WorkerState workerState) =>
             TransitionWorkerStates.Contains(workerState);

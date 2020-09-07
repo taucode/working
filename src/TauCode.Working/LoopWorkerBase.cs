@@ -143,7 +143,7 @@ namespace TauCode.Working
 
 
 
-            //_routineSignal.Set();
+            //_routineSignal.S-et();
             //_controlSignal.WaitOne();
             this.LogDebug("Sending signal to control thread and awaiting response signal.");
             WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
@@ -253,7 +253,7 @@ namespace TauCode.Working
 
             this.ChangeState(WorkerState.Running);
 
-            // inform routine that state has been changed to 'Running' and routine cat start actual work
+            // inform routine that state has been changed to 'Running' and routine can start actual work
             _controlSignal.Set();
         }
 
@@ -261,8 +261,7 @@ namespace TauCode.Working
         {
             this.ChangeState(WorkerState.Pausing);
 
-            _controlSignal.Set();
-            _routineSignal.WaitOne();
+            WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
 
             this.ChangeState(WorkerState.Paused);
             _controlSignal.Set();
@@ -271,8 +270,9 @@ namespace TauCode.Working
         protected override void ResumeImpl()
         {   
             this.ChangeState(WorkerState.Resuming);
-            _controlSignal.Set();
-            _routineSignal.WaitOne();
+
+            WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
+
             this.ChangeState(WorkerState.Running);
             _controlSignal.Set();
         }
@@ -280,8 +280,9 @@ namespace TauCode.Working
         protected override void StopImpl()
         {
             this.ChangeState(WorkerState.Stopping);
-            _controlSignal.Set();
-            _routineSignal.WaitOne();
+
+            WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
+
             this.ChangeState(WorkerState.Stopped);
             _controlSignal.Set();
 
@@ -308,20 +309,20 @@ namespace TauCode.Working
 
             if (previousState == WorkerState.Stopped)
             {
-                this.LogDebug("Worker was stopped, nothing to dispose");
+                this.LogDebug("Worker was stopped, nothing to dispose.");
                 this.ChangeState(WorkerState.Disposed);
                 return;
             }
 
-            this.LogDebug($"Sending signal to {nameof(Routine)}");
+            this.LogDebug($"Sending signal to {nameof(Routine)}.");
             WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
 
             this.ChangeState(WorkerState.Disposed);
             _controlSignal.Set();
 
-            this.LogDebug($"Waiting {nameof(Routine)} to terminate");
+            this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
             this.LoopTask.Wait();
-            this.LogDebug($"{nameof(Routine)} terminated");
+            this.LogDebug($"{nameof(Routine)} terminated.");
 
             this.LoopTask.Dispose();
             this.LoopTask = null;
@@ -336,6 +337,5 @@ namespace TauCode.Working
         }
 
         #endregion
-
     }
 }
