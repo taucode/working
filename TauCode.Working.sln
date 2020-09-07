@@ -26,12 +26,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{3E73BEB2
 		build\azure-pipelines.yml = build\azure-pipelines.yml
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.Demo.All", "test\TauCode.Working.Demo.All\TauCode.Working.Demo.All.csproj", "{CF86343B-C56E-46B6-A090-20DFBB60E486}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.Demo.Client", "test\TauCode.Working.Demo.Client\TauCode.Working.Demo.Client.csproj", "{D1AE238A-B14D-4C09-AF5E-4B4877B9C210}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.Demo.Server", "test\TauCode.Working.Demo.Server\TauCode.Working.Demo.Server.csproj", "{D24196FB-5EFA-4450-A44B-A6328545A739}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.Tests", "test\TauCode.Working.Tests\TauCode.Working.Tests.csproj", "{1D9E92CB-0758-43CB-B415-FDBE16A5B8F8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test-demo", "test-demo", "{95C22442-7CA8-4FA1-8D14-12627B0C7C23}"
@@ -44,7 +38,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.TestDemo.La
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.TestDemo.Common", "test-demo\TauCode.Working.TestDemo.Common\TauCode.Working.TestDemo.Common.csproj", "{1B8FF069-80C7-401F-9A6F-3080D452FAA6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TauCode.Working.TestDemo.EasyNetQ", "test-demo\TauCode.Working.TestDemo.EasyNetQ\TauCode.Working.TestDemo.EasyNetQ.csproj", "{EE10AF06-70E3-48AE-A831-5C3C29D54244}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.TestDemo.EasyNetQ", "test-demo\TauCode.Working.TestDemo.EasyNetQ\TauCode.Working.TestDemo.EasyNetQ.csproj", "{EE10AF06-70E3-48AE-A831-5C3C29D54244}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,18 +50,6 @@ Global
 		{7CE6C7B9-232F-4F5B-A246-5C7C16EA2063}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7CE6C7B9-232F-4F5B-A246-5C7C16EA2063}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7CE6C7B9-232F-4F5B-A246-5C7C16EA2063}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CF86343B-C56E-46B6-A090-20DFBB60E486}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CF86343B-C56E-46B6-A090-20DFBB60E486}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CF86343B-C56E-46B6-A090-20DFBB60E486}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CF86343B-C56E-46B6-A090-20DFBB60E486}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D1AE238A-B14D-4C09-AF5E-4B4877B9C210}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D1AE238A-B14D-4C09-AF5E-4B4877B9C210}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D1AE238A-B14D-4C09-AF5E-4B4877B9C210}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D1AE238A-B14D-4C09-AF5E-4B4877B9C210}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D24196FB-5EFA-4450-A44B-A6328545A739}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D24196FB-5EFA-4450-A44B-A6328545A739}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D24196FB-5EFA-4450-A44B-A6328545A739}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D24196FB-5EFA-4450-A44B-A6328545A739}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1D9E92CB-0758-43CB-B415-FDBE16A5B8F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1D9E92CB-0758-43CB-B415-FDBE16A5B8F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1D9E92CB-0758-43CB-B415-FDBE16A5B8F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -98,9 +80,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{7CE6C7B9-232F-4F5B-A246-5C7C16EA2063} = {709CF0D4-DBFE-46E7-B797-09B67BF95F87}
-		{CF86343B-C56E-46B6-A090-20DFBB60E486} = {585AC245-8B6E-4F5E-8EEF-D4125EF88880}
-		{D1AE238A-B14D-4C09-AF5E-4B4877B9C210} = {585AC245-8B6E-4F5E-8EEF-D4125EF88880}
-		{D24196FB-5EFA-4450-A44B-A6328545A739} = {585AC245-8B6E-4F5E-8EEF-D4125EF88880}
 		{1D9E92CB-0758-43CB-B415-FDBE16A5B8F8} = {585AC245-8B6E-4F5E-8EEF-D4125EF88880}
 		{BD847906-626E-4436-8EA6-D4EA15E189DF} = {95C22442-7CA8-4FA1-8D14-12627B0C7C23}
 		{9E262FF0-9A56-432D-95A7-E0E5C6CBE5E4} = {95C22442-7CA8-4FA1-8D14-12627B0C7C23}
