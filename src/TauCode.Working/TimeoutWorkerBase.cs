@@ -58,7 +58,7 @@ namespace TauCode.Working
 
         protected override Task<VacationFinishReason> TakeVacationAsyncImpl()
         {
-            var index = this.WaitForControlSignalWithExtraSignals(this.Timeout); // todo
+            var index = this.WaitForControlSignalWithExtraSignals(this.Timeout);
 
             switch (index)
             {

@@ -7,7 +7,7 @@ using TauCode.Working.TestDemo.EasyNetQ;
 
 namespace TauCode.Working.TestDemo.Server.Workers
 {
-    public class SimpleQueueWorker : QueueWorkerBase2<int>, IRabbitWorker
+    public class SimpleQueueWorker : QueueWorkerBase<int>, IRabbitWorker
     {
         private readonly IBus _bus;
 

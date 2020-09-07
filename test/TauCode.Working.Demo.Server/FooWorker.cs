@@ -1,7 +1,7 @@
 ﻿namespace TauCode.Working.Demo.Server
 {
     // todo: clean up
-    public class FooWorker : QueueWorkerBase<string>
+    public class FooWorker : QueueWorkerBaseOld<string>
     {
         public FooWorker()
         {

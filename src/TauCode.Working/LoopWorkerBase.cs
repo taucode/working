@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-// todo clean up
 namespace TauCode.Working
 {
     public abstract class LoopWorkerBase : WorkerBase
@@ -12,6 +11,7 @@ namespace TauCode.Working
         #region Constants
 
         protected const int ControlSignalIndex = 0;
+        private const int PauseTimeoutMilliseconds = 10;
 
         #endregion
 
@@ -33,6 +33,8 @@ namespace TauCode.Working
         #endregion
 
         #region Fields
+
+        private Task _routineTask;
 
         private AutoResetEvent _controlSignal;
         private AutoResetEvent _routineSignal;
@@ -126,7 +128,7 @@ namespace TauCode.Working
 
             while (true)
             {
-                var gotControlSignal = _controlSignal.WaitOne(11); // todo
+                var gotControlSignal = _controlSignal.WaitOne(PauseTimeoutMilliseconds);
                 if (gotControlSignal)
                 {
                     this.LogDebug("Got control signal.");
@@ -141,10 +143,6 @@ namespace TauCode.Working
             this.LogDebug(message);
             this.CheckState2(message, expectedStates);
 
-
-
-            //_routineSignal.S-et();
-            //_controlSignal.WaitOne();
             this.LogDebug("Sending signal to control thread and awaiting response signal.");
             WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
 
@@ -189,17 +187,10 @@ namespace TauCode.Working
 
         #region Protected
 
-        protected Task LoopTask { get; private set; } // todo: private?
-
-        protected bool WaitControlSignal(int millisecondsTimeout)
-        {
-            return _controlSignal.WaitOne(millisecondsTimeout);
-        }
-
         protected int WaitForControlSignalWithExtraSignals(int millisecondsTimeout) =>
             this.WaitForControlSignalWithExtraSignals(TimeSpan.FromMilliseconds(millisecondsTimeout));
 
-        protected int WaitForControlSignalWithExtraSignals(TimeSpan timeout) // todo rename
+        protected int WaitForControlSignalWithExtraSignals(TimeSpan timeout)
         {
             var index = WaitHandle.WaitAny(_controlSignalWithExtraSignals, timeout);
             return index;
@@ -214,11 +205,11 @@ namespace TauCode.Working
             _controlSignal.Set();
 
             this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
-            this.LoopTask.Wait();
+            this._routineTask.Wait();
             this.LogDebug($"{nameof(Routine)} terminated.");
 
-            this.LoopTask.Dispose();
-            this.LoopTask = null;
+            this._routineTask.Dispose();
+            this._routineTask = null;
 
             foreach (var signal in _controlSignalWithExtraSignals)
             {
@@ -268,28 +259,8 @@ namespace TauCode.Working
                 .Cast<WaitHandle>()
                 .ToArray();
 
-            //else
-            //{
-            //    if (extraSignals.Count == 0)
-            //    {
-                    
-            //    }
 
-            //    var distinctExtraSignals = extraSignals.Distinct().ToArray();
-            //    if (extraSignals.Count != distinctExtraSignals.Length)
-            //    {
-            //        throw new InvalidOperationException($"'{nameof(CreateExtraSignals)}' must return unique elements.");
-            //    }
-
-            //    //var list = new List<WaitHandle>();
-            //    //list.Add(_controlSignal); // always has index #0
-            //    //list.AddRange(distinctExtraSignals);
-
-            //    controlSignalWithExtraSignalsList.AddRange(extraSignals);
-            //    _controlSignalWithExtraSignals = list.ToArray();
-            //}
-
-            this.LoopTask = Task.Factory.StartNew(this.Routine);
+            this._routineTask = Task.Factory.StartNew(this.Routine);
 
             // wait signal from routine that routine has started
             _routineSignal.WaitOne();
@@ -325,27 +296,6 @@ namespace TauCode.Working
             this.ChangeState(WorkerState.Stopping);
 
             this.Shutdown(WorkerState.Stopped);
-
-            //this.LogDebug($"Sending signal to {nameof(Routine)}.");
-            //WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
-
-            //this.ChangeState(WorkerState.Stopped);
-            //_controlSignal.Set();
-
-            //this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
-            //this.LoopTask.Wait();
-            //this.LogDebug($"{nameof(Routine)} terminated.");
-
-            //this.LoopTask.Dispose();
-            //this.LoopTask = null;
-
-            //_controlSignal.Dispose();
-            //_controlSignal = null;
-
-            //_routineSignal.Dispose();
-            //_routineSignal = null;
-
-            //this.LogDebug("OS Resources disposed.");
         }
 
         protected override void DisposeImpl()
@@ -361,27 +311,6 @@ namespace TauCode.Working
             }
 
             this.Shutdown(WorkerState.Disposed);
-
-            //this.LogDebug($"Sending signal to {nameof(Routine)}.");
-            //WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
-
-            //this.ChangeState(WorkerState.Disposed);
-            //_controlSignal.Set();
-
-            //this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
-            //this.LoopTask.Wait();
-            //this.LogDebug($"{nameof(Routine)} terminated.");
-
-            //this.LoopTask.Dispose();
-            //this.LoopTask = null;
-
-            //_controlSignal.Dispose();
-            //_controlSignal = null;
-
-            //_routineSignal.Dispose();
-            //_routineSignal = null;
-
-            //this.LogDebug("OS Resources disposed.");
         }
 
         #endregion
