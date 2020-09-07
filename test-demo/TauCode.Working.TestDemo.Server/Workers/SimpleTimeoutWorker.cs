@@ -1,7 +1,9 @@
 ﻿using EasyNetQ;
 using System;
 using System.Threading.Tasks;
+using TauCode.Working.TestDemo.Common;
 using TauCode.Working.TestDemo.Common.WorkerInterfaces.Timeout;
+using TauCode.Working.TestDemo.EasyNetQ;
 
 namespace TauCode.Working.TestDemo.Server.Workers
 {
@@ -27,14 +29,34 @@ namespace TauCode.Working.TestDemo.Server.Workers
 
         public IDisposable[] RegisterHandlers()
         {
-            var rpc = _bus.Respond<SimpleTimeoutWorkerRequest, SimpleTimeoutWorkerResponse>(this.Respond);
-            return new[] { rpc };
+            var handle = _bus.RespondForWorker<SimpleTimeoutWorkerRequest, SimpleTimeoutWorkerResponse>(
+                this.Respond,
+                this.Name);
+            return new[] { handle };
         }
 
         private SimpleTimeoutWorkerResponse Respond(
             SimpleTimeoutWorkerRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (request.Timeout.HasValue)
+                {
+                    this.Timeout = TimeSpan.FromMilliseconds(request.Timeout.Value);
+                }
+
+                return new SimpleTimeoutWorkerResponse
+                {
+                    Timeout = (int)this.Timeout.TotalMilliseconds,
+                };
+            }
+            catch (Exception ex)
+            {
+                return new SimpleTimeoutWorkerResponse
+                {
+                    Exception = ExceptionInfo.FromException(ex),
+                };
+            }
         }
     }
 }

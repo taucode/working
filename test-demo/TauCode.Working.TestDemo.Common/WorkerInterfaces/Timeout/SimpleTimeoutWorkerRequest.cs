@@ -2,7 +2,6 @@
 {
     public class SimpleTimeoutWorkerRequest
     {
-        public SimpleTimeoutWorkerRequestType Type { get; set; }
-        public string Value { get; set; }
+        public int? Timeout { get; set; }
     }
 }

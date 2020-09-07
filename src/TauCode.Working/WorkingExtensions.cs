@@ -57,7 +57,7 @@ namespace TauCode.Working
             var exists = Transitions.TryGetValue(transitionWorkerState, out var stableWorkerState);
             if (!exists)
             {
-                throw new ArgumentException($"'{transitionWorkerState}' is not transition worker state.");
+                throw new ArgumentException($"'{transitionWorkerState}' is not a transition worker state.");
             }
 
             return stableWorkerState;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,12 +13,11 @@ namespace TauCode.Working
         private const int ChangeTimeoutSignalIndex = 1;
 
         #endregion
-        
+
         #region Fields
 
-        //private readonly object _timeoutLock;
         private TimeSpan _timeout;
-        private readonly AutoResetEvent _changeTimeoutSignal; // todo: where is it disposed, in base class or in this class?!
+        private AutoResetEvent _changeTimeoutSignal; // disposed by LoopWorkerBase.Shutdown
 
         #endregion
 
@@ -27,9 +27,6 @@ namespace TauCode.Working
         {
             this.CheckTimeoutArgument(initialTimeout);
             _timeout = initialTimeout;
-
-            //_timeoutLock = new object();
-            _changeTimeoutSignal = new AutoResetEvent(false);
         }
 
         protected TimeoutWorkerBase(int initialMillisecondsTimeout)
@@ -47,9 +44,10 @@ namespace TauCode.Working
 
         #region Overridden
 
-        protected override AutoResetEvent[] GetExtraSignals()
+        protected override IList<AutoResetEvent> CreateExtraSignals()
         {
-            return new[] { _changeTimeoutSignal };
+            _changeTimeoutSignal = new AutoResetEvent(false);
+            return new[] { /*_changeTimeoutSignal*/ _changeTimeoutSignal };
         }
 
         protected override async Task<WorkFinishReason> DoWorkAsyncImpl()
@@ -68,8 +66,7 @@ namespace TauCode.Working
                     return Task.FromResult(VacationFinishReason.GotControlSignal);
 
                 case ChangeTimeoutSignalIndex:
-                    throw new NotImplementedException();
-                    //return VacationFinishedReason.NewWorkArrived;
+                    return Task.FromResult(VacationFinishReason.NewWorkArrived);
 
                 case WaitHandle.WaitTimeout:
                     return Task.FromResult(VacationFinishReason.VacationTimeElapsed);
@@ -79,15 +76,21 @@ namespace TauCode.Working
             }
         }
 
+        protected override void Shutdown(WorkerState shutdownState)
+        {
+            base.Shutdown(shutdownState);
+            _changeTimeoutSignal = null;
+        }
+
         #endregion
 
         #region Private
 
-        private void CheckTimeoutArgument(in TimeSpan timeout)
+        private void CheckTimeoutArgument(TimeSpan timeout)
         {
             if (timeout <= TimeSpan.Zero)
             {
-                throw new ArgumentException($"'{timeout}' must be positive.");
+                throw new ArgumentException($"'{nameof(timeout)}' must be positive.");
             }
         }
 
@@ -117,7 +120,7 @@ namespace TauCode.Working
                 {
                     this.CheckState2("Timeout value 'set' is requested.", WorkingExtensions.NonDisposedStates);
                     _timeout = value;
-                    _changeTimeoutSignal.Set();
+                    _changeTimeoutSignal?.Set();
                 });
             }
         }

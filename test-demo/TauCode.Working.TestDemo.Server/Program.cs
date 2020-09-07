@@ -55,6 +55,12 @@ namespace TauCode.Working.TestDemo.Server
                 {
                     this.WritePrompt();
                     input = Console.ReadLine();
+
+                    if (input == "0")
+                    {
+                        break;
+                    }
+
                     name = this.ReadName();
                 }
 
@@ -63,11 +69,6 @@ namespace TauCode.Working.TestDemo.Server
                 if (!this.IsValidInput(input))
                 {
                     continue;
-                }
-
-                if (input == "0")
-                {
-                    break;
                 }
 
                 var worker = this.CreateWorker(input, name);

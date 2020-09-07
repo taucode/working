@@ -2,6 +2,7 @@
 {
     public class SimpleTimeoutWorkerResponse
     {
-        public string Result { get; set; }
+        public int Timeout { get; set; }
+        public ExceptionInfo Exception { get; set; }
     }
 }

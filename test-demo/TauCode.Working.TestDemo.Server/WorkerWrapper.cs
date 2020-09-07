@@ -3,6 +3,7 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using TauCode.Working.TestDemo.Common;
+using TauCode.Working.TestDemo.EasyNetQ;
 
 // todo clean up
 namespace TauCode.Working.TestDemo.Server
@@ -22,9 +23,9 @@ namespace TauCode.Working.TestDemo.Server
 
         public async Task Run()
         {
-            var rpcHandle1 = _bus.Respond<WorkerCommandRequest, WorkerCommandResponse>(
+            var rpcHandle1 = _bus.RespondForWorker<WorkerCommandRequest, WorkerCommandResponse>(
                 this.ProcessMethodInvocation,
-                configuration => configuration.WithQueueName(_worker.Name));
+                _worker.Name);
 
             var workerRpcHandles = _worker.RegisterHandlers();
 

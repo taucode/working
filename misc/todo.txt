@@ -9,3 +9,7 @@
     2. UT-s.
     3. Plug UT-s into Azure Pipelines
     4. Local .bat files for building and deploying
+
+2020-09-07
+==========
++   1. Test-demo server bug on input "0" (which is "exit")

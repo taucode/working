@@ -3,6 +3,7 @@ using System.Linq;
 using TauCode.Cli.CommandSummary;
 using TauCode.Cli.Data;
 using TauCode.Working.TestDemo.Common;
+using TauCode.Working.TestDemo.EasyNetQ;
 
 namespace TauCode.Working.TestDemo.Client
 {
@@ -28,9 +29,9 @@ namespace TauCode.Working.TestDemo.Client
             var summary = (new CliCommandSummaryBuilder()).Build(this.Descriptor, entries);
             var workerName = summary.Arguments["worker-name"].Single();
 
-            var response = bus.Request<WorkerCommandRequest, WorkerCommandResponse>(
+            var response = bus.RequestForWorker<WorkerCommandRequest, WorkerCommandResponse>(
                 request,
-                conf => conf.WithQueueName(workerName));
+                workerName);
 
             this.ShowResult(response.Result, response.Exception);
         }

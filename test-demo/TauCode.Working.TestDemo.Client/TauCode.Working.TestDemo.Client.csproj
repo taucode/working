@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TauCode.Working.TestDemo.Common\TauCode.Working.TestDemo.Common.csproj" />
+    <ProjectReference Include="..\TauCode.Working.TestDemo.EasyNetQ\TauCode.Working.TestDemo.EasyNetQ.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -47,7 +47,7 @@ namespace TauCode.Working
 
         protected abstract Task<VacationFinishReason> TakeVacationAsyncImpl();
 
-        protected abstract AutoResetEvent[] GetExtraSignals();
+        protected abstract IList<AutoResetEvent> CreateExtraSignals();
 
         #endregion
 
@@ -185,30 +185,6 @@ namespace TauCode.Working
             return result;
         }
 
-        private void Shutdown(WorkerState shutdownState)
-        {
-            this.LogDebug($"Sending signal to {nameof(Routine)}.");
-            WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
-
-            this.ChangeState(shutdownState);
-            _controlSignal.Set();
-
-            this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
-            this.LoopTask.Wait();
-            this.LogDebug($"{nameof(Routine)} terminated.");
-
-            this.LoopTask.Dispose();
-            this.LoopTask = null;
-
-            _controlSignal.Dispose();
-            _controlSignal = null;
-
-            _routineSignal.Dispose();
-            _routineSignal = null;
-
-            this.LogDebug("OS Resources disposed.");
-        }
-
         #endregion
 
         #region Protected
@@ -225,13 +201,38 @@ namespace TauCode.Working
 
         protected int WaitForControlSignalWithExtraSignals(TimeSpan timeout) // todo rename
         {
-            if (_controlSignalWithExtraSignals == null)
-            {
-                throw new InvalidOperationException(); // todo
-            }
-
             var index = WaitHandle.WaitAny(_controlSignalWithExtraSignals, timeout);
             return index;
+        }
+
+        protected virtual void Shutdown(WorkerState shutdownState)
+        {
+            this.LogDebug($"Sending signal to {nameof(Routine)}.");
+            WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
+
+            this.ChangeState(shutdownState);
+            _controlSignal.Set();
+
+            this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
+            this.LoopTask.Wait();
+            this.LogDebug($"{nameof(Routine)} terminated.");
+
+            this.LoopTask.Dispose();
+            this.LoopTask = null;
+
+            foreach (var signal in _controlSignalWithExtraSignals)
+            {
+                signal.Dispose();
+            }
+
+            _controlSignalWithExtraSignals = null;
+
+            _controlSignal = null;
+
+            _routineSignal.Dispose();
+            _routineSignal = null;
+
+            this.LogDebug("OS Resources disposed.");
         }
 
         #endregion
@@ -245,30 +246,48 @@ namespace TauCode.Working
             _controlSignal = new AutoResetEvent(false);
             _routineSignal = new AutoResetEvent(false);
 
-            var extraSignals = this.GetExtraSignals();
-            if (extraSignals == null)
+            var controlSignalWithExtraSignalsList = new List<AutoResetEvent>
             {
-                this.CheckInternalIntegrity(_controlSignalWithExtraSignals == null);
-            }
-            else
+                _controlSignal, // always has index #0
+            };
+
+            var extraSignals = this.CreateExtraSignals();
+
+            var extraSignalsOk =
+                extraSignals != null &&
+                extraSignals.Distinct().Count() == extraSignals.Count &&
+                extraSignals.All(x => x != null);
+
+            if (!extraSignalsOk)
             {
-                if (extraSignals.Length == 0)
-                {
-                    throw new NotImplementedException(); // todo. if you don't need extra signals, return null instead of empty array.
-                }
-
-                var distinctExtraSignals = extraSignals.Distinct().ToArray();
-                if (extraSignals.Length != distinctExtraSignals.Length)
-                {
-                    throw new NotImplementedException(); // must be different.
-                }
-
-                var list = new List<WaitHandle>();
-                list.Add(_controlSignal); // always has index #0
-                list.AddRange(distinctExtraSignals);
-
-                _controlSignalWithExtraSignals = list.ToArray();
+                throw new InvalidOperationException($"'{nameof(CreateExtraSignals)}' must return non-null list with unique non-null elements.");
             }
+            
+            controlSignalWithExtraSignalsList.AddRange(extraSignals);
+            _controlSignalWithExtraSignals = controlSignalWithExtraSignalsList
+                .Cast<WaitHandle>()
+                .ToArray();
+
+            //else
+            //{
+            //    if (extraSignals.Count == 0)
+            //    {
+                    
+            //    }
+
+            //    var distinctExtraSignals = extraSignals.Distinct().ToArray();
+            //    if (extraSignals.Count != distinctExtraSignals.Length)
+            //    {
+            //        throw new InvalidOperationException($"'{nameof(CreateExtraSignals)}' must return unique elements.");
+            //    }
+
+            //    //var list = new List<WaitHandle>();
+            //    //list.Add(_controlSignal); // always has index #0
+            //    //list.AddRange(distinctExtraSignals);
+
+            //    controlSignalWithExtraSignalsList.AddRange(extraSignals);
+            //    _controlSignalWithExtraSignals = list.ToArray();
+            //}
 
             this.LoopTask = Task.Factory.StartNew(this.Routine);
 
