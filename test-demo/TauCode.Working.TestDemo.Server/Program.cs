@@ -48,7 +48,7 @@ namespace TauCode.Working.TestDemo.Server
 
                 if (firstIteration && args.Length == 2)
                 {
-                    input = "1";
+                    input = "2";
                     name = "a";
                 }
                 else
@@ -108,6 +108,12 @@ namespace TauCode.Working.TestDemo.Server
                         Name = workerName,
                     };
 
+                case "2":
+                    return new SimpleQueueWorker(_bus)
+                    {
+                        Name = workerName,
+                    };
+
                 default:
                     throw new ArgumentException();
             }
@@ -115,7 +121,7 @@ namespace TauCode.Working.TestDemo.Server
 
         private bool IsValidInput(string input)
         {
-            return input.IsIn("0", "1");
+            return input.IsIn("0", "1", "2");
         }
 
         private void WritePrompt()
@@ -124,6 +130,7 @@ namespace TauCode.Working.TestDemo.Server
 Choose worker type or exit
 0 - Exit
 1 - Timeout Worker
+2 - Queue Worker
 : ");
         }
 

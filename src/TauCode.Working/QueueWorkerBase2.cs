@@ -8,9 +8,21 @@ namespace TauCode.Working
     // todo clean up
     public abstract class QueueWorkerBase2<TAssignment> : LoopWorkerBase, IQueueWorker<TAssignment>
     {
+        #region Constants
+
+        private const int AssignmentsQueuedSignalIndex = 1;
+
+        #endregion
+
+        #region Fields
+
         private readonly Queue<TAssignment> _assignments;
         private readonly object _dataLock;
-        private AutoResetEvent _dataSignal;
+        private AutoResetEvent _dataSignal; // disposed by LoopWorkerBase.Shutdown
+
+        #endregion
+
+        #region Constructor
 
         protected QueueWorkerBase2()
         {
@@ -19,82 +31,9 @@ namespace TauCode.Working
 
         }
 
-        protected override void StartImpl()
-        {
-            _dataSignal = new AutoResetEvent(false);
-            base.StartImpl();
+        #endregion
 
-            throw new NotImplementedException(); // todo: WillWaitForControlSignalWithOthers();
-        }
-
-        protected abstract Task DoAssignmentAsync(TAssignment assignment);
-
-        protected override async Task<WorkFinishReason> DoWorkAsyncImpl()
-        {
-            WorkFinishReason reason;
-
-            while (true)
-            {
-                var gotControlSignal = this.WaitControlSignal(0);
-
-                if (gotControlSignal)
-                {
-                    this.LogDebug("Got control signal.");
-                    reason = WorkFinishReason.GotControlSignal;
-                    break;
-                }
-
-                var gotAssignment = this.TryGetAssignment(out var assignment);
-                if (gotAssignment)
-                {
-                    try
-                    {
-                        await this.DoAssignmentAsync(assignment);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogError($"Assignment {assignment} caused an exception: {ex}.");
-                    }
-                }
-                else
-                {
-                    reason = WorkFinishReason.WorkIsDone;
-                    break;
-                }
-            }
-
-            return reason;
-        }
-
-        protected override Task<VacationFinishReason> TakeVacationAsyncImpl()
-        {
-            while (true)
-            {
-                //var signalIndex = WaitHandle.WaitAny(_handles, Timeout);
-
-                var signalIndex = this.WaitForControlSignalWithExtraSignals(11); // todo
-
-                throw new NotImplementedException();
-
-                //switch (signalIndex)
-                //{
-                //    case 0: // todo const
-                //        this.LogVerbose("Got control signal");
-                //        //this.CheckState(WorkerState.Stopping, WorkerState.Pausing, WorkerState.Disposing);
-                //        //_controlRequestAcknowledgedSignal.Set();
-                //        //_controlSignal.WaitOne();
-                //        //this.CheckState(WorkerState.Stopped, WorkerState.Paused, WorkerState.Disposed);
-                //        //return IdleStateInterruptionReason.GotControlSignal;
-
-                //        return VacationFinishedReason.GotControlSignal;
-
-                //    case 1: // todo constant
-                //        this.LogVerbose("Got data");
-                //        //return IdleStateInterruptionReason.GotAssignment;
-                //        return VacationFinishedReason.NewWorkArrived;
-                //}
-            }
-        }
+        #region Private
 
         private bool TryGetAssignment(out TAssignment assignment)
         {
@@ -112,6 +51,116 @@ namespace TauCode.Working
                 }
             }
         }
+
+        #endregion
+
+        #region Abstract
+
+        protected abstract Task DoAssignmentAsync(TAssignment assignment);
+
+        #endregion
+
+        #region Overridden
+
+        protected override async Task<WorkFinishReason> DoWorkAsyncImpl()
+        {
+            while (true)
+            {
+                var gotAssignment = this.TryGetAssignment(out var assignment);
+                if (!gotAssignment)
+                {
+                    // queue is empty - work is done.
+                    return WorkFinishReason.WorkIsDone;
+                }
+
+                // let's work on assignment.
+                try
+                {
+                    // loop must not break due to an exception
+                    await this.DoAssignmentAsync(assignment);
+                }
+                catch (Exception ex)
+                {
+                    this.LogError($"Assignment {assignment} caused an exception: {ex}.");
+                }
+                
+
+                // got more assignments?
+                if (this.Backlog > 0)
+                {
+                    // more work is coming
+                }
+                else
+                {
+                    // backlog is empty, let's have a vacation then
+                    return WorkFinishReason.WorkIsDone;
+                }
+
+                // ok, we have more work to do, but let's check if we didn't receive some signals
+
+                var signalIndex = this.WaitForControlSignalWithExtraSignals(0);
+
+                switch (signalIndex)
+                {
+                    case ControlSignalIndex:
+                        // got control signal, let's stop working
+                        return WorkFinishReason.GotControlSignal;
+
+                    case AssignmentsQueuedSignalIndex:
+                        // got more work, nice; continue loop
+                        break;
+
+                    case WaitHandle.WaitTimeout:
+                        // no signals received, continue loop
+                        break;
+
+                    default:
+                        throw this.CreateInternalErrorException(); // should never happen.
+                }
+            }
+        }
+
+        protected override Task<VacationFinishReason> TakeVacationAsyncImpl()
+        {
+            while (true)
+            {
+                var signalIndex = this.WaitForControlSignalWithExtraSignals(11); // todo
+
+                switch (signalIndex)
+                {
+                    case ControlSignalIndex:
+                        // got control signal, let's stop vacation
+                        return Task.FromResult(VacationFinishReason.GotControlSignal);
+
+                    case AssignmentsQueuedSignalIndex:
+                        // new work arrived, stop vacation
+                        return Task.FromResult(VacationFinishReason.NewWorkArrived);
+
+                    case WaitHandle.WaitTimeout:
+                        // no signals received, let's continue enjoying the vacation
+                        break;
+
+                    default:
+                        throw this.CreateInternalErrorException(); // should never happen.
+                }
+            }
+        }
+
+        protected override IList<AutoResetEvent> CreateExtraSignals()
+        {
+            _dataSignal = new AutoResetEvent(false);
+            return new[] { _dataSignal };
+        }
+
+        protected override void Shutdown(WorkerState shutdownState)
+        {
+            base.Shutdown(shutdownState);
+            _dataSignal = null;
+        }
+        
+        #endregion
+
+        #region IQueueWorker<TAssignment> Members
 
         public void Enqueue(TAssignment assignment)
         {
@@ -142,5 +191,25 @@ namespace TauCode.Working
                 }
             }
         }
+
+
+        #endregion
+
+
+
+
+        //protected override void StartImpl()
+        //{
+        //    _dataSignal = new AutoResetEvent(false);
+        //    base.StartImpl();
+
+        //    throw new NotImplementedException(); // todo: WillWaitForControlSignalWithOthers();
+        //}
+
+
+
+
+
+
     }
 }

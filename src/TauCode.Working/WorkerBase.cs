@@ -166,6 +166,8 @@ namespace TauCode.Working
         //}
 
         // todo rename and get rid of two others.
+
+        // todo: consider HashSet.
         protected void CheckState2(string preamble, params WorkerState[] acceptedStates)
         {
             var state = this.State;
