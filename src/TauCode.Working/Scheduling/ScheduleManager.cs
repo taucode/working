@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
+// todo clean up
 namespace TauCode.Working.Scheduling
 {
     public class ScheduleManager : IScheduleManager
@@ -12,6 +13,9 @@ namespace TauCode.Working.Scheduling
         private bool _isDisposed;
         private readonly ScheduleManagerHelper _helper;
 
+        private readonly Dictionary<string, ScheduleRegistration> _registrations;
+        private readonly HashSet<AutoStopWorkerBase> _workers;
+
         #endregion
 
         #region Constructor
@@ -20,6 +24,8 @@ namespace TauCode.Working.Scheduling
         {
             _lock = new object();
             _helper = new ScheduleManagerHelper();
+            _registrations = new Dictionary<string, ScheduleRegistration>();
+            _workers = new HashSet<AutoStopWorkerBase>();
         }
 
         #endregion
@@ -50,6 +56,12 @@ namespace TauCode.Working.Scheduling
             }
         }
 
+        private string GenerateRegistrationId()
+        {
+            var result = Guid.NewGuid().ToString("N");
+            return result;
+        }
+
         #endregion
 
         #region IScheduleManager Members
@@ -66,7 +78,41 @@ namespace TauCode.Working.Scheduling
             }
         }
 
-        public string RegisterWorker(IScheduledWorker scheduledWorker)
+        public string Register(AutoStopWorkerBase worker, ISchedule schedule)
+        {
+            if (worker == null)
+            {
+                throw new ArgumentNullException(nameof(worker));
+            }
+
+            if (schedule == null)
+            {
+                throw new ArgumentNullException(nameof(schedule));
+            }
+
+            lock (_lock)
+            {
+                this.CheckStarted();
+                this.CheckNotDisposed();
+
+                if (_workers.Contains(worker))
+                {
+                    throw new NotImplementedException(); // todo dup
+                }
+
+                var registrationId = this.GenerateRegistrationId();
+                var registration = new ScheduleRegistration(registrationId, worker, schedule);
+
+                _registrations.Add(registration.RegistrationId, registration);
+                _workers.Add(worker);
+
+                _helper.OnNewRegistration(registration); // todo: try/catch, remove on exception?
+
+                return registrationId;
+            }
+        }
+
+        public void ChangeSchedule(string registrationId, ISchedule schedule)
         {
             lock (_lock)
             {
@@ -77,7 +123,7 @@ namespace TauCode.Working.Scheduling
             }
         }
 
-        public void UnregisterWorker(IScheduledWorker scheduledWorker)
+        public void Remove(string registrationId)
         {
             lock (_lock)
             {
@@ -88,7 +134,7 @@ namespace TauCode.Working.Scheduling
             }
         }
 
-        public void UnregisterWorker(string registrationId)
+        public void Enable(string registrationId)
         {
             lock (_lock)
             {
@@ -99,7 +145,7 @@ namespace TauCode.Working.Scheduling
             }
         }
 
-        public IReadOnlyDictionary<string, ScheduledWorkerRegistration> GetWorkers()
+        public void Disable(string registrationId)
         {
             lock (_lock)
             {
@@ -109,29 +155,6 @@ namespace TauCode.Working.Scheduling
                 throw new NotImplementedException();
             }
         }
-
-        public void EnableSchedule(string registrationId)
-        {
-            lock (_lock)
-            {
-                this.CheckStarted();
-                this.CheckNotDisposed();
-
-                throw new NotImplementedException();
-            }
-        }
-
-        public void DisableSchedule(string registrationId)
-        {
-            lock (_lock)
-            {
-                this.CheckStarted();
-                this.CheckNotDisposed();
-
-                throw new NotImplementedException();
-            }
-        }
-
 
         #endregion
 

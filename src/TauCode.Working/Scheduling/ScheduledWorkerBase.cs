@@ -1,50 +1,52 @@
-﻿using System;
+﻿//using System;
 
-namespace TauCode.Working.Scheduling
-{
-    public class ScheduledWorkerBase : OnDemandWorkerBase, IScheduledWorker
-    {
-        #region Fields
+// todo clean up
 
-        private ISchedule _schedule;
-        private readonly object _lock;
+//namespace TauCode.Working.Scheduling
+//{
+//    public class ScheduledWorkerBase : OnDemandWorkerBase, IScheduledWorker
+//    {
+//        #region Fields
 
-        #endregion
+//        private ISchedule _schedule;
+//        private readonly object _lock;
 
-        #region Constructor
+//        #endregion
 
-        public ScheduledWorkerBase(ISchedule schedule)
-        {
-            _schedule = schedule ?? throw new ArgumentNullException(nameof(schedule));
-            _lock = new object();
-        }
+//        #region Constructor
 
-        #endregion
+//        public ScheduledWorkerBase(ISchedule schedule)
+//        {
+//            _schedule = schedule ?? throw new ArgumentNullException(nameof(schedule));
+//            _lock = new object();
+//        }
 
-        #region IScheduledWorker Members
+//        #endregion
 
-        public ISchedule Schedule
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _schedule;
-                }
-            }
-            set
-            {
-                lock (_lock)
-                {
-                    _schedule = value ?? throw new ArgumentNullException(nameof(value));
-                }
+//        #region IScheduledWorker Members
 
-                this.ScheduleChanged?.Invoke(new ScheduleChangedEventArgs(this));
-            }
-        }
+//        public ISchedule Schedule
+//        {
+//            get
+//            {
+//                lock (_lock)
+//                {
+//                    return _schedule;
+//                }
+//            }
+//            set
+//            {
+//                lock (_lock)
+//                {
+//                    _schedule = value ?? throw new ArgumentNullException(nameof(value));
+//                }
 
-        public event Action<ScheduleChangedEventArgs> ScheduleChanged;
+//                this.ScheduleChanged?.Invoke(new ScheduleChangedEventArgs(this));
+//            }
+//        }
 
-        #endregion
-    }
-}
+//        public event Action<ScheduleChangedEventArgs> ScheduleChanged;
+
+//        #endregion
+//    }
+//}
