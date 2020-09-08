@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using TauCode.Working.Exceptions;
 
 namespace TauCode.Working
 {

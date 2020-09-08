@@ -1,10 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using TauCode.Extensions;
 
 namespace TauCode.Working.Jobs.Schedules
 {
     public class SimpleSchedule : ISchedule
     {
-        public SimpleSchedule(SimpleScheduleKind kind, int multiplier, DateTime baseTime)
+        private readonly IList<DateTime> _concreteMoments;
+
+        public SimpleSchedule(SimpleScheduleKind kind, int multiplier, DateTime baseTime, IEnumerable<TimeSpan> concreteOffsets = null)
         {
             if (baseTime.Kind != DateTimeKind.Utc)
             {
@@ -26,6 +31,24 @@ namespace TauCode.Working.Jobs.Schedules
             this.BaseTime = baseTime;
 
             this.TimeSpan = this.CalculateTimeSpan();
+
+            var concreteMoments = new List<DateTime>();
+
+            if (concreteOffsets != null)
+            {
+                var curr = baseTime;
+                foreach (var offset in concreteOffsets)
+                {
+                    // todo: non-negative
+                    curr = curr.Add(offset).TruncateMilliseconds();
+                    concreteMoments.Add(curr);
+                }
+            }
+
+            _concreteMoments = concreteMoments
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
         }
 
         private TimeSpan CalculateTimeSpan()
@@ -88,6 +111,15 @@ namespace TauCode.Working.Jobs.Schedules
                     result = result.TruncateMilliseconds();
                     if (result > after)
                     {
+                        // maybe there is concrete moment between 'after' and 'result'?
+                        var resultCopy = result; // capture of variable!
+                        var idx = _concreteMoments.FindFirstIndexOf(x => x > after && x < resultCopy);
+
+                        if (idx >= 0)
+                        {
+                            result = _concreteMoments[idx];
+                        }
+
                         return result;
                     }
 

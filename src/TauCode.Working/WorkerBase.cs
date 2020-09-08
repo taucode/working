@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using TauCode.Working.Exceptions;
 
 namespace TauCode.Working
 {
@@ -16,6 +17,7 @@ namespace TauCode.Working
 
         private string _name;
         private WorkerState _state;
+
         private readonly object _stateLock;
         private readonly object _controlLock;
 

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 // todo clean up
@@ -211,7 +213,10 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        public void RegisterJob(string jobName, Func<Task> jobTaskCreator, ISchedule jobSchedule)
+        public void RegisterJob(
+            string jobName,
+            Func<TextWriter, CancellationToken, Task<bool>> jobTaskCreator,
+            ISchedule jobSchedule)
         {
             if (jobName == null)
             {
@@ -245,7 +250,43 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
+        public void ChangeJobDueTime(string jobName, DateTime dueTime)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ResetJobDueTime(string jobName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ForceStartJob(string jobName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CancelRunningJob(string jobName)
+        {
+            JobWorkerEntry entry;
+            lock (_lock)
+            {
+                entry = _entries[jobName];
+            }
+
+            entry.Worker.CancelCurrentJobRun();
+        }
+
         public void EnableJob(string jobName, bool enable)
+        {
+            throw new NotImplementedException();
+        }
+
+        public JobInfo GetJobInfo(string jobName, bool includeLog)
+        {
+            throw new NotImplementedException();
+        }
+
+        public JobInfo GetJobInfo(string jobName)
         {
             throw new NotImplementedException();
         }
@@ -259,6 +300,9 @@ namespace TauCode.Working.Jobs
 
         internal void StartJob(string jobName)
         {
+            // todo: checks
+            // todo: job state
+
             IWorker worker;
 
             lock (_lock)
@@ -270,8 +314,6 @@ namespace TauCode.Working.Jobs
             worker.Start();
         }
 
-        #endregion
-
         internal ISchedule GetSchedule(string jobName)
         {
             // todo checks
@@ -281,5 +323,7 @@ namespace TauCode.Working.Jobs
                 return _entries[jobName].Schedule;
             }
         }
+
+        #endregion
     }
 }
