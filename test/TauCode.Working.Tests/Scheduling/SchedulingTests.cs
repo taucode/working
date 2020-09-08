@@ -35,7 +35,7 @@ namespace TauCode.Working.Tests.Scheduling
                 }),
                 schedule);
 
-            await Task.Delay(6 * 1000); // todo
+            await Task.Delay(120 * 1000); // todo
 
             // Assert
             var res = sb.ToString();

@@ -14,17 +14,5 @@ namespace TauCode.Working.Jobs
         void EnableJob(string jobName, bool enable);
 
         void RemoveJob(string jobName);
-
-        
-
-
-        //string RegisterWorker(IScheduledWorker scheduledWorker);
-        //void UnregisterWorker(IScheduledWorker scheduledWorker);
-        //void UnregisterWorker(string registrationId);
-        //IReadOnlyDictionary<string, ScheduledWorkerRegistration> GetWorkers();
-
-        
-
-        //void Disable(string registrationId);
     }
 }

@@ -21,71 +21,7 @@ namespace TauCode.Working.Jobs
 
         #region Nested
 
-        //private readonly struct ScheduleKey : IComparable<ScheduleKey>, IEquatable<ScheduleKey>
-        //{
-        //    public ScheduleKey(DateTime dueTime, string subscriptionId)
-        //    {
-        //        if (dueTime.Kind != DateTimeKind.Utc)
-        //        {
-        //            throw new NotImplementedException();
-        //        }
-
-        //        if (dueTime.Millisecond != 0)
-        //        {
-        //            throw new NotImplementedException();
-        //        }
-
-        //        this.DueTime = dueTime;
-        //        this.SubscriptionId = subscriptionId ?? throw new ArgumentNullException(nameof(subscriptionId));
-        //    }
-
-        //    public DateTime DueTime { get; }
-        //    public string SubscriptionId { get; }
-
-        //    public int CompareTo(ScheduleKey other)
-        //    {
-        //        var dueTimeComparison = DueTime.CompareTo(other.DueTime);
-
-        //        if (dueTimeComparison != 0)
-        //        {
-        //            return dueTimeComparison;
-        //        }
-
-        //        return string.Compare(SubscriptionId, other.SubscriptionId, StringComparison.Ordinal);
-        //    }
-
-        //    public bool Equals(ScheduleKey other)
-        //    {
-        //        return
-        //            DueTime.Equals(other.DueTime) &&
-        //            SubscriptionId == other.SubscriptionId;
-        //    }
-
-        //    public override bool Equals(object obj)
-        //    {
-        //        return obj is ScheduleKey other && Equals(other);
-        //    }
-
-        //    public override int GetHashCode()
-        //    {
-        //        return HashCode.Combine(DueTime, SubscriptionId);
-        //    }
-        //}
-
-        //private class ScheduleEntry
-        //{
-        //    public ScheduleEntry(ScheduleRegistration registration, DateTime dueTime)
-        //    {
-        //        // todo: checks on utc?
-
-        //        this.Registration = registration;
-        //        this.DueTime = dueTime;
-        //    }
-
-        //    public ScheduleRegistration Registration { get; }
-        //    public DateTime DueTime { get; set; } // todo: use method
-        //}
-
+        // todo: 'internal' in nested types, not 'public'.
         private class ScheduleEntry
         {
             public ScheduleEntry(string jobName, DateTime dueTime)
@@ -95,7 +31,12 @@ namespace TauCode.Working.Jobs
             }
 
             public string JobName { get; }
-            public DateTime DueTime { get; }
+            public DateTime DueTime { get; private set; }
+
+            public void ChangeDueTime(DateTime dueTime)
+            {
+                this.DueTime = dueTime;
+            }
         }
 
         #endregion
@@ -107,7 +48,9 @@ namespace TauCode.Working.Jobs
 
         private readonly JobManager _host;
 
-        private readonly List<ScheduleEntry> _list;
+        //private readonly List<ScheduleEntry> _list;
+
+        private readonly Dictionary<string, ScheduleEntry> _entries;
 
         private AutoResetEvent _scheduleChangedEvent; // disposed by LoopWorkerBase.Shutdown
         private readonly object _scheduleLock;
@@ -122,7 +65,8 @@ namespace TauCode.Working.Jobs
             //_list = new SortedList<ScheduleKey, ScheduleRegistration>(Comparer<ScheduleKey>.Default);
 
             _host = host;
-            _list = new List<ScheduleEntry>();
+            //_list = new List<ScheduleEntry>();
+            _entries = new Dictionary<string, ScheduleEntry>();
 
             _scheduleLock = new object();
         }
@@ -131,31 +75,57 @@ namespace TauCode.Working.Jobs
 
         #region Private
 
-        private int? GetIndexOfEntryWithClosestDueTime(out DateTime dueTime)
+        //private int? GetIndexOfEntryWithClosestDueTime(out DateTime dueTime)
+        //{
+        //    lock (_scheduleLock)
+        //    {
+        //        var minTime = Never;
+        //        var index = int.MaxValue;
+
+        //        for (var i = 0; i < _list.Count; i++)
+        //        {
+        //            var entry = _list[i];
+        //            if (entry.DueTime < minTime)
+        //            {
+        //                index = i;
+        //                minTime = entry.DueTime;
+        //            }
+        //        }
+
+        //        if (index == int.MaxValue)
+        //        {
+        //            dueTime = Never;
+        //            return null;
+        //        }
+
+        //        dueTime = minTime;
+        //        return index;
+        //    }
+        //}
+
+        private ScheduleEntry GetClosestEntry()
         {
             lock (_scheduleLock)
             {
-                var minTime = Never;
-                var index = int.MaxValue;
-
-                for (var i = 0; i < _list.Count; i++)
+                if (_entries.Count == 0)
                 {
-                    var entry = _list[i];
-                    if (entry.DueTime < minTime)
-                    {
-                        index = i;
-                        minTime = entry.DueTime;
-                    }
-                }
-
-                if (index == int.MaxValue)
-                {
-                    dueTime = Never;
                     return null;
                 }
 
-                dueTime = minTime;
-                return index;
+                var min = Never;
+                ScheduleEntry bestEntry = null;
+
+                foreach (var pair in _entries)
+                {
+                    var entry = pair.Value;
+                    if (entry.DueTime < min)
+                    {
+                        bestEntry = entry;
+                        min = entry.DueTime;
+                    }
+                }
+
+                return bestEntry;
             }
         }
 
@@ -165,67 +135,41 @@ namespace TauCode.Working.Jobs
 
         protected override Task<WorkFinishReason> DoWorkAsyncImpl()
         {
+            string jobNameToStart = null;
+
             lock (_scheduleLock)
             {
-                var index = this.GetIndexOfEntryWithClosestDueTime(out var dueTime);
+                var entry = this.GetClosestEntry();
 
-                if (index.HasValue)
+                if (entry == null)
+                {
+                    // nothing to work on.
+                    return Task.FromResult(WorkFinishReason.WorkIsDone);
+                }
+                else
                 {
                     var now = TimeProvider.GetCurrent();
-                    var entry = _list[index.Value];
+                    var dueTime = entry.DueTime;
 
                     if (dueTime <= now)
                     {
-                        _host.StartJob(entry.JobName);
-                        _list.RemoveAt(index.Value);
-
-                        // todo: ugly.
-                        this.OnNewRegistration(entry.JobName, _host.GetSchedule(entry.JobName));
+                        // gotta run this job
+                        jobNameToStart = entry.JobName;
                     }
-
-                    //return Task.FromResult(WorkFinishReason.WorkIsDone);
                 }
-
-                //else
-                //{
-                //    return Task.FromResult(WorkFinishReason.WorkIsDone); // no candidates.
-                //}
-
-                return Task.FromResult(WorkFinishReason.WorkIsDone);
-
-                //var tuple = this.GetClosestDueTime();
-                //if (tuple == null)
-                //{
-                //    return Task.FromResult(WorkFinishReason.WorkIsDone); // no candidates.
-                //}
-
-
-
-                //if (tuple.Item2 <= now)
-                //{
-                //    var entry = _list[tuple.Item1];
-
-                //    try
-                //    {
-                //        entry.Registration.Worker.Start();
-                //        var nextDueTime = entry.Registration.Schedule.GetDueTimeAfter(now);
-                //        entry.DueTime = nextDueTime;
-
-                //        return Task.FromResult(WorkFinishReason.WorkIsDone); // let's have a rest.
-                //    }
-                //    catch (Exception e)
-                //    {
-                //        // todo
-                //        Console.WriteLine(e);
-                //        throw;
-                //    }
-                //}
-                //else
-                //{
-                //    // due time not occurred yet.
-                //    return Task.FromResult(WorkFinishReason.WorkIsDone);
-                //}
             }
+
+            if (jobNameToStart != null)
+            {
+                // start the job
+                Task.Run(() => _host.StartJob(jobNameToStart));
+
+                // get schedule and re-schedule job.
+                var jobSchedule = _host.GetSchedule(jobNameToStart);
+                this.Reschedule(jobNameToStart, jobSchedule);
+            }
+
+            return Task.FromResult(WorkFinishReason.WorkIsDone);
         }
 
         protected override Task<VacationFinishReason> TakeVacationAsyncImpl()
@@ -234,9 +178,14 @@ namespace TauCode.Working.Jobs
 
             lock (_scheduleLock)
             {
-                var index = this.GetIndexOfEntryWithClosestDueTime(out var dueTime);
-                if (index.HasValue)
+                var entry = this.GetClosestEntry();
+                if (entry == null)
                 {
+                    vacationTimeout = InfiniteTimeSpan; // no candidates, let's party 'forever'
+                }
+                else
+                {
+                    var dueTime = entry.DueTime;
                     var now = TimeProvider.GetCurrent();
                     if (dueTime <= now)
                     {
@@ -252,32 +201,7 @@ namespace TauCode.Working.Jobs
                             vacationTimeout = InfiniteTimeSpan;
                         }
                     }
-
                 }
-                else
-                {
-                    vacationTimeout = InfiniteTimeSpan; // no candidates, let's party 'forever'
-                }
-
-                //var tuple = this.GetClosestDueTime();
-                //if (tuple == null)
-                //{
-                //    vacationTimeout = InfiniteTimeSpan; // no candidates, let's party 'forever'
-                //}
-                //else
-                //{
-                //    var now = TimeProvider.GetCurrent();
-                //    if (tuple.Item2 <= now)
-                //    {
-                //        // oh, we've got a due time, terminate vacation immediately!
-                //        return Task.FromResult(VacationFinishReason.VacationTimeElapsed);
-                //    }
-                //    else
-                //    {
-                //        // got some time to have fun before the due time
-                //        vacationTimeout = tuple.Item2 - now;
-                //    }
-                //}
             }
 
             var signalIndex = this.WaitForControlSignalWithExtraSignals(vacationTimeout);
@@ -349,40 +273,54 @@ namespace TauCode.Working.Jobs
 
         #endregion
 
-        internal void OnNewRegistration(string jobName, ISchedule jobSchedule)
+        internal void Reschedule(string jobName, ISchedule jobSchedule)
         {
+            // todo check args
+            var now = TimeProvider.GetCurrent();
+
+            if (now.Kind != DateTimeKind.Utc)
+            {
+                throw new NotImplementedException(); // todo wtf
+            }
+
+            var dueTime = jobSchedule.GetDueTimeAfter(now);
+
+            if (dueTime <= now)
+            {
+                throw new NotImplementedException();
+            }
+
+            if (dueTime.Kind != DateTimeKind.Utc)
+            {
+                throw new NotImplementedException();
+            }
+
+            if (dueTime.Millisecond != 0)
+            {
+                throw new NotImplementedException();
+            }
+
             lock (_scheduleLock)
             {
-                var now = TimeProvider.GetCurrent();
-                if (now.Kind != DateTimeKind.Utc)
+                // maybe we already have entry with that name
+                var exists = _entries.TryGetValue(jobName, out var entry);
+                if (!exists)
                 {
-                    throw new NotImplementedException(); // todo wtf
+                    entry = new ScheduleEntry(jobName, dueTime);
+                    _entries.Add(entry.JobName, entry);
                 }
 
-                var dueTime = jobSchedule.GetDueTimeAfter(now);
-
-                if (dueTime <= now)
-                {
-                    throw new NotImplementedException();
-                }
-
-                if (dueTime.Kind != DateTimeKind.Utc)
-                {
-                    throw new NotImplementedException();
-                }
-
-                if (dueTime.Millisecond != 0)
-                {
-                    throw new NotImplementedException();
-                }
+                entry.ChangeDueTime(dueTime);
 
                 //_registrations.Add(registration.RegistrationId, registration);
                 //_list.Add(new ScheduleKey(dueTime, registration.RegistrationId), registration);
 
-                var entry = new ScheduleEntry(jobName, dueTime);
-                _list.Add(entry);
-                _scheduleChangedEvent.Set();
+                //var entry = new ScheduleEntry(jobName, dueTime);
+                //_list.Add(entry);
+                //_scheduleChangedEvent.Set();
             }
+
+            _scheduleChangedEvent.Set();
         }
     }
 }

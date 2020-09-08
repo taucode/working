@@ -22,6 +22,7 @@ namespace TauCode.Working.Jobs
             public string Name { get; }
             public JobWorker Worker { get; }
             public ISchedule Schedule { get; private set; }
+            public bool IsEnabled { get; private set; }
         }
 
         #endregion
@@ -34,7 +35,7 @@ namespace TauCode.Working.Jobs
         private readonly JobManagerHelper _helper;
 
         //private readonly Dictionary<string, ScheduleRegistration> _registrations;
-        private readonly HashSet<AutoStopWorkerBase> _workers;
+        //private readonly HashSet<AutoStopWorkerBase> _workers;
 
         private readonly Dictionary<string, JobWorkerEntry> _entries;
 
@@ -47,7 +48,7 @@ namespace TauCode.Working.Jobs
             _lock = new object();
             _helper = new JobManagerHelper(this);
             //_registrations = new Dictionary<string, ScheduleRegistration>();
-            _workers = new HashSet<AutoStopWorkerBase>();
+            //_workers = new HashSet<AutoStopWorkerBase>();
             _entries = new Dictionary<string, JobWorkerEntry>();
         }
 
@@ -79,11 +80,11 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        private string GenerateRegistrationId()
-        {
-            var result = Guid.NewGuid().ToString("N");
-            return result;
-        }
+        //private string GenerateRegistrationId()
+        //{
+        //    var result = Guid.NewGuid().ToString("N");
+        //    return result;
+        //}
 
         #endregion
 
@@ -191,6 +192,8 @@ namespace TauCode.Working.Jobs
 
                 _helper.Dispose();
                 _isDisposed = true;
+
+                // todo: dispose workers.
             }
         }
 
@@ -230,26 +233,11 @@ namespace TauCode.Working.Jobs
                 this.CheckStarted();
                 this.CheckNotDisposed();
 
-                //if (_workers.Contains(worker))
-                //{
-                //    throw new NotImplementedException(); // todo dup
-                //}
-
                 var entry = new JobWorkerEntry(jobName, new JobWorker(jobTaskCreator), jobSchedule);
                 _entries.Add(entry.Name, entry);
-
-                //throw new NotImplementedException();
-
-                //var registrationId = this.GenerateRegistrationId();
-                //var registration = new ScheduleRegistration(registrationId, worker, schedule);
-
-                //_registrations.Add(registration.RegistrationId, registration);
-                //_workers.Add(worker);
-
-                _helper.OnNewRegistration(jobName, jobSchedule); // todo: try/catch, remove on exception?
-
-                //return registrationId;
             }
+
+            _helper.Reschedule(jobName, jobSchedule); // todo: try/catch, remove on exception?
         }
 
         public void ChangeJobSchedule(string jobName, ISchedule newJobSchedule)
@@ -271,8 +259,15 @@ namespace TauCode.Working.Jobs
 
         internal void StartJob(string jobName)
         {
-            var entry = _entries[jobName];
-            entry.Worker.Start();
+            IWorker worker;
+
+            lock (_lock)
+            {
+                var entry = _entries[jobName];
+                worker = entry.Worker;
+            }
+
+            worker.Start();
         }
 
         #endregion
