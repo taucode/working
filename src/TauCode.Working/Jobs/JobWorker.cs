@@ -1,14 +1,27 @@
 ﻿using System;
+using System.Threading.Tasks;
 
-namespace TauCode.Working
+namespace TauCode.Working.Jobs
 {
-    internal class AutoStopWorkerBase : WorkerBase
+    internal class JobWorker : WorkerBase
     {
-        #region Overridden
+        private readonly Func<Task> _taskCreator;
+
+        internal JobWorker(Func<Task> taskCreator)
+        {
+            _taskCreator = taskCreator; // todo checks
+        }
 
         protected override void StartImpl()
         {
-            throw new NotImplementedException();
+            var task = _taskCreator().ContinueWith(this.Wat);
+            this.ChangeState(WorkerState.Running);
+        }
+
+        private Task Wat(Task task)
+        {
+            this.Stop();
+            return Task.CompletedTask;
         }
 
         protected override void PauseImpl()
@@ -30,7 +43,5 @@ namespace TauCode.Working
         {
             this.ChangeState(WorkerState.Disposed);
         }
-
-        #endregion
     }
 }

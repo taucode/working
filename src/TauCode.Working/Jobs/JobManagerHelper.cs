@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Infrastructure.Time;
 
-namespace TauCode.Working.Scheduling
+namespace TauCode.Working.Jobs
 {
     // todo clean up
-    internal class ScheduleManagerHelper : LoopWorkerBase
+    internal class JobManagerHelper : LoopWorkerBase
     {
         #region Constants
 
@@ -72,18 +72,30 @@ namespace TauCode.Working.Scheduling
         //    }
         //}
 
+        //private class ScheduleEntry
+        //{
+        //    public ScheduleEntry(ScheduleRegistration registration, DateTime dueTime)
+        //    {
+        //        // todo: checks on utc?
+
+        //        this.Registration = registration;
+        //        this.DueTime = dueTime;
+        //    }
+
+        //    public ScheduleRegistration Registration { get; }
+        //    public DateTime DueTime { get; set; } // todo: use method
+        //}
+
         private class ScheduleEntry
         {
-            public ScheduleEntry(ScheduleRegistration registration, DateTime dueTime)
+            public ScheduleEntry(string jobName, DateTime dueTime)
             {
-                // todo: checks on utc?
-
-                this.Registration = registration;
+                this.JobName = jobName;
                 this.DueTime = dueTime;
             }
 
-            public ScheduleRegistration Registration { get; }
-            public DateTime DueTime { get; set; } // todo: use method
+            public string JobName { get; }
+            public DateTime DueTime { get; }
         }
 
         #endregion
@@ -92,6 +104,8 @@ namespace TauCode.Working.Scheduling
 
         //private readonly Dictionary<string, ScheduleRegistration> _registrations;
         //private readonly SortedList<ScheduleKey, ScheduleRegistration> _list;
+
+        private readonly JobManager _host;
 
         private readonly List<ScheduleEntry> _list;
 
@@ -102,11 +116,12 @@ namespace TauCode.Working.Scheduling
 
         #region Constructor
 
-        internal ScheduleManagerHelper()
+        internal JobManagerHelper(JobManager host)
         {
             //_registrations = new Dictionary<string, ScheduleRegistration>();
             //_list = new SortedList<ScheduleKey, ScheduleRegistration>(Comparer<ScheduleKey>.Default);
 
+            _host = host;
             _list = new List<ScheduleEntry>();
 
             _scheduleLock = new object();
@@ -116,7 +131,7 @@ namespace TauCode.Working.Scheduling
 
         #region Private
 
-        private Tuple<int, DateTime> GetClosestDueTime()
+        private int? GetIndexOfEntryWithClosestDueTime(out DateTime dueTime)
         {
             lock (_scheduleLock)
             {
@@ -135,10 +150,12 @@ namespace TauCode.Working.Scheduling
 
                 if (index == int.MaxValue)
                 {
+                    dueTime = Never;
                     return null;
                 }
 
-                return Tuple.Create(index, minTime);
+                dueTime = minTime;
+                return index;
             }
         }
 
@@ -150,38 +167,64 @@ namespace TauCode.Working.Scheduling
         {
             lock (_scheduleLock)
             {
-                var tuple = this.GetClosestDueTime();
-                if (tuple == null)
+                var index = this.GetIndexOfEntryWithClosestDueTime(out var dueTime);
+
+                if (index.HasValue)
                 {
-                    return Task.FromResult(WorkFinishReason.WorkIsDone); // no candidates.
-                }
+                    var now = TimeProvider.GetCurrent();
+                    var entry = _list[index.Value];
 
-                var now = TimeProvider.GetCurrent();
-
-                if (tuple.Item2 <= now)
-                {
-                    var entry = _list[tuple.Item1];
-
-                    try
+                    if (dueTime <= now)
                     {
-                        entry.Registration.Worker.Start();
-                        var nextDueTime = entry.Registration.Schedule.GetDueTimeAfter(now);
-                        entry.DueTime = nextDueTime;
+                        _host.StartJob(entry.JobName);
+                        _list.RemoveAt(index.Value);
 
-                        return Task.FromResult(WorkFinishReason.WorkIsDone); // let's have a rest.
+                        // todo: ugly.
+                        this.OnNewRegistration(entry.JobName, _host.GetSchedule(entry.JobName));
                     }
-                    catch (Exception e)
-                    {
-                        // todo
-                        Console.WriteLine(e);
-                        throw;
-                    }
+
+                    //return Task.FromResult(WorkFinishReason.WorkIsDone);
                 }
-                else
-                {
-                    // due time not occurred yet.
-                    return Task.FromResult(WorkFinishReason.WorkIsDone);
-                }
+
+                //else
+                //{
+                //    return Task.FromResult(WorkFinishReason.WorkIsDone); // no candidates.
+                //}
+
+                return Task.FromResult(WorkFinishReason.WorkIsDone);
+
+                //var tuple = this.GetClosestDueTime();
+                //if (tuple == null)
+                //{
+                //    return Task.FromResult(WorkFinishReason.WorkIsDone); // no candidates.
+                //}
+
+
+
+                //if (tuple.Item2 <= now)
+                //{
+                //    var entry = _list[tuple.Item1];
+
+                //    try
+                //    {
+                //        entry.Registration.Worker.Start();
+                //        var nextDueTime = entry.Registration.Schedule.GetDueTimeAfter(now);
+                //        entry.DueTime = nextDueTime;
+
+                //        return Task.FromResult(WorkFinishReason.WorkIsDone); // let's have a rest.
+                //    }
+                //    catch (Exception e)
+                //    {
+                //        // todo
+                //        Console.WriteLine(e);
+                //        throw;
+                //    }
+                //}
+                //else
+                //{
+                //    // due time not occurred yet.
+                //    return Task.FromResult(WorkFinishReason.WorkIsDone);
+                //}
             }
         }
 
@@ -191,15 +234,11 @@ namespace TauCode.Working.Scheduling
 
             lock (_scheduleLock)
             {
-                var tuple = this.GetClosestDueTime();
-                if (tuple == null)
-                {
-                    vacationTimeout = InfiniteTimeSpan; // no candidates, let's party 'forever'
-                }
-                else
+                var index = this.GetIndexOfEntryWithClosestDueTime(out var dueTime);
+                if (index.HasValue)
                 {
                     var now = TimeProvider.GetCurrent();
-                    if (tuple.Item2 <= now)
+                    if (dueTime <= now)
                     {
                         // oh, we've got a due time, terminate vacation immediately!
                         return Task.FromResult(VacationFinishReason.VacationTimeElapsed);
@@ -207,9 +246,38 @@ namespace TauCode.Working.Scheduling
                     else
                     {
                         // got some time to have fun before the due time
-                        vacationTimeout = tuple.Item2 - now;
+                        vacationTimeout = dueTime - now;
+                        if (vacationTimeout > InfiniteTimeSpan)
+                        {
+                            vacationTimeout = InfiniteTimeSpan;
+                        }
                     }
+
                 }
+                else
+                {
+                    vacationTimeout = InfiniteTimeSpan; // no candidates, let's party 'forever'
+                }
+
+                //var tuple = this.GetClosestDueTime();
+                //if (tuple == null)
+                //{
+                //    vacationTimeout = InfiniteTimeSpan; // no candidates, let's party 'forever'
+                //}
+                //else
+                //{
+                //    var now = TimeProvider.GetCurrent();
+                //    if (tuple.Item2 <= now)
+                //    {
+                //        // oh, we've got a due time, terminate vacation immediately!
+                //        return Task.FromResult(VacationFinishReason.VacationTimeElapsed);
+                //    }
+                //    else
+                //    {
+                //        // got some time to have fun before the due time
+                //        vacationTimeout = tuple.Item2 - now;
+                //    }
+                //}
             }
 
             var signalIndex = this.WaitForControlSignalWithExtraSignals(vacationTimeout);
@@ -241,10 +309,48 @@ namespace TauCode.Working.Scheduling
 
         #region Internal
 
-        internal void OnNewRegistration(ScheduleRegistration registration)
-        {
-            // this method is always protected by lock ScheduleManager._lock, so no additional lock is needed.
+        //internal void OnNewRegistration(ScheduleRegistration registration)
+        //{
+        //    // this method is always protected by lock ScheduleManager._lock, so no additional lock is needed.
 
+        //    lock (_scheduleLock)
+        //    {
+        //        var now = TimeProvider.GetCurrent();
+        //        if (now.Kind != DateTimeKind.Utc)
+        //        {
+        //            throw new NotImplementedException(); // todo wtf
+        //        }
+
+        //        var dueTime = registration.Schedule.GetDueTimeAfter(now);
+
+        //        if (dueTime <= now)
+        //        {
+        //            throw new NotImplementedException();
+        //        }
+
+        //        if (dueTime.Kind != DateTimeKind.Utc)
+        //        {
+        //            throw new NotImplementedException();
+        //        }
+
+        //        if (dueTime.Millisecond != 0)
+        //        {
+        //            throw new NotImplementedException();
+        //        }
+
+        //        //_registrations.Add(registration.RegistrationId, registration);
+        //        //_list.Add(new ScheduleKey(dueTime, registration.RegistrationId), registration);
+
+        //        var entry = new ScheduleEntry(registration, dueTime);
+        //        _list.Add(entry);
+        //        _scheduleChangedEvent.Set();
+        //    }
+        //}
+
+        #endregion
+
+        internal void OnNewRegistration(string jobName, ISchedule jobSchedule)
+        {
             lock (_scheduleLock)
             {
                 var now = TimeProvider.GetCurrent();
@@ -253,7 +359,7 @@ namespace TauCode.Working.Scheduling
                     throw new NotImplementedException(); // todo wtf
                 }
 
-                var dueTime = registration.Schedule.GetDueTimeAfter(now);
+                var dueTime = jobSchedule.GetDueTimeAfter(now);
 
                 if (dueTime <= now)
                 {
@@ -273,12 +379,10 @@ namespace TauCode.Working.Scheduling
                 //_registrations.Add(registration.RegistrationId, registration);
                 //_list.Add(new ScheduleKey(dueTime, registration.RegistrationId), registration);
 
-                var entry = new ScheduleEntry(registration, dueTime);
+                var entry = new ScheduleEntry(jobName, dueTime);
                 _list.Add(entry);
                 _scheduleChangedEvent.Set();
             }
         }
-
-        #endregion
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace TauCode.Working.Scheduling.Schedules
+﻿namespace TauCode.Working.Jobs.Schedules
 {
     public enum SimpleScheduleKind
     {

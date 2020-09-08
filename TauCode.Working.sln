@@ -40,6 +40,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.TestDemo.Co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.TestDemo.EasyNetQ", "test-demo\TauCode.Working.TestDemo.EasyNetQ\TauCode.Working.TestDemo.EasyNetQ.csproj", "{EE10AF06-70E3-48AE-A831-5C3C29D54244}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TauCode.Working.TestDemo.GuiServer", "test-demo\TauCode.Working.TestDemo.GuiServer\TauCode.Working.TestDemo.GuiServer.csproj", "{BF71A18E-E932-43C6-BD92-4B1BEE6091C8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -74,6 +76,10 @@ Global
 		{EE10AF06-70E3-48AE-A831-5C3C29D54244}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE10AF06-70E3-48AE-A831-5C3C29D54244}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE10AF06-70E3-48AE-A831-5C3C29D54244}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF71A18E-E932-43C6-BD92-4B1BEE6091C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF71A18E-E932-43C6-BD92-4B1BEE6091C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF71A18E-E932-43C6-BD92-4B1BEE6091C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF71A18E-E932-43C6-BD92-4B1BEE6091C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -86,6 +92,7 @@ Global
 		{D8B41D63-6DF2-4C0D-8D0B-885740039A8E} = {95C22442-7CA8-4FA1-8D14-12627B0C7C23}
 		{1B8FF069-80C7-401F-9A6F-3080D452FAA6} = {95C22442-7CA8-4FA1-8D14-12627B0C7C23}
 		{EE10AF06-70E3-48AE-A831-5C3C29D54244} = {95C22442-7CA8-4FA1-8D14-12627B0C7C23}
+		{BF71A18E-E932-43C6-BD92-4B1BEE6091C8} = {95C22442-7CA8-4FA1-8D14-12627B0C7C23}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CA6859C8-B1CF-4CDF-A5FE-24E4FF8F85B8}

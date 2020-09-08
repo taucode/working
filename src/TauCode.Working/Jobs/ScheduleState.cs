@@ -1,4 +1,4 @@
-﻿namespace TauCode.Working.Scheduling
+﻿namespace TauCode.Working.Jobs
 {
     public enum ScheduleState
     {
