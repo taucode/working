@@ -4,23 +4,23 @@ namespace TauCode.Extensions.Lab
 {
     public readonly struct DateTimeInterval
     {
-        public DateTimeInterval(DateTime from, DateTime to)
+        public DateTimeInterval(DateTime start, DateTime end)
         {
-            if (from.Kind != to.Kind)
+            if (start.Kind != end.Kind)
             {
-                throw new ArgumentException($"'{nameof(from)}' and '{nameof(to)}' must be of same kind.");
+                throw new ArgumentException($"'{nameof(start)}' and '{nameof(end)}' must be of same kind.");
             }
 
-            if (from > to)
+            if (start > end)
             {
-                throw new ArgumentException($"'{nameof(from)}' must be not greater than '{nameof(to)}'.");
+                throw new ArgumentException($"'{nameof(start)}' must be not greater than '{nameof(end)}'.");
             }
 
-            this.From = from;
-            this.To = to;
+            this.Start = start;
+            this.End = end;
         }
 
-        public DateTime From { get; }
-        public DateTime To { get; }
+        public DateTime Start { get; }
+        public DateTime End { get; }
     }
 }

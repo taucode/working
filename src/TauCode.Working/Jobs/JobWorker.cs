@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -9,6 +10,7 @@ using TauCode.Working.Exceptions;
 
 namespace TauCode.Working.Jobs
 {
+    // todo clean up
     internal class JobWorker : WorkerBase
     {
         private readonly Func<TextWriter, CancellationToken, Task> _taskCreator;
@@ -16,6 +18,8 @@ namespace TauCode.Working.Jobs
         private StringWriterWithEncoding _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
         private JobRunResultBuilder _currentJobRunResultBuilder;
+
+        private readonly List<JobRunResult> _log;
 
         //private Task _currentTask;
 
@@ -25,6 +29,7 @@ namespace TauCode.Working.Jobs
         {
             // todo checks
             _taskCreator = taskCreator;
+            _log = new List<JobRunResult>();
         }
 
         protected override void StartImpl()
@@ -62,7 +67,7 @@ namespace TauCode.Working.Jobs
         private void EndTask(Task task)
         {
             var now = TimeProvider.GetCurrent();
-            _currentJobRunResultBuilder.FinishedAt = now;
+            _currentJobRunResultBuilder.End = now;
             _currentJobRunResultBuilder.Output = _currentRunTextWriter.ToString();
 
             switch (task.Status)
@@ -90,11 +95,7 @@ namespace TauCode.Working.Jobs
                     _currentJobRunResultBuilder.Status = JobRunStatus.Canceled;
                     break;
 
-                //case TaskStatus.Canceled:
-                //    break;
                 //case TaskStatus.Created:
-                //    break;
-                //case TaskStatus.RanToCompletion:
                 //    break;
                 //case TaskStatus.Running:
                 //    break;
@@ -104,8 +105,9 @@ namespace TauCode.Working.Jobs
                 //    break;
                 //case TaskStatus.WaitingToRun:
                 //    break;
+
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(); // todo.
             }
 
 
@@ -114,6 +116,9 @@ namespace TauCode.Working.Jobs
 
             _currentRunCancellationTokenSource.Dispose();
             _currentRunCancellationTokenSource = null;
+
+            var jobRunResult = _currentJobRunResultBuilder.Build();
+            _log.Add(jobRunResult);
 
             _currentJobRunResultBuilder = null;
 
