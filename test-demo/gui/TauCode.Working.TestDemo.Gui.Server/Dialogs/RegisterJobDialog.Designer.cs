@@ -30,6 +30,8 @@
         {
             this.buttonOk = new System.Windows.Forms.Button();
             this.buttonCancel = new System.Windows.Forms.Button();
+            this.textBoxJobName = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // buttonOk
@@ -40,6 +42,7 @@
             this.buttonOk.TabIndex = 0;
             this.buttonOk.Text = "&OK";
             this.buttonOk.UseVisualStyleBackColor = true;
+            this.buttonOk.Click += new System.EventHandler(this.buttonOk_Click);
             // 
             // buttonCancel
             // 
@@ -50,6 +53,22 @@
             this.buttonCancel.Text = "&Cancel";
             this.buttonCancel.UseVisualStyleBackColor = true;
             // 
+            // textBoxJobName
+            // 
+            this.textBoxJobName.Location = new System.Drawing.Point(79, 12);
+            this.textBoxJobName.Name = "textBoxJobName";
+            this.textBoxJobName.Size = new System.Drawing.Size(281, 23);
+            this.textBoxJobName.TabIndex = 1;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(12, 15);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(61, 15);
+            this.label1.TabIndex = 2;
+            this.label1.Text = "Job name:";
+            // 
             // RegisterJobDialog
             // 
             this.AcceptButton = this.buttonOk;
@@ -57,6 +76,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.buttonCancel;
             this.ClientSize = new System.Drawing.Size(372, 183);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.textBoxJobName);
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.buttonOk);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -67,6 +88,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Register Job";
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -74,5 +96,7 @@
 
         private System.Windows.Forms.Button buttonOk;
         private System.Windows.Forms.Button buttonCancel;
+        private System.Windows.Forms.TextBox textBoxJobName;
+        private System.Windows.Forms.Label label1;
     }
 }

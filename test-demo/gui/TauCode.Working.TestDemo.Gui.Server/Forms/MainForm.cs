@@ -1,4 +1,5 @@
-﻿using System.Windows.Forms;
+﻿using System;
+using System.Windows.Forms;
 
 namespace TauCode.Working.TestDemo.Gui.Server
 {
@@ -12,7 +13,12 @@ namespace TauCode.Working.TestDemo.Gui.Server
         private void toolStripMenuItemRegisterJob_Click(object sender, System.EventArgs e)
         {
             var dialog = new RegisterJobDialog();
-            dialog.ShowDialog();
+            var result = dialog.ShowDialog();
+
+            if (result == DialogResult.OK)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
