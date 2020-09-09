@@ -283,7 +283,7 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
-        public void ForceStart(string jobName)
+        public void ManualStart(string jobName)
         {
             throw new NotImplementedException();
         }
@@ -329,7 +329,7 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
-        public event EventHandler<JobChangedEventArgs> Changed;
+        public event EventHandler<JobChangedEventArgs> JobChanged;
 
         #region Internal
 

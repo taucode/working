@@ -10,17 +10,19 @@ namespace TauCode.Working.TestDemo.Gui.Server.Forms
     {
         private readonly IJobManager _jobManager;
         private readonly string _jobName;
+        private readonly DemoRunner _demoRunner;
 
         public JobForm()
         {
             InitializeComponent();
         }
 
-        public JobForm(IJobManager jobManager, string jobName)
+        public JobForm(IJobManager jobManager, string jobName, DemoRunner demoRunner)
             : this()
         {
             _jobManager = jobManager;
             _jobName = jobName;
+            _demoRunner = demoRunner;
         }
 
         private void JobForm_Load(object sender, System.EventArgs e)

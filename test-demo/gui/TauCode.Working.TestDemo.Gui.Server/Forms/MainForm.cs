@@ -45,8 +45,9 @@ namespace TauCode.Working.TestDemo.Gui.Server.Forms
         {
             try
             {
-                _jobManager.Register(jobName, Program.CreateJobTask, schedule, parameter);
-                var jobForm = new JobForm(_jobManager, jobName);
+                var demoRunner = new DemoRunner();
+                _jobManager.Register(jobName, demoRunner.Run, schedule, parameter);
+                var jobForm = new JobForm(_jobManager, jobName, demoRunner);
                 jobForm.MdiParent = this;
                 jobForm.Show();
             }

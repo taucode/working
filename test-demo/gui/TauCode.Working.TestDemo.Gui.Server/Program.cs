@@ -2,9 +2,6 @@ using EasyNetQ;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using TauCode.Working.Jobs;
 using TauCode.Working.TestDemo.Gui.Common;
@@ -102,9 +99,9 @@ namespace TauCode.Working.TestDemo.Gui.Server
 
         public IJobManager JobManager { get; private set; }
 
-        public static Task CreateJobTask(object parameter, TextWriter writer, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
+        //public static Task CreateJobTask(object parameter, TextWriter writer, CancellationToken cancellationToken)
+        //{
+        //    throw new NotImplementedException();
+        //}
     }
 }

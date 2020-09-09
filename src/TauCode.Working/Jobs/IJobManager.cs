@@ -28,7 +28,7 @@ namespace TauCode.Working.Jobs
 
         IList<DateTime> GetSchedulePart(string jobName, int length);
 
-        void ForceStart(string jobName);
+        void ManualStart(string jobName);
 
         void RedirectOutput(string jobName, TextWriter output);
 
@@ -44,6 +44,6 @@ namespace TauCode.Working.Jobs
 
         void Remove(string jobName);
 
-        event EventHandler<JobChangedEventArgs> Changed;
+        event EventHandler<JobChangedEventArgs> JobChanged;
     }
 }

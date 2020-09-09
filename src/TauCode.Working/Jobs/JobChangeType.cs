@@ -6,9 +6,10 @@
         ParameterChanged = 2,
         ScheduleChanged = 3,
         DueTimeChanged = 4,
-        ForceStarted = 5,
-        Canceled = 6,
-        IsEnabledChanged = 7,
-        Removed = 8,
+        Started = 5,
+        Completed = 7,
+        Canceled = 8,
+        EnabledChanged = 9,
+        Removed = 10,
     }
 }

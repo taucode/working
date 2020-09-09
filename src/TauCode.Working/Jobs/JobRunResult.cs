@@ -3,7 +3,7 @@ using TauCode.Extensions.Lab;
 
 namespace TauCode.Working.Jobs
 {
-    public class JobRunResult
+    public readonly struct JobRunResult
     {
         public JobRunResult(
             int index,
