@@ -218,10 +218,11 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        public void RegisterJob(
+        public void Register(
             string jobName,
-            Func<TextWriter, CancellationToken, Task> jobTaskCreator,
-            ISchedule jobSchedule)
+            Func<object, TextWriter, CancellationToken, Task> jobTaskCreator,
+            ISchedule jobSchedule,
+            object parameter)
         {
             if (jobName == null)
             {
@@ -243,34 +244,44 @@ namespace TauCode.Working.Jobs
                 this.CheckStarted();
                 this.CheckNotDisposed();
 
-                var entry = new JobWorkerEntry(jobName, new JobWorker(jobTaskCreator), jobSchedule);
-                _entries.Add(entry.Name, entry);
+                var entry = new JobWorkerEntry(jobName, new JobWorker(jobTaskCreator, parameter), jobSchedule);
+                _entries.Add(entry.Name, entry); // todo checks
             }
 
             _helper.Reschedule(jobName, jobSchedule); // todo: try/catch, remove on exception?
         }
 
-        public void ChangeJobSchedule(string jobName, ISchedule newJobSchedule)
+        public void SetParameter(string jobName, object parameter)
         {
             throw new NotImplementedException();
         }
 
-        public void ChangeJobDueTime(string jobName, DateTime dueTime)
+        public object GetParameter(string jobName)
         {
             throw new NotImplementedException();
         }
 
-        public void ResetJobDueTime(string jobName)
+        public void ChangeSchedule(string jobName, ISchedule newJobSchedule)
         {
             throw new NotImplementedException();
         }
 
-        public void ForceStartJob(string jobName)
+        public void ChangeDueTime(string jobName, DateTime dueTime)
         {
             throw new NotImplementedException();
         }
 
-        public void CancelRunningJob(string jobName)
+        public void ResetDueTime(string jobName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ForceStart(string jobName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Cancel(string jobName)
         {
             JobWorkerEntry entry;
             lock (_lock)
@@ -281,25 +292,29 @@ namespace TauCode.Working.Jobs
             entry.Worker.CancelCurrentJobRun();
         }
 
-        public void EnableJob(string jobName, bool enable)
+        public void Enable(string jobName, bool enable)
+        {
+            throw new NotImplementedException();
+
+            this.Changed?.Invoke(this, new JobChangedEventArgs(jobName, JobChangeType.IsEnabledChanged));
+        }
+
+        public bool IsEnabled(string jobName)
         {
             throw new NotImplementedException();
         }
 
-        public JobInfo GetJobInfo(string jobName, bool includeLog)
+        public JobInfo GetInfo(string jobName, bool includeLog)
         {
             throw new NotImplementedException();
         }
 
-        public JobInfo GetJobInfo(string jobName)
+        public void Remove(string jobName)
         {
             throw new NotImplementedException();
         }
 
-        public void RemoveJob(string jobName)
-        {
-            throw new NotImplementedException();
-        }
+        public event EventHandler<JobChangedEventArgs> Changed;
 
         #region Internal
 

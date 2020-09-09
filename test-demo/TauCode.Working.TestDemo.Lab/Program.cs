@@ -56,23 +56,26 @@ namespace TauCode.Working.TestDemo.Lab
                 });
 
             // Act
-            scheduleManager.RegisterJob(
+            scheduleManager.Register(
                 "my-job",
-                (writer, token) => Task.Run(async () =>
+                (parameter, writer, token) => Task.Run(async () =>
                     {
+                        var limit = (int)parameter;
+
                         var routineStartedTime = TimeProvider.GetCurrent();
 
                         Console.WriteLine($"*** ROUTINE STARTED ***: {routineStartedTime.FormatTime()}");
                         Console.WriteLine($"*** DEFECT ***: {(expectedRoutineStartTime - routineStartedTime).TotalMilliseconds}");
 
-                        for (var i = 0; i < 100; i++)
+                        for (var i = 0; i < limit; i++)
                         {
                             Console.WriteLine($"{i + 1}    :    {TimeProvider.GetCurrent().FormatTime()}");
                             await Task.Delay(routineTimeout, token);
                         }
                     },
                     token),
-                schedule);
+                schedule,
+                33);
 
 
             var now2 = TimeProvider.GetCurrent();
@@ -85,7 +88,7 @@ namespace TauCode.Working.TestDemo.Lab
             Console.WriteLine($"*** AWAITING STARTED ***: {TimeProvider.GetCurrent().FormatTime()}");
             await Task.Delay(timeoutBeforeShowtime - adjustment + ticksToAllow * routineTimeout);
 
-            scheduleManager.CancelRunningJob("my-job");
+            scheduleManager.Cancel("my-job");
 
             //await Task.Delay(60 * 60 * 1000); // todo
 

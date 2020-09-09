@@ -36,9 +36,9 @@ namespace TauCode.Working.Tests.Scheduling
             
 
             // Act
-            scheduleManager.RegisterJob(
+            scheduleManager.Register(
                 "my-job",
-                (writer, token) => Task.Run(async () =>
+                (parameter, writer, token) => Task.Run(async () =>
                     {
                         for (int i = 0; i < 10; i++)
                         {
@@ -62,10 +62,11 @@ namespace TauCode.Working.Tests.Scheduling
                         return true;
                     },
                     token),
-                schedule);
+                schedule,
+                10);
 
             await Task.Delay(2001);
-            scheduleManager.CancelRunningJob("my-job");
+            scheduleManager.Cancel("my-job");
             
             await Task.Delay(60 * 60 * 1000); // todo
 

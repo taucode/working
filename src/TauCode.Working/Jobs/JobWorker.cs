@@ -13,11 +13,13 @@ namespace TauCode.Working.Jobs
     // todo clean up
     internal class JobWorker : WorkerBase
     {
-        private readonly Func<TextWriter, CancellationToken, Task> _taskCreator;
+        private readonly Func<object, TextWriter, CancellationToken, Task> _taskCreator;
 
         private StringWriterWithEncoding _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
         private JobRunResultBuilder _currentJobRunResultBuilder;
+
+        private object _parameter;
 
         private readonly List<JobRunResult> _log;
 
@@ -25,11 +27,12 @@ namespace TauCode.Working.Jobs
 
         private int _runIndex;
 
-        internal JobWorker(Func<TextWriter, CancellationToken, Task> taskCreator)
+        internal JobWorker(Func<object, TextWriter, CancellationToken, Task> taskCreator, object parameter)
         {
             // todo checks
             _taskCreator = taskCreator;
             _log = new List<JobRunResult>();
+            _parameter = parameter;
         }
 
         protected override void StartImpl()
@@ -46,7 +49,7 @@ namespace TauCode.Working.Jobs
 
             try
             {
-                task = _taskCreator(_currentRunTextWriter, _currentRunCancellationTokenSource.Token);
+                task = _taskCreator(_parameter, _currentRunTextWriter, _currentRunCancellationTokenSource.Token);
             }
             catch (Exception ex)
             {

@@ -9,25 +9,34 @@ namespace TauCode.Working.Jobs
     {
         void Start();
 
-        void RegisterJob(
+        void Register(
             string jobName,
-            Func<TextWriter, CancellationToken, Task> jobTaskCreator,
-            ISchedule jobSchedule);
+            Func<object, TextWriter, CancellationToken, Task> jobTaskCreator,
+            ISchedule jobSchedule,
+            object parameter);
 
-        void ChangeJobSchedule(string jobName, ISchedule newJobSchedule);
+        void SetParameter(string jobName, object parameter);
 
-        void ChangeJobDueTime(string jobName, DateTime dueTime);
+        object GetParameter(string jobName);
 
-        void ResetJobDueTime(string jobName);
+        void ChangeSchedule(string jobName, ISchedule newJobSchedule);
 
-        void ForceStartJob(string jobName);
+        void ChangeDueTime(string jobName, DateTime dueTime);
 
-        void CancelRunningJob(string jobName);
+        void ResetDueTime(string jobName); // todo: get rid of.
 
-        void EnableJob(string jobName, bool enable);
+        void ForceStart(string jobName);
 
-        JobInfo GetJobInfo(string jobName, bool includeLog);
+        void Cancel(string jobName);
 
-        void RemoveJob(string jobName);
+        void Enable(string jobName, bool enable);
+
+        bool IsEnabled(string jobName);
+
+        JobInfo GetInfo(string jobName, bool includeLog);
+
+        void Remove(string jobName);
+
+        event EventHandler<JobChangedEventArgs> Changed;
     }
 }
