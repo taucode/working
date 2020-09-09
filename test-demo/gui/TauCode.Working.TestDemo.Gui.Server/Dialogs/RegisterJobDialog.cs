@@ -1,6 +1,6 @@
 ﻿using System.Windows.Forms;
 
-namespace TauCode.Working.TestDemo.Gui.Server
+namespace TauCode.Working.TestDemo.Gui.Server.Dialogs
 {
     public partial class RegisterJobDialog : Form
     {

@@ -1,30 +1,62 @@
+using EasyNetQ;
+using Microsoft.Extensions.Configuration;
 using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using TauCode.Working.Jobs;
+using TauCode.Working.TestDemo.Gui.Server.Forms;
 
 namespace TauCode.Working.TestDemo.Gui.Server
 {
     public class Program
     {
+        #region Static Entry Point
+
         /// <summary>
         ///  The main entry point for the application.
         /// </summary>
         [STAThread]
         private static void Main()
         {
-            //Application.SetHighDpiMode(HighDpiMode.SystemAware);
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new MainForm());
+            var env = "Development";
+            var configuration = CreateConfiguration(env);
 
-            var program = new Program();
+            var program = new Program(configuration);
             program.Run();
         }
 
-        public Program()
-        {   
+        private static IConfiguration CreateConfiguration(string env)
+        {
+            var mainSettingsFileName = "appsettings.json";
+            var envSettingsFileName = $"appsettings.{env}.json";
+
+            var configurationBuilder = new ConfigurationBuilder()
+                .AddJsonFile(mainSettingsFileName, false, true)
+                .AddJsonFile(envSettingsFileName, false);
+
+            try
+            {
+                var configuration = configurationBuilder.Build();
+                return configuration;
+            }
+            catch
+            {
+                Console.WriteLine($"ERROR: Failed to load configuration for environment '{env}'.");
+                throw;
+            }
         }
 
-        public MainForm MainForm { get; private set; }
+        #endregion
+
+
+        private readonly IConfiguration _configuration;
+
+        private Program(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
         private void Run()
         {
@@ -32,8 +64,38 @@ namespace TauCode.Working.TestDemo.Gui.Server
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            this.MainForm = new MainForm();
+            this.Bus = this.CreateBus();
+            this.JobManager = this.CreateJobManager();
+            this.JobManager.Start();
+
+            this.MainForm = new MainForm(this.JobManager);
             Application.Run(this.MainForm);
+
+            this.Bus.Dispose();
+            this.JobManager.Dispose();
+        }
+
+        private IJobManager CreateJobManager()
+        {
+            return new JobManager();
+        }
+
+        private IBus CreateBus()
+        {
+            var connectionString = _configuration["ConnectionStrings:RabbitMQ"];
+            var bus = RabbitHutch.CreateBus(connectionString);
+            return bus;
+        }
+
+        public MainForm MainForm { get; private set; }
+
+        public IBus Bus { get; private set; }
+
+        public IJobManager JobManager { get; private set; }
+
+        public static Task CreateJobTask(object parameter, TextWriter writer, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

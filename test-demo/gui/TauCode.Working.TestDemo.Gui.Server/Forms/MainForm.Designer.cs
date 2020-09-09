@@ -1,4 +1,4 @@
-﻿namespace TauCode.Working.TestDemo.Gui.Server
+﻿namespace TauCode.Working.TestDemo.Gui.Server.Forms
 {
     partial class MainForm
     {

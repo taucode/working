@@ -6,7 +6,10 @@ namespace TauCode.Extensions.Lab
     {
         public static DateTime ToExactUtcDate(this string dateString)
         {
-            throw new NotImplementedException();
+            var date = DateTime.Parse(dateString);
+
+            var result = DateTime.SpecifyKind(date, DateTimeKind.Utc);
+            return result;
         }
 
         public static DateTimeInterval ToExactUtcDateTimeInterval(this string dateIntervalString)
