@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace TauCode.Working
@@ -63,17 +64,25 @@ namespace TauCode.Working
             return stableWorkerState;
         }
 
-        internal static DateTime TruncateMilliseconds(this DateTime dateTime)
+        //internal static DateTime Trunca-teMilliseconds(this DateTime dateTime)
+        //{
+        //    return new DateTime(
+        //        dateTime.Year,
+        //        dateTime.Month,
+        //        dateTime.Day,
+        //        dateTime.Hour,
+        //        dateTime.Minute,
+        //        dateTime.Second,
+        //        0,
+        //        dateTime.Kind);
+        //}
+
+
+        // todo temp
+        public static string FormatTime(this DateTime dateTime)
         {
-            return new DateTime(
-                dateTime.Year,
-                dateTime.Month,
-                dateTime.Day,
-                dateTime.Hour,
-                dateTime.Minute,
-                dateTime.Second,
-                0,
-                dateTime.Kind);
+            return dateTime.ToString("O", CultureInfo.InvariantCulture);
         }
+
     }
 }

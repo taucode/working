@@ -11,7 +11,7 @@ namespace TauCode.Working.Jobs
 {
     internal class JobWorker : WorkerBase
     {
-        private readonly Func<TextWriter, CancellationToken, Task<bool>> _taskCreator;
+        private readonly Func<TextWriter, CancellationToken, Task> _taskCreator;
 
         private StringWriterWithEncoding _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
@@ -21,7 +21,7 @@ namespace TauCode.Working.Jobs
 
         private int _runIndex;
 
-        internal JobWorker(Func<TextWriter, CancellationToken, Task<bool>> taskCreator)
+        internal JobWorker(Func<TextWriter, CancellationToken, Task> taskCreator)
         {
             // todo checks
             _taskCreator = taskCreator;
@@ -65,8 +65,6 @@ namespace TauCode.Working.Jobs
             _currentJobRunResultBuilder.FinishedAt = now;
             _currentJobRunResultBuilder.Output = _currentRunTextWriter.ToString();
 
-            var boolTask = (Task<bool>)task;
-            
             switch (task.Status)
             {
                 case TaskStatus.Faulted:
@@ -110,9 +108,20 @@ namespace TauCode.Working.Jobs
                     throw new ArgumentOutOfRangeException();
             }
 
+
+            _currentRunTextWriter.Dispose();
+            _currentRunTextWriter = null;
+
+            _currentRunCancellationTokenSource.Dispose();
+            _currentRunCancellationTokenSource = null;
+
+            _currentJobRunResultBuilder = null;
+
             this.Stop();
 
-            throw new NotImplementedException();
+
+
+            //throw new NotImplementedException();
             //return Task.CompletedTask;
         }
 

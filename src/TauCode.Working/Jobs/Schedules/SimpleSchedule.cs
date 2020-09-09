@@ -5,6 +5,7 @@ using TauCode.Extensions;
 
 namespace TauCode.Working.Jobs.Schedules
 {
+    // todo clean up
     public class SimpleSchedule : ISchedule
     {
         private readonly IList<DateTime> _concreteMoments;
@@ -16,10 +17,10 @@ namespace TauCode.Working.Jobs.Schedules
                 throw new NotImplementedException(); // todo
             }
 
-            if (baseTime.Millisecond != 0)
-            {
-                throw new NotImplementedException(); // todo
-            }
+            //if (baseTime.Millisecond != 0)
+            //{
+            //    throw new NotImplementedException(); // todo
+            //}
 
             if (multiplier <= 0)
             {
@@ -40,7 +41,7 @@ namespace TauCode.Working.Jobs.Schedules
                 foreach (var offset in concreteOffsets)
                 {
                     // todo: non-negative
-                    curr = curr.Add(offset).TruncateMilliseconds();
+                    curr = curr.Add(offset);
                     concreteMoments.Add(curr);
                 }
             }
@@ -108,7 +109,6 @@ namespace TauCode.Working.Jobs.Schedules
 
                 while (true)
                 {
-                    result = result.TruncateMilliseconds();
                     if (result > after)
                     {
                         // maybe there is concrete moment between 'after' and 'result'?

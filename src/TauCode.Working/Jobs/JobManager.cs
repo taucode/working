@@ -195,6 +195,11 @@ namespace TauCode.Working.Jobs
                 _helper.Dispose();
                 _isDisposed = true;
 
+                foreach (var entry in _entries)
+                {
+                    entry.Value.Worker.Dispose();
+                }
+
                 // todo: dispose workers.
             }
         }
@@ -215,7 +220,7 @@ namespace TauCode.Working.Jobs
 
         public void RegisterJob(
             string jobName,
-            Func<TextWriter, CancellationToken, Task<bool>> jobTaskCreator,
+            Func<TextWriter, CancellationToken, Task> jobTaskCreator,
             ISchedule jobSchedule)
         {
             if (jobName == null)

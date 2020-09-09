@@ -11,7 +11,7 @@ namespace TauCode.Working.Jobs
 
         void RegisterJob(
             string jobName,
-            Func<TextWriter, CancellationToken, Task<bool>> jobTaskCreator,
+            Func<TextWriter, CancellationToken, Task> jobTaskCreator,
             ISchedule jobSchedule);
 
         void ChangeJobSchedule(string jobName, ISchedule newJobSchedule);

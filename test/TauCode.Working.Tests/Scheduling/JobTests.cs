@@ -7,7 +7,7 @@ using TauCode.Infrastructure.Time;
 using TauCode.Working.Jobs;
 using TauCode.Working.Jobs.Schedules;
 
-
+// todo clean up
 namespace TauCode.Working.Tests.Scheduling
 {
     [TestFixture]
@@ -20,7 +20,7 @@ namespace TauCode.Working.Tests.Scheduling
             IJobManager scheduleManager = new JobManager();
             scheduleManager.Start();
 
-            var now = TimeProvider.GetCurrent().TruncateMilliseconds();
+            var now = TimeProvider.GetCurrent();
 
             //var sb = new StringBuilder();
 

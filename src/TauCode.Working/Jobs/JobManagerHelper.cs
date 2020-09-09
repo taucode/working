@@ -284,6 +284,7 @@ namespace TauCode.Working.Jobs
             }
 
             var dueTime = jobSchedule.GetDueTimeAfter(now);
+            Console.WriteLine($"DUE TIME: {dueTime.FormatTime()}");
 
             if (dueTime <= now)
             {
@@ -295,10 +296,10 @@ namespace TauCode.Working.Jobs
                 throw new NotImplementedException();
             }
 
-            if (dueTime.Millisecond != 0)
-            {
-                throw new NotImplementedException();
-            }
+            //if (dueTime.Millisecond != 0)
+            //{
+            //    throw new NotImplementedException();
+            //}
 
             lock (_scheduleLock)
             {
