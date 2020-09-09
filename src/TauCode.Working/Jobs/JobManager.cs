@@ -48,9 +48,11 @@ namespace TauCode.Working.Jobs
         public JobManager()
         {
             _lock = new object();
-            _helper = new JobManagerHelper(this);
-            //_registrations = new Dictionary<string, ScheduleRegistration>();
-            //_workers = new HashSet<AutoStopWorkerBase>();
+            _helper = new JobManagerHelper(this)
+            {
+                Name = "JM Helper",
+            };
+
             _entries = new Dictionary<string, JobWorkerEntry>();
         }
 
@@ -266,17 +268,32 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
-        public void ChangeDueTime(string jobName, DateTime dueTime)
+        public void ChangeDueTime(string jobName, DateTime? dueTime)
         {
             throw new NotImplementedException();
         }
 
-        public void ResetDueTime(string jobName)
+        public DueTimeInfo GetDueTime(string jobName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IList<DateTime> GetSchedulePart(string jobName, int length)
         {
             throw new NotImplementedException();
         }
 
         public void ForceStart(string jobName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RedirectOutput(string jobName, TextWriter output)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsRunning(string jobName)
         {
             throw new NotImplementedException();
         }
@@ -295,8 +312,6 @@ namespace TauCode.Working.Jobs
         public void Enable(string jobName, bool enable)
         {
             throw new NotImplementedException();
-
-            this.Changed?.Invoke(this, new JobChangedEventArgs(jobName, JobChangeType.IsEnabledChanged));
         }
 
         public bool IsEnabled(string jobName)

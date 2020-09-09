@@ -33,6 +33,8 @@
             this.toolStripMenuItemExit = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemJobs = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemRegisterJob = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemView = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemLog = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStripMain.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -40,7 +42,8 @@
             // 
             this.menuStripMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripMenuItemFile,
-            this.toolStripMenuItemJobs});
+            this.toolStripMenuItemJobs,
+            this.toolStripMenuItemView});
             this.menuStripMain.Location = new System.Drawing.Point(0, 0);
             this.menuStripMain.Name = "menuStripMain";
             this.menuStripMain.Size = new System.Drawing.Size(868, 24);
@@ -76,6 +79,21 @@
             this.toolStripMenuItemRegisterJob.Text = "&Register Job";
             this.toolStripMenuItemRegisterJob.Click += new System.EventHandler(this.toolStripMenuItemRegisterJob_Click);
             // 
+            // toolStripMenuItemView
+            // 
+            this.toolStripMenuItemView.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripMenuItemLog});
+            this.toolStripMenuItemView.Name = "toolStripMenuItemView";
+            this.toolStripMenuItemView.Size = new System.Drawing.Size(44, 20);
+            this.toolStripMenuItemView.Text = "&View";
+            // 
+            // toolStripMenuItemLog
+            // 
+            this.toolStripMenuItemLog.Name = "toolStripMenuItemLog";
+            this.toolStripMenuItemLog.Size = new System.Drawing.Size(94, 22);
+            this.toolStripMenuItemLog.Text = "&Log";
+            this.toolStripMenuItemLog.Click += new System.EventHandler(this.toolStripMenuItemLog_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -101,6 +119,8 @@
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemFile;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemExit;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemRegisterJob;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemView;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemLog;
     }
 }
 

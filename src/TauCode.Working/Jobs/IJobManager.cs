@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,11 +22,17 @@ namespace TauCode.Working.Jobs
 
         void ChangeSchedule(string jobName, ISchedule newJobSchedule);
 
-        void ChangeDueTime(string jobName, DateTime dueTime);
+        void ChangeDueTime(string jobName, DateTime? dueTime);
 
-        void ResetDueTime(string jobName); // todo: get rid of.
+        DueTimeInfo GetDueTime(string jobName);
+
+        IList<DateTime> GetSchedulePart(string jobName, int length);
 
         void ForceStart(string jobName);
+
+        void RedirectOutput(string jobName, TextWriter output);
+
+        bool IsRunning(string jobName);
 
         void Cancel(string jobName);
 

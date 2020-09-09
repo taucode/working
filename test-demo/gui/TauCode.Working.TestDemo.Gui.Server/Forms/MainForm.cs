@@ -11,6 +11,7 @@ namespace TauCode.Working.TestDemo.Gui.Server.Forms
     public partial class MainForm : Form
     {
         private readonly IJobManager _jobManager;
+        private readonly TextBoxWriter _textBoxWriter;
 
         /// <summary>
         /// Used only for UI design while development.
@@ -20,10 +21,11 @@ namespace TauCode.Working.TestDemo.Gui.Server.Forms
             InitializeComponent();
         }
 
-        public MainForm(IJobManager jobManager)
+        public MainForm(IJobManager jobManager, TextBoxWriter textBoxWriter)
             : this()
         {
             _jobManager = jobManager;
+            _textBoxWriter = textBoxWriter;
         }
 
         private void toolStripMenuItemRegisterJob_Click(object sender, System.EventArgs e)
@@ -52,6 +54,22 @@ namespace TauCode.Working.TestDemo.Gui.Server.Forms
             {
                 ex.ToMessageBox();
             }
+        }
+
+        private void toolStripMenuItemLog_Click(object sender, EventArgs e)
+        {
+            foreach (var form in MdiChildren)
+            {
+                if (form is LogForm)
+                {
+                    form.Show();
+                    return;
+                }
+            }
+
+            var logForm = new LogForm(_textBoxWriter);
+            logForm.MdiParent = this;
+            logForm.Show();
         }
     }
 }

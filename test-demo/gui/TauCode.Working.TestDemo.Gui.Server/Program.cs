@@ -1,11 +1,13 @@
 using EasyNetQ;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TauCode.Working.Jobs;
+using TauCode.Working.TestDemo.Gui.Common;
 using TauCode.Working.TestDemo.Gui.Server.Forms;
 
 namespace TauCode.Working.TestDemo.Gui.Server
@@ -17,7 +19,7 @@ namespace TauCode.Working.TestDemo.Gui.Server
         /// <summary>
         ///  The main entry point for the application.
         /// </summary>
-        [STAThread]
+        [MTAThread]
         private static void Main()
         {
             var env = "Development";
@@ -49,8 +51,7 @@ namespace TauCode.Working.TestDemo.Gui.Server
         }
 
         #endregion
-
-
+        
         private readonly IConfiguration _configuration;
 
         private Program(IConfiguration configuration)
@@ -60,6 +61,14 @@ namespace TauCode.Working.TestDemo.Gui.Server
 
         private void Run()
         {
+            var writer = new TextBoxWriter();
+
+            Log.Logger = new LoggerConfiguration()
+                .Filter.ByIncludingOnly(x => x.Properties.ContainsKey("taucode.working"))
+                .MinimumLevel.Debug()
+                .WriteTo.TextWriter(writer)
+                .CreateLogger();
+
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -68,7 +77,7 @@ namespace TauCode.Working.TestDemo.Gui.Server
             this.JobManager = this.CreateJobManager();
             this.JobManager.Start();
 
-            this.MainForm = new MainForm(this.JobManager);
+            this.MainForm = new MainForm(this.JobManager, writer);
             Application.Run(this.MainForm);
 
             this.Bus.Dispose();
