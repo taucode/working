@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace TauCode.Working.Jobs
 {
@@ -10,15 +7,27 @@ namespace TauCode.Working.Jobs
     {
         void Start();
 
-        void Register(
-            string jobName,
-            Func<object, TextWriter, CancellationToken, Task> jobTaskCreator,
-            ISchedule jobSchedule,
-            object parameter);
+        //void Register(
+        //    string jobName,
+        //    Func<object, TextWriter, CancellationToken, Task> jobTaskCreator,
+        //    ISchedule jobSchedule,
+        //    object parameter);
 
-        void SetParameter(string jobName, object parameter);
+        //void SetParameter(string jobName, object parameter);
 
-        object GetParameter(string jobName);
+        //object GetParameter(string jobName);
+
+        //void AddProgressTracker(string jobName, string progressTrackerName, IProgressTracker progressTracker);
+
+        //IReadOnlyList<string> GetProgressTrackerNames(string jobName);
+
+        //void RemoveProgressTracker(string jobName, string progressTrackerName);
+
+        void Create(string jobName);
+
+        void Set(string jobName, Job job);
+
+        Job Get(string jobName);
 
         void SetSchedule(string jobName, ISchedule schedule);
 
@@ -26,11 +35,11 @@ namespace TauCode.Working.Jobs
 
         void ManualChangeDueTime(string jobName, DateTime? dueTime);
 
-        IList<DateTime> GetSchedulePart(string jobName, int length);
+        IReadOnlyList<DateTime> GetSchedulePart(string jobName, int length);
 
         void ForceStart(string jobName);
 
-        void RedirectOutput(string jobName, TextWriter output);
+        //void RedirectOutput(string jobName, TextWriter output);
 
         void Cancel(string jobName);
 
@@ -39,6 +48,8 @@ namespace TauCode.Working.Jobs
         JobInfo GetInfo(string jobName, int? maxRunCount);
 
         void Remove(string jobName);
+
+        JobRunWaitResult Wait(string jobName, TimeSpan timeout);
 
         event EventHandler<JobChangedEventArgs> JobChanged;
     }

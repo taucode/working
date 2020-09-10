@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 // todo clean up
 namespace TauCode.Working.Jobs
@@ -220,48 +217,63 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        public void Register(
-            string jobName,
-            Func<object, TextWriter, CancellationToken, Task> jobTaskCreator,
-            ISchedule jobSchedule,
-            object parameter)
-        {
-            if (jobName == null)
-            {
-                throw new ArgumentNullException(nameof(jobName));
-            }
-
-            if (jobTaskCreator == null)
-            {
-                throw new ArgumentNullException(nameof(jobTaskCreator));
-            }
-
-            if (jobSchedule == null)
-            {
-                throw new ArgumentNullException(nameof(jobSchedule));
-            }
-
-            lock (_lock)
-            {
-                this.CheckStarted();
-                this.CheckNotDisposed();
-
-                var entry = new JobWorkerEntry(jobName, new JobWorker(jobTaskCreator, parameter), jobSchedule);
-                _entries.Add(entry.Name, entry); // todo checks
-            }
-
-            _helper.Reschedule(jobName, jobSchedule); // todo: try/catch, remove on exception?
-        }
-
-        public void SetParameter(string jobName, object parameter)
+        public void Create(string jobName)
         {
             throw new NotImplementedException();
         }
 
-        public object GetParameter(string jobName)
+        public void Set(string jobName, Job job)
         {
             throw new NotImplementedException();
         }
+
+        public Job Get(string jobName)
+        {
+            throw new NotImplementedException();
+        }
+
+        //public void Register(
+        //    string jobName,
+        //    Func<object, TextWriter, CancellationToken, Task> jobTaskCreator,
+        //    ISchedule jobSchedule,
+        //    object parameter)
+        //{
+        //    if (jobName == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(jobName));
+        //    }
+
+        //    if (jobTaskCreator == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(jobTaskCreator));
+        //    }
+
+        //    if (jobSchedule == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(jobSchedule));
+        //    }
+
+        //    lock (_lock)
+        //    {
+        //        this.CheckStarted();
+        //        this.CheckNotDisposed();
+
+        //        var entry = new JobWorkerEntry(jobName, new JobWorker(jobTaskCreator, parameter), jobSchedule);
+        //        _entries.Add(entry.Name, entry); // todo checks
+        //    }
+
+        //    _helper.Reschedule(jobName, jobSchedule); // todo: try/catch, remove on exception?
+        //}
+
+        //public void SetParameter(string jobName, object parameter)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        //public object GetParameter(string jobName)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         public void SetSchedule(string jobName, ISchedule newJobSchedule)
         {
@@ -284,7 +296,8 @@ namespace TauCode.Working.Jobs
         //}
 
         // todo read-only?
-        public IList<DateTime> GetSchedulePart(string jobName, int length)
+
+        public IReadOnlyList<DateTime> GetSchedulePart(string jobName, int length)
         {
             throw new NotImplementedException();
         }
@@ -294,10 +307,10 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
-        public void RedirectOutput(string jobName, TextWriter output)
-        {
-            throw new NotImplementedException();
-        }
+        //public void RedirectOutput(string jobName, TextWriter output)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         //public bool IsRunning(string jobName)
         //{
@@ -337,6 +350,11 @@ namespace TauCode.Working.Jobs
         //}
 
         public void Remove(string jobName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public JobRunWaitResult Wait(string jobName, TimeSpan timeout)
         {
             throw new NotImplementedException();
         }

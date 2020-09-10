@@ -13,3 +13,7 @@
 2020-09-07
 ==========
 +   1. Test-demo server bug on input "0" (which is "exit")
+
+2020-09-10
+==========
+    1. Check all operations fail on disposed IJobManager
