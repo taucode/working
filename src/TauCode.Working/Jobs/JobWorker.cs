@@ -1,25 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
-using TauCode.Working.Jobs.Schedules;
 
 namespace TauCode.Working.Jobs
 {
     // todo clean up
-    internal class JobWorker : WorkerBase, IJob
+    internal class JobWorker : WorkerBase
     {
         #region Fields
 
-        private ISchedule _schedule;
-        private JobDelegate _routine;
-        private object _parameter;
-        private IProgressTracker _progressTracker;
-        private TextWriter _output;
+        //private ISchedule _schedule;
+        //private JobDelegate _routine;
+        //private object _parameter;
+        //private IProgressTracker _progressTracker;
+        //private TextWriter _output;
 
         private StringWriterWithEncoding _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
@@ -32,6 +30,8 @@ namespace TauCode.Working.Jobs
 
         private int _runIndex;
 
+        private readonly Job _job;
+
         #endregion
 
         #region Constructor
@@ -43,8 +43,10 @@ namespace TauCode.Working.Jobs
             //_log = new List<JobRunInfo>();
             //_parameter = parameter;
 
-            _schedule = new NeverSchedule();
-            _routine = JobExtensions.IdleJobRoutine;
+            //_schedule = new NeverSchedule();
+            //_routine = JobExtensions.IdleJobRoutine;
+
+            _job = new Job(this);
         }
 
         #endregion
@@ -206,39 +208,13 @@ namespace TauCode.Working.Jobs
             //throw new NotImplementedException();
         }
 
+        internal Job GetJob() => _job;
 
-        #endregion
-
-        #region IJob Members (explicit)
-
-        ISchedule IJob.Schedule
+        internal T RequestWithControlLock<T>(Func<T> func)
         {
-            get => throw new NotImplementedException();
-            set => throw new NotImplementedException();
-        }
-
-        JobDelegate IJob.Routine
-        {
-            get => throw new NotImplementedException();
-            set => throw new NotImplementedException();
-        }
-
-        object IJob.Parameter
-        {
-            get => throw new NotImplementedException();
-            set => throw new NotImplementedException();
-        }
-
-        IProgressTracker IJob.ProgressTracker
-        {
-            get => throw new NotImplementedException();
-            set => throw new NotImplementedException();
-        }
-
-        TextWriter IJob.Output
-        {
-            get => throw new NotImplementedException();
-            set => throw new NotImplementedException();
+            T value = default;
+            this.RequestControlLock(() => value = func());
+            return value;
         }
 
         #endregion

@@ -11,16 +11,16 @@ namespace TauCode.Working.Jobs
         // todo: internal, not public? here & in other private nested types.
         private class JobWorkerEntry
         {
-            public JobWorkerEntry(string name, JobWorker worker, ISchedule schedule)
+            public JobWorkerEntry(string name, JobWorker worker/*, ISchedule schedule*/)
             {
                 this.Name = name;
                 this.Worker = worker;
-                this.Schedule = schedule;
+                //this.Schedule = schedule;
             }
 
             public string Name { get; }
             public JobWorker Worker { get; }
-            public ISchedule Schedule { get; private set; }
+            //public ISchedule Schedule { get; private set; }
             public bool IsEnabled { get; private set; }
         }
 
@@ -85,6 +85,19 @@ namespace TauCode.Working.Jobs
         {
             this.CheckStarted();
             this.CheckNotDisposed();
+        }
+
+        protected void CheckJobName(string jobName, string jobNameArgumentName)
+        {
+            if (jobName == null)
+            {
+                throw new ArgumentNullException(jobNameArgumentName);
+            }
+
+            if (string.IsNullOrWhiteSpace(jobName))
+            {
+                throw new ArgumentException($"'{jobNameArgumentName}' cannot be empty.", jobNameArgumentName);
+            }
         }
 
         //private string GenerateRegistrationId()
@@ -205,26 +218,20 @@ namespace TauCode.Working.Jobs
 
         public IJob Create(string jobName)
         {
-            throw new NotImplementedException();
+            this.CheckJobName(jobName, nameof(jobName));
 
-            //if (jobName == null)
-            //{
-            //    throw new NotImplementedException();
-            //}
+            lock (_lock)
+            {
+                this.CheckRunning();
+                if (_entries.ContainsKey(jobName))
+                {
+                    throw new NotImplementedException();
+                }
 
-            //lock (_lock)
-            //{
-            //    this.CheckRunning();
-            //    if (_entries.ContainsKey(jobName))
-            //    {
-            //        throw new NotImplementedException();
-            //    }
-
-            //    var entry = new JobWorkerEntry(jobName, worker);
-            //}
-
-
-
+                var worker = new JobWorker();
+                var entry = new JobWorkerEntry(jobName, worker);
+                return entry.Worker.GetJob();
+            }
 
             //throw new NotImplementedException();
         }
@@ -419,11 +426,11 @@ namespace TauCode.Working.Jobs
         internal ISchedule GetScheduleInternal(string jobName)
         {
             // todo checks
-
-            lock (_lock)
-            {
-                return _entries[jobName].Schedule;
-            }
+            throw new NotImplementedException();
+            //lock (_lock)
+            //{
+            //    return _entries[jobName].Schedule;
+            //}
         }
 
         #endregion

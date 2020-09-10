@@ -1,18 +1,59 @@
-﻿//using System.IO;
+﻿using System;
+using System.IO;
+using TauCode.Working.Jobs.Schedules;
 
-// todo clean
-//namespace TauCode.Working.Jobs
-//{
-//    internal class Job : IJob
-//    {
-//        public ISchedule Schedule { get; set; }
+namespace TauCode.Working.Jobs
+{
+    internal class Job : IJob
+    {
+        private readonly JobWorker _host;
 
-//        public JobDelegate Routine { get; set; }
+        private ISchedule _schedule;
+        private JobDelegate _routine;
+        private object _parameter;
+        private IProgressTracker _progressTracker;
+        private TextWriter _output;
 
-//        public object Parameter { get; set; }
+        internal Job(JobWorker host)
+        {
+            _host = host;
 
-//        public IProgressTracker ProgressTracker { get; set; }
+            _schedule = new NeverSchedule();
+            _routine = JobExtensions.IdleJobRoutine;
+        }
 
-//        public TextWriter Output { get; set; }
-//    }
-//}
+        #region IJob Members (explicit)
+
+        ISchedule IJob.Schedule
+        {
+            get => _host.RequestWithControlLock(() => _schedule);
+            set => throw new NotImplementedException();
+        }
+
+        JobDelegate IJob.Routine
+        {
+            get => _host.RequestWithControlLock(() => _routine);
+            set => throw new NotImplementedException();
+        }
+
+        object IJob.Parameter
+        {
+            get => _host.RequestWithControlLock(() => _parameter);
+            set => throw new NotImplementedException();
+        }
+
+        IProgressTracker IJob.ProgressTracker
+        {
+            get => _host.RequestWithControlLock(() => _progressTracker);
+            set => throw new NotImplementedException();
+        }
+
+        TextWriter IJob.Output
+        {
+            get => _host.RequestWithControlLock(() => _output);
+            set => throw new NotImplementedException();
+        }
+
+        #endregion
+    }
+}

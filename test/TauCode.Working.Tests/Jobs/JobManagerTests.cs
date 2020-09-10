@@ -1,7 +1,9 @@
 ﻿using NUnit.Framework;
+using TauCode.Infrastructure.Time;
+using TauCode.Working.Jobs;
 
 // todo clean up
-namespace TauCode.Working.Tests.Scheduling
+namespace TauCode.Working.Tests.Jobs
 {
     [TestFixture]
     public class JobManagerTests
@@ -24,7 +26,7 @@ namespace TauCode.Working.Tests.Scheduling
         //            TimeSpan.FromSeconds(2),
         //        });
 
-            
+
 
         //    // Act
         //    scheduleManager.Register(
@@ -57,14 +59,33 @@ namespace TauCode.Working.Tests.Scheduling
         //}
 
         [Test]
-        public void Todo1()
+        public void Constructor_NoArguments_CreatesInstance()
         {
             // Arrange
 
             // Act
+            IJobManager jobManager = new JobManager();
 
             // Assert
         }
-        
+
+        [Test]
+        public void Create_ValidJobName_CreatesJob()
+        {
+            // Arrange
+            IJobManager jobManager = new JobManager();
+            jobManager.Start(); // todo: ut cannot be started twice.
+
+            // Act
+            var job = jobManager.Create("my-job");
+
+            // Assert
+            var now = TimeProvider.GetCurrent();
+            Assert.That(job.Schedule.GetDueTimeAfter(now), Is.EqualTo(JobExtensions.Never));
+            Assert.That(job.Routine, Is.Not.Null);
+            Assert.That(job.Parameter, Is.Null);
+            Assert.That(job.ProgressTracker, Is.Null);
+            Assert.That(job.Output, Is.Null);
+        }
     }
 }
