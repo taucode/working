@@ -17,11 +17,11 @@ namespace TauCode.Working.Jobs
 
         private StringWriterWithEncoding _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
-        private JobRunResultBuilder _currentJobRunResultBuilder;
+        private JobRunInfoBuilder _currentJobRunResultBuilder;
 
         private object _parameter;
 
-        private readonly List<JobRunResult> _log;
+        private readonly List<JobRunInfo> _log;
 
         //private Task _currentTask;
 
@@ -31,7 +31,7 @@ namespace TauCode.Working.Jobs
         {
             // todo checks
             _taskCreator = taskCreator;
-            _log = new List<JobRunResult>();
+            _log = new List<JobRunInfo>();
             _parameter = parameter;
         }
 
@@ -41,7 +41,9 @@ namespace TauCode.Working.Jobs
 
             _currentRunCancellationTokenSource = new CancellationTokenSource();
             _currentRunTextWriter = new StringWriterWithEncoding(Encoding.UTF8);
-            _currentJobRunResultBuilder = new JobRunResultBuilder(_runIndex, now);
+
+            // todo0
+            //_currentJobRunResultBuilder = new JobRunInfoBuilder(_runIndex, now);
 
             // todo try/catch
 
@@ -70,7 +72,7 @@ namespace TauCode.Working.Jobs
         private void EndTask(Task task)
         {
             var now = TimeProvider.GetCurrent();
-            _currentJobRunResultBuilder.End = now;
+            _currentJobRunResultBuilder.EndTime = now;
             _currentJobRunResultBuilder.Output = _currentRunTextWriter.ToString();
 
             switch (task.Status)
@@ -151,6 +153,16 @@ namespace TauCode.Working.Jobs
         protected override void DisposeImpl()
         {
             this.ChangeState(WorkerState.Disposed);
+        }
+
+        internal void ForceStart()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void DueTimeStart()
+        {
+            throw new NotImplementedException();
         }
 
         internal void CancelCurrentJobRun()

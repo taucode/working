@@ -3,8 +3,9 @@
     public enum JobRunStatus
     {
         FailedToStart = 1,
-        Succeeded = 2,
-        Failed = 3,
-        Canceled = 4,
+        Running = 2,
+        Succeeded = 3,
+        Failed = 4,
+        Canceled = 5,
     }
 }

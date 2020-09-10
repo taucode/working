@@ -165,7 +165,7 @@ namespace TauCode.Working.Jobs
                 Task.Run(() => _host.StartJob(jobNameToStart));
 
                 // get schedule and re-schedule job.
-                var jobSchedule = _host.GetSchedule(jobNameToStart);
+                var jobSchedule = _host.GetScheduleInternal(jobNameToStart);
                 this.Reschedule(jobNameToStart, jobSchedule);
             }
 

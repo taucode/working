@@ -20,27 +20,23 @@ namespace TauCode.Working.Jobs
 
         object GetParameter(string jobName);
 
-        void ChangeSchedule(string jobName, ISchedule newJobSchedule);
+        void SetSchedule(string jobName, ISchedule schedule);
 
-        void ChangeDueTime(string jobName, DateTime? dueTime);
+        ISchedule GetSchedule(string jobName);
 
-        DueTimeInfo GetDueTime(string jobName);
+        void ManualChangeDueTime(string jobName, DateTime? dueTime);
 
         IList<DateTime> GetSchedulePart(string jobName, int length);
 
-        void ManualStart(string jobName);
+        void ForceStart(string jobName);
 
         void RedirectOutput(string jobName, TextWriter output);
-
-        bool IsRunning(string jobName);
 
         void Cancel(string jobName);
 
         void Enable(string jobName, bool enable);
 
-        bool IsEnabled(string jobName);
-
-        JobInfo GetInfo(string jobName, bool includeLog);
+        JobInfo GetInfo(string jobName, int? maxRunCount);
 
         void Remove(string jobName);
 

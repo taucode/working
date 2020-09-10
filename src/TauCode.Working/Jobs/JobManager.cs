@@ -263,27 +263,33 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
-        public void ChangeSchedule(string jobName, ISchedule newJobSchedule)
+        public void SetSchedule(string jobName, ISchedule newJobSchedule)
         {
             throw new NotImplementedException();
         }
 
-        public void ChangeDueTime(string jobName, DateTime? dueTime)
+        public ISchedule GetSchedule(string jobName)
         {
             throw new NotImplementedException();
         }
 
-        public DueTimeInfo GetDueTime(string jobName)
+        public void ManualChangeDueTime(string jobName, DateTime? dueTime)
         {
             throw new NotImplementedException();
         }
 
+        //public DueTimeInfo GetDueTime(string jobName)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        // todo read-only?
         public IList<DateTime> GetSchedulePart(string jobName, int length)
         {
             throw new NotImplementedException();
         }
 
-        public void ManualStart(string jobName)
+        public void ForceStart(string jobName)
         {
             throw new NotImplementedException();
         }
@@ -293,10 +299,10 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
-        public bool IsRunning(string jobName)
-        {
-            throw new NotImplementedException();
-        }
+        //public bool IsRunning(string jobName)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         public void Cancel(string jobName)
         {
@@ -314,15 +320,21 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
-        public bool IsEnabled(string jobName)
+        public JobInfo GetInfo(string jobName, int? maxRunCount)
         {
             throw new NotImplementedException();
         }
 
-        public JobInfo GetInfo(string jobName, bool includeLog)
-        {
-            throw new NotImplementedException();
-        }
+
+        //public bool IsEnabled(string jobName)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        //public JobInfo GetInfo(string jobName, bool includeLog)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         public void Remove(string jobName)
         {
@@ -349,7 +361,8 @@ namespace TauCode.Working.Jobs
             worker.Start();
         }
 
-        internal ISchedule GetSchedule(string jobName)
+        // todo why need this?
+        internal ISchedule GetScheduleInternal(string jobName)
         {
             // todo checks
 
