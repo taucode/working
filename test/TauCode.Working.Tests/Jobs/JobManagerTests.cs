@@ -118,5 +118,29 @@ namespace TauCode.Working.Tests.Jobs
             // Assert
             Assert.That(job, Is.SameAs(gotJob));
         }
+
+        [Test]
+        public void GetInfo_NoArguments_ReturnsJobInfo()
+        {
+            // Arrange
+            IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            var name = "job1";
+            jobManager.Create(name);
+
+            // Act
+            var info = jobManager.GetInfo(name, null);
+
+            // Assert
+            Assert.That(info.Name, Is.EqualTo(name));
+            Assert.That(info.CurrentRun, Is.Null);
+
+            Assert.That(info.DueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
+            Assert.That(info.DueTimeInfo.DueTime, Is.EqualTo(JobExtensions.Never));
+
+            Assert.That(info.IsEnabled, Is.True);
+            Assert.That(info.RunCount, Is.Zero);
+            Assert.That(info.Runs, Is.Empty);
+        }
     }
 }

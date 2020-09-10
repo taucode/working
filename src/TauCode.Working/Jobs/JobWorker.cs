@@ -23,6 +23,7 @@ namespace TauCode.Working.Jobs
         private CancellationTokenSource _currentRunCancellationTokenSource;
         private JobRunInfoBuilder _currentJobRunResultBuilder;
 
+        private readonly DueTimeInfoBuilder _dueTimeInfoBuilder;
 
         private readonly List<JobRunInfo> _log;
 
@@ -30,23 +31,22 @@ namespace TauCode.Working.Jobs
 
         private int _runIndex;
 
-        private readonly Job _job;
+        private readonly IJob _job;
+
+        private readonly object _lockIsEnabled;
+        private bool _isEnabled;
 
         #endregion
 
         #region Constructor
 
-        internal JobWorker(/*Func<object, TextWriter, CancellationToken, Task> taskCreator, object parameter*/)
+        internal JobWorker()
         {
-            // todo checks
-            //_taskCreator = taskCreator;
-            //_log = new List<JobRunInfo>();
-            //_parameter = parameter;
-
-            //_schedule = new NeverSchedule();
-            //_routine = JobExtensions.IdleJobRoutine;
-
             _job = new Job(this);
+            _dueTimeInfoBuilder = new DueTimeInfoBuilder();
+            _dueTimeInfoBuilder.UpdateBySchedule(_job.Schedule);
+            _lockIsEnabled = new object();
+            _isEnabled = true;
         }
 
         #endregion
@@ -208,13 +208,46 @@ namespace TauCode.Working.Jobs
             //throw new NotImplementedException();
         }
 
-        internal Job GetJob() => _job;
+        internal IJob GetJob() => _job;
 
-        internal T RequestWithControlLock<T>(Func<T> func)
+        internal T GetWithControlLock<T>(Func<T> func)
         {
             T value = default;
             this.RequestControlLock(() => value = func());
             return value;
+        }
+
+        internal JobInfoBuilder GetJobInfoBuilder(int? maxRunCount)
+        {
+            var builder = new JobInfoBuilder(this.Name)
+            {
+                IsEnabled = this.IsEnabled,
+            };
+
+            this.RequestControlLock(() =>
+            {
+                builder.DueTimeInfo = _dueTimeInfoBuilder.Build();
+            });
+
+            return builder;
+        }
+
+        internal bool IsEnabled
+        {
+            get
+            {
+                lock (_lockIsEnabled)
+                {
+                    return _isEnabled;
+                }
+            }
+            set
+            {
+                lock (_lockIsEnabled)
+                {
+                    _isEnabled = value;
+                }
+            }
         }
 
         #endregion

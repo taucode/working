@@ -26,31 +26,31 @@ namespace TauCode.Working.Jobs
 
         ISchedule IJob.Schedule
         {
-            get => _host.RequestWithControlLock(() => _schedule);
+            get => _host.GetWithControlLock(() => _schedule);
             set => throw new NotImplementedException();
         }
 
         JobDelegate IJob.Routine
         {
-            get => _host.RequestWithControlLock(() => _routine);
+            get => _host.GetWithControlLock(() => _routine);
             set => throw new NotImplementedException();
         }
 
         object IJob.Parameter
         {
-            get => _host.RequestWithControlLock(() => _parameter);
+            get => _host.GetWithControlLock(() => _parameter);
             set => throw new NotImplementedException();
         }
 
         IProgressTracker IJob.ProgressTracker
         {
-            get => _host.RequestWithControlLock(() => _progressTracker);
+            get => _host.GetWithControlLock(() => _progressTracker);
             set => throw new NotImplementedException();
         }
 
         TextWriter IJob.Output
         {
-            get => _host.RequestWithControlLock(() => _output);
+            get => _host.GetWithControlLock(() => _output);
             set => throw new NotImplementedException();
         }
 

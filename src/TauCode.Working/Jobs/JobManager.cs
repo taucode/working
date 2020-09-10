@@ -229,7 +229,10 @@ namespace TauCode.Working.Jobs
                     throw new NotImplementedException();
                 }
 
-                var worker = new JobWorker();
+                var worker = new JobWorker
+                {
+                    Name = jobName,
+                };
                 var entry = new JobWorkerEntry(jobName, worker);
 
                 _entries.Add(entry.Name, entry);
@@ -366,9 +369,19 @@ namespace TauCode.Working.Jobs
 
         public JobInfo GetInfo(string jobName, int? maxRunCount)
         {
-            throw new NotImplementedException();
-        }
+            this.CheckJobName(jobName, nameof(jobName));
 
+            lock (_lock)
+            {
+                var entry = _entries[jobName];
+                var worker = entry.Worker;
+
+                var jobInfoBuilder = worker.GetJobInfoBuilder(maxRunCount);
+
+                var jobInfo = jobInfoBuilder.Build();
+                return jobInfo;
+            }
+        }
 
         //public bool IsEnabled(string jobName)
         //{
