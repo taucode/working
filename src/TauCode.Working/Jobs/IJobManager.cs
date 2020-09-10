@@ -27,7 +27,7 @@ namespace TauCode.Working.Jobs
 
         IReadOnlyList<string> GetJobNames();
 
-        void Set(string jobName, IJob job);
+        //void Set(string jobName, IJob job);
 
         IJob Get(string jobName);
 

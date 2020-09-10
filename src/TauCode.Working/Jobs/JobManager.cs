@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 // todo clean up
 namespace TauCode.Working.Jobs
@@ -230,6 +231,9 @@ namespace TauCode.Working.Jobs
 
                 var worker = new JobWorker();
                 var entry = new JobWorkerEntry(jobName, worker);
+
+                _entries.Add(entry.Name, entry);
+
                 return entry.Worker.GetJob();
             }
 
@@ -238,17 +242,25 @@ namespace TauCode.Working.Jobs
 
         public IReadOnlyList<string> GetJobNames()
         {
-            throw new NotImplementedException();
+            lock (_lock)
+            {
+                return _entries.Keys.ToList();
+            }
         }
 
-        public void Set(string jobName, IJob job)
-        {
-            throw new NotImplementedException();
-        }
+        //public void Set(string jobName, IJob job)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         public IJob Get(string jobName)
         {
-            throw new NotImplementedException();
+            this.CheckJobName(jobName, nameof(jobName));
+
+            lock (_lock)
+            {
+                return _entries[jobName].Worker.GetJob();
+            }
         }
 
         //public void Register(

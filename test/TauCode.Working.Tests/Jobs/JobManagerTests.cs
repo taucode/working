@@ -87,5 +87,36 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(job.ProgressTracker, Is.Null);
             Assert.That(job.Output, Is.Null);
         }
+
+        [Test]
+        public void GetJobNames_NoArguments_ReturnsJobNames()
+        {
+            // Arrange
+            IJobManager jobManager = new JobManager();
+            jobManager.Start(); // todo: ut cannot be started twice.
+            jobManager.Create("job1");
+            jobManager.Create("job2");
+
+            // Act
+            var names = jobManager.GetJobNames();
+
+            // Assert
+            CollectionAssert.AreEquivalent(new[] { "job1", "job2" }, names);
+        }
+
+        [Test]
+        public void Get_ValidName_ReturnsJob()
+        {
+            // Arrange
+            IJobManager jobManager = new JobManager();
+            jobManager.Start(); // todo: ut cannot be started twice.
+            var job = jobManager.Create("job1");
+
+            // Act
+            var gotJob = jobManager.Get("job1");
+
+            // Assert
+            Assert.That(job, Is.SameAs(gotJob));
+        }
     }
 }
