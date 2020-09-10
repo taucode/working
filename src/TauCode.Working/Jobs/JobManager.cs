@@ -81,6 +81,12 @@ namespace TauCode.Working.Jobs
             }
         }
 
+        private void CheckRunning()
+        {
+            this.CheckStarted();
+            this.CheckNotDisposed();
+        }
+
         //private string GenerateRegistrationId()
         //{
         //    var result = Guid.NewGuid().ToString("N");
@@ -183,27 +189,7 @@ namespace TauCode.Working.Jobs
 
         //#endregion
 
-        #region IDisposable Members
-
-        public void Dispose()
-        {
-            lock (_lock)
-            {
-                this.CheckNotDisposed();
-
-                _helper.Dispose();
-                _isDisposed = true;
-
-                foreach (var entry in _entries)
-                {
-                    entry.Value.Worker.Dispose();
-                }
-
-                // todo: dispose workers.
-            }
-        }
-
-        #endregion
+        #region IJobManager Members
 
         public void Start()
         {
@@ -217,17 +203,43 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        public void Create(string jobName)
+        public IJob Create(string jobName)
+        {
+            throw new NotImplementedException();
+
+            //if (jobName == null)
+            //{
+            //    throw new NotImplementedException();
+            //}
+
+            //lock (_lock)
+            //{
+            //    this.CheckRunning();
+            //    if (_entries.ContainsKey(jobName))
+            //    {
+            //        throw new NotImplementedException();
+            //    }
+
+            //    var entry = new JobWorkerEntry(jobName, worker);
+            //}
+
+
+
+
+            //throw new NotImplementedException();
+        }
+
+        public IReadOnlyList<string> GetJobNames()
         {
             throw new NotImplementedException();
         }
 
-        public void Set(string jobName, Job job)
+        public void Set(string jobName, IJob job)
         {
             throw new NotImplementedException();
         }
 
-        public Job Get(string jobName)
+        public IJob Get(string jobName)
         {
             throw new NotImplementedException();
         }
@@ -275,15 +287,15 @@ namespace TauCode.Working.Jobs
         //    throw new NotImplementedException();
         //}
 
-        public void SetSchedule(string jobName, ISchedule newJobSchedule)
-        {
-            throw new NotImplementedException();
-        }
+        //public void SetSchedule(string jobName, ISchedule newJobSchedule)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
-        public ISchedule GetSchedule(string jobName)
-        {
-            throw new NotImplementedException();
-        }
+        //public ISchedule GetSchedule(string jobName)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         public void ManualChangeDueTime(string jobName, DateTime? dueTime)
         {
@@ -360,6 +372,30 @@ namespace TauCode.Working.Jobs
         }
 
         public event EventHandler<JobChangedEventArgs> JobChanged;
+
+        #endregion
+
+        #region IDisposable Members
+
+        public void Dispose()
+        {
+            lock (_lock)
+            {
+                this.CheckNotDisposed();
+
+                _helper.Dispose();
+                _isDisposed = true;
+
+                foreach (var entry in _entries)
+                {
+                    entry.Value.Worker.Dispose();
+                }
+
+                // todo: dispose workers.
+            }
+        }
+
+        #endregion
 
         #region Internal
 

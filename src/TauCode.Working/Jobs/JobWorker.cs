@@ -1,25 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
+using TauCode.Working.Jobs.Schedules;
 
 namespace TauCode.Working.Jobs
 {
     // todo clean up
-    internal class JobWorker : WorkerBase
+    internal class JobWorker : WorkerBase, IJob
     {
-        private readonly Func<object, TextWriter, CancellationToken, Task> _taskCreator;
+        #region Fields
+
+        private ISchedule _schedule;
+        private JobDelegate _routine;
+        private object _parameter;
+        private IProgressTracker _progressTracker;
+        private TextWriter _output;
 
         private StringWriterWithEncoding _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
         private JobRunInfoBuilder _currentJobRunResultBuilder;
 
-        private object _parameter;
 
         private readonly List<JobRunInfo> _log;
 
@@ -27,47 +32,24 @@ namespace TauCode.Working.Jobs
 
         private int _runIndex;
 
-        internal JobWorker(Func<object, TextWriter, CancellationToken, Task> taskCreator, object parameter)
+        #endregion
+
+        #region Constructor
+
+        internal JobWorker(/*Func<object, TextWriter, CancellationToken, Task> taskCreator, object parameter*/)
         {
             // todo checks
-            _taskCreator = taskCreator;
-            _log = new List<JobRunInfo>();
-            _parameter = parameter;
+            //_taskCreator = taskCreator;
+            //_log = new List<JobRunInfo>();
+            //_parameter = parameter;
+
+            _schedule = new NeverSchedule();
+            _routine = JobExtensions.IdleJobRoutine;
         }
 
-        protected override void StartImpl()
-        {
-            var now = TimeProvider.GetCurrent(); // todo checks utc
+        #endregion
 
-            _currentRunCancellationTokenSource = new CancellationTokenSource();
-            _currentRunTextWriter = new StringWriterWithEncoding(Encoding.UTF8);
-
-            // todo0
-            //_currentJobRunResultBuilder = new JobRunInfoBuilder(_runIndex, now);
-
-            // todo try/catch
-
-            Task task;
-
-            try
-            {
-                task = _taskCreator(_parameter, _currentRunTextWriter, _currentRunCancellationTokenSource.Token);
-            }
-            catch (Exception ex)
-            {
-                var jobEx = new JobRunFailedToStartException(ex);
-                task = Task.FromException(jobEx);
-            }
-
-            _runIndex++;
-
-            task.ContinueWith(this.EndTask);
-
-            //_currentTask = _taskCreator(_currentRunTextWriter, _currentRunCancellationTokenSource.Token);
-            //_currentTask.ContinueWith(this.EndTask);
-
-            this.ChangeState(WorkerState.Running);
-        }
+        #region Private
 
         private void EndTask(Task task)
         {
@@ -135,6 +117,45 @@ namespace TauCode.Working.Jobs
             //return Task.CompletedTask;
         }
 
+        #endregion
+
+        #region Overridden
+
+        protected override void StartImpl()
+        {
+            throw new NotImplementedException();
+            //var now = TimeProvider.GetCurrent(); // todo checks utc
+
+            //_currentRunCancellationTokenSource = new CancellationTokenSource();
+            //_currentRunTextWriter = new StringWriterWithEncoding(Encoding.UTF8);
+
+            //// todo0
+            ////_currentJobRunResultBuilder = new JobRunInfoBuilder(_runIndex, now);
+
+            //// todo try/catch
+
+            //Task task;
+
+            //try
+            //{
+            //    task = _taskCreator(_parameter, _currentRunTextWriter, _currentRunCancellationTokenSource.Token);
+            //}
+            //catch (Exception ex)
+            //{
+            //    var jobEx = new JobRunFailedToStartException(ex);
+            //    task = Task.FromException(jobEx);
+            //}
+
+            //_runIndex++;
+
+            //task.ContinueWith(this.EndTask);
+
+            ////_currentTask = _taskCreator(_currentRunTextWriter, _currentRunCancellationTokenSource.Token);
+            ////_currentTask.ContinueWith(this.EndTask);
+
+            //this.ChangeState(WorkerState.Running);
+        }
+
         protected override void PauseImpl()
         {
             throw new NotSupportedException("Pausing is not supported.");
@@ -154,6 +175,11 @@ namespace TauCode.Working.Jobs
         {
             this.ChangeState(WorkerState.Disposed);
         }
+
+
+        #endregion
+
+        #region Internal
 
         internal void ForceStart()
         {
@@ -179,5 +205,42 @@ namespace TauCode.Working.Jobs
 
             //throw new NotImplementedException();
         }
+
+
+        #endregion
+
+        #region IJob Members (explicit)
+
+        ISchedule IJob.Schedule
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        JobDelegate IJob.Routine
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        object IJob.Parameter
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        IProgressTracker IJob.ProgressTracker
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        TextWriter IJob.Output
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
+        #endregion
     }
 }

@@ -23,15 +23,17 @@ namespace TauCode.Working.Jobs
 
         //void RemoveProgressTracker(string jobName, string progressTrackerName);
 
-        void Create(string jobName);
+        IJob Create(string jobName);
 
-        void Set(string jobName, Job job);
+        IReadOnlyList<string> GetJobNames();
 
-        Job Get(string jobName);
+        void Set(string jobName, IJob job);
 
-        void SetSchedule(string jobName, ISchedule schedule);
+        IJob Get(string jobName);
 
-        ISchedule GetSchedule(string jobName);
+        //void SetSchedule(string jobName, ISchedule schedule);
+
+        //ISchedule GetSchedule(string jobName);
 
         void ManualChangeDueTime(string jobName, DateTime? dueTime);
 

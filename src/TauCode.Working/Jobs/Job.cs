@@ -1,15 +1,18 @@
-﻿using System.IO;
+﻿//using System.IO;
 
-namespace TauCode.Working.Jobs
-{
-    public class Job
-    {
-        public JobDelegate Routine { get; set; }
+// todo clean
+//namespace TauCode.Working.Jobs
+//{
+//    internal class Job : IJob
+//    {
+//        public ISchedule Schedule { get; set; }
 
-        public object Parameter { get; set; }
+//        public JobDelegate Routine { get; set; }
 
-        public IProgressTracker ProgressTracker { get; set; }
+//        public object Parameter { get; set; }
 
-        public TextWriter Output { get; set; }
-    }
-}
+//        public IProgressTracker ProgressTracker { get; set; }
+
+//        public TextWriter Output { get; set; }
+//    }
+//}
