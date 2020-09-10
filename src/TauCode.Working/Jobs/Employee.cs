@@ -9,7 +9,7 @@ using TauCode.Working.Exceptions;
 namespace TauCode.Working.Jobs
 {
     // todo clean up
-    internal class JobWorker : WorkerBase
+    internal class Employee : WorkerBase
     {
         #region Fields
 
@@ -18,6 +18,8 @@ namespace TauCode.Working.Jobs
         //private object _parameter;
         //private IProgressTracker _progressTracker;
         //private TextWriter _output;
+
+        private readonly Vice _vice;
 
         private StringWriterWithEncoding _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
@@ -40,8 +42,9 @@ namespace TauCode.Working.Jobs
 
         #region Constructor
 
-        internal JobWorker()
+        internal Employee(Vice vice)
         {
+            _vice = vice;
             _job = new Job(this);
             _dueTimeInfoBuilder = new DueTimeInfoBuilder();
             _dueTimeInfoBuilder.UpdateBySchedule(_job.Schedule);
@@ -178,10 +181,11 @@ namespace TauCode.Working.Jobs
             this.ChangeState(WorkerState.Disposed);
         }
 
-
         #endregion
 
         #region Internal
+
+        internal DueTimeInfoBuilder getDueTimeInfoBuilder() => _dueTimeInfoBuilder;
 
         internal void ForceStart()
         {

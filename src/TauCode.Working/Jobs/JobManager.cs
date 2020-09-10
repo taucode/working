@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 // todo clean up
 namespace TauCode.Working.Jobs
@@ -10,34 +9,34 @@ namespace TauCode.Working.Jobs
         #region Nested
 
         // todo: internal, not public? here & in other private nested types.
-        private class JobWorkerEntry
-        {
-            public JobWorkerEntry(string name, JobWorker worker/*, ISchedule schedule*/)
-            {
-                this.Name = name;
-                this.Worker = worker;
-                //this.Schedule = schedule;
-            }
+        //private class JobWorkerEntry
+        //{
+        //    public JobWorkerEntry(string name, JobWorker worker/*, ISchedule schedule*/)
+        //    {
+        //        this.Name = name;
+        //        this.Worker = worker;
+        //        //this.Schedule = schedule;
+        //    }
 
-            public string Name { get; }
-            public JobWorker Worker { get; }
-            //public ISchedule Schedule { get; private set; }
-            public bool IsEnabled { get; private set; }
-        }
+        //    public string Name { get; }
+        //    public JobWorker Worker { get; }
+        //    //public ISchedule Schedule { get; private set; }
+        //    //public bool IsEnabled { get; private set; }
+        //}
 
         #endregion
 
         #region Fields
 
         private readonly object _lock;
-        private bool _isStarted;
-        private bool _isDisposed;
-        private readonly JobManagerHelper _helper;
+        private bool _isStarted;  // todo: use _helper's state(s) to detect?
+        private bool _isDisposed;  // todo: use _helper's state(s) to detect?
+        private readonly Vice _vice;
 
         //private readonly Dictionary<string, ScheduleRegistration> _registrations;
         //private readonly HashSet<AutoStopWorkerBase> _workers;
 
-        private readonly Dictionary<string, JobWorkerEntry> _entries;
+        //private readonly Dictionary<string, JobWorkerEntry> _entries;
 
         #endregion
 
@@ -46,12 +45,12 @@ namespace TauCode.Working.Jobs
         public JobManager()
         {
             _lock = new object();
-            _helper = new JobManagerHelper(this)
+            _vice = new Vice(this)
             {
-                Name = "JM Helper",
+                Name = typeof(Vice).FullName,
             };
 
-            _entries = new Dictionary<string, JobWorkerEntry>();
+            //_entries = new Dictionary<string, JobWorkerEntry>();
         }
 
         #endregion
@@ -66,13 +65,13 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        private void CheckStarted()
-        {
-            if (!_isStarted)
-            {
-                throw new InvalidOperationException("Manager not started.");
-            }
-        }
+        //private void CheckStarted()
+        //{
+        //    if (!_isStarted)
+        //    {
+        //        throw new InvalidOperationException("Manager not started.");
+        //    }
+        //}
 
         private void CheckNotDisposed()
         {
@@ -84,7 +83,13 @@ namespace TauCode.Working.Jobs
 
         private void CheckRunning()
         {
-            this.CheckStarted();
+            //this.CheckStarted();
+
+            if (!_isStarted)
+            {
+                throw new InvalidOperationException("Manager not started.");
+            }
+
             this.CheckNotDisposed();
         }
 
@@ -207,13 +212,13 @@ namespace TauCode.Working.Jobs
 
         public void Start()
         {
-            lock (_lock)
+            lock (_lock) // todo: move _lock to Vice, Manager should not bother themselves with this.
             {
                 this.CheckNotStarted();
                 this.CheckNotDisposed();
 
-                _helper.Start();
-                _isStarted = true;
+                _vice.Start();
+                _isStarted = true; // todo: use _helper's state(s) to detect?
             }
         }
 
@@ -224,30 +229,41 @@ namespace TauCode.Working.Jobs
             lock (_lock)
             {
                 this.CheckRunning();
-                if (_entries.ContainsKey(jobName))
-                {
-                    throw new NotImplementedException();
-                }
-
-                var worker = new JobWorker
-                {
-                    Name = jobName,
-                };
-                var entry = new JobWorkerEntry(jobName, worker);
-
-                _entries.Add(entry.Name, entry);
-
-                return entry.Worker.GetJob();
+                return _vice.CreateJob(jobName);
             }
+
+            //this.CheckJobName(jobName, nameof(jobName));
+
+            //lock (_lock)
+            //{
+            //    this.CheckRunning();
+            //    if (_entries.ContainsKey(jobName))
+            //    {
+            //        throw new NotImplementedException();
+            //    }
+
+            //    var worker = new JobWorker(_helper)
+            //    {
+            //        Name = jobName,
+            //    };
+            //    var entry = new JobWorkerEntry(jobName, worker);
+
+            //    _entries.Add(entry.Name, entry);
+
+            //    return entry.Worker.GetJob();
+            //}
 
             //throw new NotImplementedException();
         }
 
-        public IReadOnlyList<string> GetJobNames()
+        public IReadOnlyList<string> GetJobNames() //=> _helper.GetJobNames(); // todo: resharper warning about sync/lock
         {
             lock (_lock)
             {
-                return _entries.Keys.ToList();
+                this.CheckRunning();
+                return _vice.GetJobNames();
+
+                //return _entries.Keys.ToList();
             }
         }
 
@@ -256,13 +272,14 @@ namespace TauCode.Working.Jobs
         //    throw new NotImplementedException();
         //}
 
-        public IJob Get(string jobName)
+        public IJob Get(string jobName) //=> _helper.GetJob(jobName);
         {
             this.CheckJobName(jobName, nameof(jobName));
 
             lock (_lock)
             {
-                return _entries[jobName].Worker.GetJob();
+                //return _entries[jobName].Worker.GetJob();
+                return _vice.GetJob(jobName);
             }
         }
 
@@ -353,13 +370,14 @@ namespace TauCode.Working.Jobs
 
         public void Cancel(string jobName)
         {
-            JobWorkerEntry entry;
-            lock (_lock)
-            {
-                entry = _entries[jobName];
-            }
+            throw new NotImplementedException();
+            //JobWorkerEntry entry;
+            //lock (_lock)
+            //{
+            //    entry = _entries[jobName];
+            //}
 
-            entry.Worker.CancelCurrentJobRun();
+            //entry.Worker.CancelCurrentJobRun();
         }
 
         public void Enable(string jobName, bool enable)
@@ -373,13 +391,15 @@ namespace TauCode.Working.Jobs
 
             lock (_lock)
             {
-                var entry = _entries[jobName];
-                var worker = entry.Worker;
+                return _vice.GetJobInfo(jobName, maxRunCount);
 
-                var jobInfoBuilder = worker.GetJobInfoBuilder(maxRunCount);
+                //var entry = _entries[jobName];
+                //var worker = entry.Worker;
 
-                var jobInfo = jobInfoBuilder.Build();
-                return jobInfo;
+                //var jobInfoBuilder = worker.GetJobInfoBuilder(maxRunCount);
+
+                //var jobInfo = jobInfoBuilder.Build();
+                //return jobInfo;
             }
         }
 
@@ -413,17 +433,18 @@ namespace TauCode.Working.Jobs
         {
             lock (_lock)
             {
-                this.CheckNotDisposed();
+                throw new NotImplementedException();
+                //this.CheckNotDisposed();
 
-                _helper.Dispose();
-                _isDisposed = true;
+                //_helper.Dispose();
+                //_isDisposed = true;
 
-                foreach (var entry in _entries)
-                {
-                    entry.Value.Worker.Dispose();
-                }
+                //foreach (var entry in _entries)
+                //{
+                //    entry.Value.Worker.Dispose();
+                //}
 
-                // todo: dispose workers.
+                //// todo: dispose workers.
             }
         }
 
@@ -431,32 +452,32 @@ namespace TauCode.Working.Jobs
 
         #region Internal
 
-        internal void StartJob(string jobName)
-        {
-            // todo: checks
-            // todo: job state
+        //internal void StartJob(string jobName)
+        //{
+        //    // todo: checks
+        //    // todo: job state
 
-            IWorker worker;
+        //    IWorker worker;
 
-            lock (_lock)
-            {
-                var entry = _entries[jobName];
-                worker = entry.Worker;
-            }
+        //    lock (_lock)
+        //    {
+        //        var entry = _entries[jobName];
+        //        worker = entry.Worker;
+        //    }
 
-            worker.Start();
-        }
+        //    worker.Start();
+        //}
 
         // todo why need this?
-        internal ISchedule GetScheduleInternal(string jobName)
-        {
-            // todo checks
-            throw new NotImplementedException();
-            //lock (_lock)
-            //{
-            //    return _entries[jobName].Schedule;
-            //}
-        }
+        //internal ISchedule GetScheduleInternal(string jobName)
+        //{
+        //    // todo checks
+        //    throw new NotImplementedException();
+        //    //lock (_lock)
+        //    //{
+        //    //    return _entries[jobName].Schedule;
+        //    //}
+        //}
 
         #endregion
     }
