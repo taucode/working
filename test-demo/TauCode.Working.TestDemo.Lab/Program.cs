@@ -56,26 +56,27 @@ namespace TauCode.Working.TestDemo.Lab
                 });
 
             // Act
-            scheduleManager.Register(
-                "my-job",
-                (parameter, writer, token) => Task.Run(async () =>
-                    {
-                        var limit = (int)parameter;
+            throw new NotImplementedException();
+            //scheduleManager.Register(
+            //    "my-job",
+            //    (parameter, writer, token) => Task.Run(async () =>
+            //        {
+            //            var limit = (int)parameter;
 
-                        var routineStartedTime = TimeProvider.GetCurrent();
+            //            var routineStartedTime = TimeProvider.GetCurrent();
 
-                        Console.WriteLine($"*** ROUTINE STARTED ***: {routineStartedTime.FormatTime()}");
-                        Console.WriteLine($"*** DEFECT ***: {(expectedRoutineStartTime - routineStartedTime).TotalMilliseconds}");
+            //            Console.WriteLine($"*** ROUTINE STARTED ***: {routineStartedTime.FormatTime()}");
+            //            Console.WriteLine($"*** DEFECT ***: {(expectedRoutineStartTime - routineStartedTime).TotalMilliseconds}");
 
-                        for (var i = 0; i < limit; i++)
-                        {
-                            Console.WriteLine($"{i + 1}    :    {TimeProvider.GetCurrent().FormatTime()}");
-                            await Task.Delay(routineTimeout, token);
-                        }
-                    },
-                    token),
-                schedule,
-                33);
+            //            for (var i = 0; i < limit; i++)
+            //            {
+            //                Console.WriteLine($"{i + 1}    :    {TimeProvider.GetCurrent().FormatTime()}");
+            //                await Task.Delay(routineTimeout, token);
+            //            }
+            //        },
+            //        token),
+            //    schedule,
+            //    33);
 
 
             var now2 = TimeProvider.GetCurrent();

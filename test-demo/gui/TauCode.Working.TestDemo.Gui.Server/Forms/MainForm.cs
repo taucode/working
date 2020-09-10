@@ -43,18 +43,19 @@ namespace TauCode.Working.TestDemo.Gui.Server.Forms
 
         private void DoRegisterJob(string jobName, ISchedule schedule, object parameter)
         {
-            try
-            {
-                var demoRunner = new DemoRunner();
-                _jobManager.Register(jobName, demoRunner.Run, schedule, parameter);
-                var jobForm = new JobForm(_jobManager, jobName, demoRunner);
-                jobForm.MdiParent = this;
-                jobForm.Show();
-            }
-            catch (Exception ex)
-            {
-                ex.ToMessageBox();
-            }
+            throw new NotImplementedException();
+            //try
+            //{
+            //    var demoRunner = new DemoRunner();
+            //    _jobManager.Register(jobName, demoRunner.Run, schedule, parameter);
+            //    var jobForm = new JobForm(_jobManager, jobName, demoRunner);
+            //    jobForm.MdiParent = this;
+            //    jobForm.Show();
+            //}
+            //catch (Exception ex)
+            //{
+            //    ex.ToMessageBox();
+            //}
         }
 
         private void toolStripMenuItemLog_Click(object sender, EventArgs e)
