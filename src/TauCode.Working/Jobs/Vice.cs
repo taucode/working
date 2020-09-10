@@ -56,7 +56,7 @@ namespace TauCode.Working.Jobs
         //private readonly Dictionary<string, ScheduleRegistration> _registrations;
         //private readonly SortedList<ScheduleKey, ScheduleRegistration> _list;
 
-        private readonly JobManager _host;
+        private readonly JobManager _host; // todo: rename to _manager?
 
         //private readonly List<ScheduleEntry> _list;
 
@@ -65,7 +65,9 @@ namespace TauCode.Working.Jobs
         private readonly Dictionary<string, EmployeeRecord> _employeeRecords;
 
         private AutoResetEvent _scheduleChangedEvent; // disposed by LoopWorkerBase.Shutdown
-        private readonly object _scheduleLock;
+        //private readonly object _scheduleLock;
+
+        private readonly object _lock;
 
         #endregion
 
@@ -82,7 +84,8 @@ namespace TauCode.Working.Jobs
 
             _employeeRecords = new Dictionary<string, EmployeeRecord>();
 
-            _scheduleLock = new object();
+            //_scheduleLock = new object();
+            _lock = new object();
         }
 
         #endregion
@@ -192,34 +195,34 @@ namespace TauCode.Working.Jobs
         {
             TimeSpan vacationTimeout = TimeSpan.FromSeconds(1); // todo
 
-            lock (_scheduleLock)
-            {
-                //throw new NotImplementedException();
-                //var entry = this.GetClosestEntry();
-                //if (entry == null)
-                //{
-                //    vacationTimeout = InfiniteTimeSpan; // no candidates, let's party 'forever'
-                //}
-                //else
-                //{
-                //    var dueTime = entry.DueTime;
-                //    var now = TimeProvider.GetCurrent();
-                //    if (dueTime <= now)
-                //    {
-                //        // oh, we've got a due time, terminate vacation immediately!
-                //        return Task.FromResult(VacationFinishReason.VacationTimeElapsed);
-                //    }
-                //    else
-                //    {
-                //        // got some time to have fun before the due time
-                //        vacationTimeout = dueTime - now;
-                //        if (vacationTimeout > InfiniteTimeSpan)
-                //        {
-                //            vacationTimeout = InfiniteTimeSpan;
-                //        }
-                //    }
-                //}
-            }
+            //lock (_scheduleLock)
+            //{
+            //    //throw new NotImplementedException();
+            //    //var entry = this.GetClosestEntry();
+            //    //if (entry == null)
+            //    //{
+            //    //    vacationTimeout = InfiniteTimeSpan; // no candidates, let's party 'forever'
+            //    //}
+            //    //else
+            //    //{
+            //    //    var dueTime = entry.DueTime;
+            //    //    var now = TimeProvider.GetCurrent();
+            //    //    if (dueTime <= now)
+            //    //    {
+            //    //        // oh, we've got a due time, terminate vacation immediately!
+            //    //        return Task.FromResult(VacationFinishReason.VacationTimeElapsed);
+            //    //    }
+            //    //    else
+            //    //    {
+            //    //        // got some time to have fun before the due time
+            //    //        vacationTimeout = dueTime - now;
+            //    //        if (vacationTimeout > InfiniteTimeSpan)
+            //    //        {
+            //    //            vacationTimeout = InfiniteTimeSpan;
+            //    //        }
+            //    //    }
+            //    //}
+            //}
 
             
 
@@ -292,41 +295,49 @@ namespace TauCode.Working.Jobs
 
         internal IReadOnlyList<string> GetJobNames()
         {
-            return _employeeRecords.Keys.ToList();
+            lock (_lock)
+            {
+                return _employeeRecords.Keys.ToList();
+            }
         }
 
         internal IJob CreateJob(string jobName)
         {
-            // the method is only called by JobManager, no need to lock
-
-            // todo: check name doesn't exist
-            var employee = new Employee(this)
+            lock (_lock)
             {
-                Name = jobName,
-            };
+                // todo: check name doesn't exist
+                var employee = new Employee(this)
+                {
+                    Name = jobName,
+                };
 
-            var record = new EmployeeRecord(employee);
-            _employeeRecords.Add(employee.Name, record);
+                var record = new EmployeeRecord(employee);
+                _employeeRecords.Add(employee.Name, record);
 
-            return employee.GetJob();
+                return employee.GetJob();
+            }
         }
 
         internal IJob GetJob(string jobName)
         {
-            // todo: remove _lock from Manager, add to myself, here & anywhere.
-
-            return _employeeRecords[jobName].Employee.GetJob(); // todo check exists
+            lock (_lock)
+            {
+                return _employeeRecords[jobName].Employee.GetJob(); // todo check exists, here & anywhere.
+            }
         }
 
         internal JobInfo GetJobInfo(string jobName, int? maxRunCount)
         {
-            var record = _employeeRecords[jobName];
-            var employee = record.Employee;
+            lock (_lock)
+            {
+                var record = _employeeRecords[jobName];
+                var employee = record.Employee;
 
-            var jobInfoBuilder = employee.GetJobInfoBuilder(maxRunCount);
+                var jobInfoBuilder = employee.GetJobInfoBuilder(maxRunCount);
 
-            var jobInfo = jobInfoBuilder.Build();
-            return jobInfo;
+                var jobInfo = jobInfoBuilder.Build();
+                return jobInfo;
+            }
         }
 
         #endregion

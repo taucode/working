@@ -28,9 +28,9 @@ namespace TauCode.Working.Jobs
 
         #region Fields
 
-        private readonly object _lock;
-        private bool _isStarted;  // todo: use _helper's state(s) to detect?
-        private bool _isDisposed;  // todo: use _helper's state(s) to detect?
+        //private readonly object _lock;
+        //private bool _isStarted;  // todo: use _helper's state(s) to detect?
+        //private bool _isDisposed;  // todo: use _helper's state(s) to detect?
         private readonly Vice _vice;
 
         //private readonly Dictionary<string, ScheduleRegistration> _registrations;
@@ -44,7 +44,7 @@ namespace TauCode.Working.Jobs
 
         public JobManager()
         {
-            _lock = new object();
+            //_lock = new object();
             _vice = new Vice(this)
             {
                 Name = typeof(Vice).FullName,
@@ -57,13 +57,13 @@ namespace TauCode.Working.Jobs
 
         #region Private
 
-        private void CheckNotStarted()
-        {
-            if (_isStarted)
-            {
-                throw new InvalidOperationException("Manager already started.");
-            }
-        }
+        //private void CheckNotStarted()
+        //{
+        //    if (_isStarted)
+        //    {
+        //        throw new InvalidOperationException("Manager already started.");
+        //    }
+        //}
 
         //private void CheckStarted()
         //{
@@ -73,38 +73,38 @@ namespace TauCode.Working.Jobs
         //    }
         //}
 
-        private void CheckNotDisposed()
-        {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException("Manager was disposed.");
-            }
-        }
+        //private void CheckNotDisposed()
+        //{
+        //    if (_isDisposed)
+        //    {
+        //        throw new ObjectDisposedException("Manager was disposed.");
+        //    }
+        //}
 
-        private void CheckRunning()
-        {
-            //this.CheckStarted();
+        //private void CheckRunning()
+        //{
+        //    //this.CheckStarted();
 
-            if (!_isStarted)
-            {
-                throw new InvalidOperationException("Manager not started.");
-            }
+        //    if (!_isStarted)
+        //    {
+        //        throw new InvalidOperationException("Manager not started.");
+        //    }
 
-            this.CheckNotDisposed();
-        }
+        //    this.CheckNotDisposed();
+        //}
 
-        protected void CheckJobName(string jobName, string jobNameArgumentName)
-        {
-            if (jobName == null)
-            {
-                throw new ArgumentNullException(jobNameArgumentName);
-            }
+        //protected void CheckJobName(string jobName, string jobNameArgumentName)
+        //{
+        //    if (jobName == null)
+        //    {
+        //        throw new ArgumentNullException(jobNameArgumentName);
+        //    }
 
-            if (string.IsNullOrWhiteSpace(jobName))
-            {
-                throw new ArgumentException($"'{jobNameArgumentName}' cannot be empty.", jobNameArgumentName);
-            }
-        }
+        //    if (string.IsNullOrWhiteSpace(jobName))
+        //    {
+        //        throw new ArgumentException($"'{jobNameArgumentName}' cannot be empty.", jobNameArgumentName);
+        //    }
+        //}
 
         //private string GenerateRegistrationId()
         //{
@@ -212,25 +212,29 @@ namespace TauCode.Working.Jobs
 
         public void Start()
         {
-            lock (_lock) // todo: move _lock to Vice, Manager should not bother themselves with this.
-            {
-                this.CheckNotStarted();
-                this.CheckNotDisposed();
+            _vice.Start(); // todo: gracefully handle exception when _vice throws them
 
-                _vice.Start();
-                _isStarted = true; // todo: use _helper's state(s) to detect?
-            }
+            //lock (_lock) // todo: move _lock to Vice, Manager should not bother themselves with this.
+            //{
+            //    this.CheckNotStarted();
+            //    this.CheckNotDisposed();
+
+            //    _vice.Start();
+            //    _isStarted = true; // todo: use _helper's state(s) to detect?
+            //}
         }
 
         public IJob Create(string jobName)
         {
-            this.CheckJobName(jobName, nameof(jobName));
+            return _vice.CreateJob(jobName);
 
-            lock (_lock)
-            {
-                this.CheckRunning();
-                return _vice.CreateJob(jobName);
-            }
+            //this.CheckJobName(jobName, nameof(jobName));
+
+            //lock (_lock)
+            //{
+            //    this.CheckRunning();
+            //    return _vice.CreateJob(jobName);
+            //}
 
             //this.CheckJobName(jobName, nameof(jobName));
 
@@ -258,13 +262,15 @@ namespace TauCode.Working.Jobs
 
         public IReadOnlyList<string> GetJobNames() //=> _helper.GetJobNames(); // todo: resharper warning about sync/lock
         {
-            lock (_lock)
-            {
-                this.CheckRunning();
-                return _vice.GetJobNames();
+            return _vice.GetJobNames();
 
-                //return _entries.Keys.ToList();
-            }
+            //lock (_lock)
+            //{
+            //    this.CheckRunning();
+            //    return _vice.GetJobNames();
+
+            //    //return _entries.Keys.ToList();
+            //}
         }
 
         //public void Set(string jobName, IJob job)
@@ -274,13 +280,15 @@ namespace TauCode.Working.Jobs
 
         public IJob Get(string jobName) //=> _helper.GetJob(jobName);
         {
-            this.CheckJobName(jobName, nameof(jobName));
+            return _vice.GetJob(jobName);
 
-            lock (_lock)
-            {
-                //return _entries[jobName].Worker.GetJob();
-                return _vice.GetJob(jobName);
-            }
+            //this.CheckJobName(jobName, nameof(jobName));
+
+            //lock (_lock)
+            //{
+            //    //return _entries[jobName].Worker.GetJob();
+            //    return _vice.GetJob(jobName);
+            //}
         }
 
         //public void Register(
@@ -387,20 +395,22 @@ namespace TauCode.Working.Jobs
 
         public JobInfo GetInfo(string jobName, int? maxRunCount)
         {
-            this.CheckJobName(jobName, nameof(jobName));
+            return _vice.GetJobInfo(jobName, maxRunCount);
 
-            lock (_lock)
-            {
-                return _vice.GetJobInfo(jobName, maxRunCount);
+            //this.CheckJobName(jobName, nameof(jobName));
 
-                //var entry = _entries[jobName];
-                //var worker = entry.Worker;
+            //lock (_lock)
+            //{
+            //    return _vice.GetJobInfo(jobName, maxRunCount);
 
-                //var jobInfoBuilder = worker.GetJobInfoBuilder(maxRunCount);
+            //    //var entry = _entries[jobName];
+            //    //var worker = entry.Worker;
 
-                //var jobInfo = jobInfoBuilder.Build();
-                //return jobInfo;
-            }
+            //    //var jobInfoBuilder = worker.GetJobInfoBuilder(maxRunCount);
+
+            //    //var jobInfo = jobInfoBuilder.Build();
+            //    //return jobInfo;
+            //}
         }
 
         //public bool IsEnabled(string jobName)
@@ -431,21 +441,23 @@ namespace TauCode.Working.Jobs
 
         public void Dispose()
         {
-            lock (_lock)
-            {
-                throw new NotImplementedException();
-                //this.CheckNotDisposed();
+            throw new NotImplementedException(); // todo ut. dispose vice and employees.
 
-                //_helper.Dispose();
-                //_isDisposed = true;
+            //lock (_lock)
+            //{
+            //    throw new NotImplementedException();
+            //    //this.CheckNotDisposed();
 
-                //foreach (var entry in _entries)
-                //{
-                //    entry.Value.Worker.Dispose();
-                //}
+            //    //_helper.Dispose();
+            //    //_isDisposed = true;
 
-                //// todo: dispose workers.
-            }
+            //    //foreach (var entry in _entries)
+            //    //{
+            //    //    entry.Value.Worker.Dispose();
+            //    //}
+
+            //    //// todo: dispose workers.
+            //}
         }
 
         #endregion
