@@ -6,37 +6,9 @@ namespace TauCode.Working.Jobs
 {
     public class JobManager : IJobManager
     {
-        #region Nested
-
-        // todo: internal, not public? here & in other private nested types.
-        //private class JobWorkerEntry
-        //{
-        //    public JobWorkerEntry(string name, JobWorker worker/*, ISchedule schedule*/)
-        //    {
-        //        this.Name = name;
-        //        this.Worker = worker;
-        //        //this.Schedule = schedule;
-        //    }
-
-        //    public string Name { get; }
-        //    public JobWorker Worker { get; }
-        //    //public ISchedule Schedule { get; private set; }
-        //    //public bool IsEnabled { get; private set; }
-        //}
-
-        #endregion
-
         #region Fields
 
-        //private readonly object _lock;
-        //private bool _isStarted;  // todo: use _helper's state(s) to detect?
-        //private bool _isDisposed;  // todo: use _helper's state(s) to detect?
         private readonly Vice _vice;
-
-        //private readonly Dictionary<string, ScheduleRegistration> _registrations;
-        //private readonly HashSet<AutoStopWorkerBase> _workers;
-
-        //private readonly Dictionary<string, JobWorkerEntry> _entries;
 
         #endregion
 
@@ -44,396 +16,31 @@ namespace TauCode.Working.Jobs
 
         public JobManager()
         {
-            //_lock = new object();
             _vice = new Vice(this)
             {
                 Name = typeof(Vice).FullName,
             };
-
-            //_entries = new Dictionary<string, JobWorkerEntry>();
         }
 
         #endregion
-
-        #region Private
-
-        //private void CheckNotStarted()
-        //{
-        //    if (_isStarted)
-        //    {
-        //        throw new InvalidOperationException("Manager already started.");
-        //    }
-        //}
-
-        //private void CheckStarted()
-        //{
-        //    if (!_isStarted)
-        //    {
-        //        throw new InvalidOperationException("Manager not started.");
-        //    }
-        //}
-
-        //private void CheckNotDisposed()
-        //{
-        //    if (_isDisposed)
-        //    {
-        //        throw new ObjectDisposedException("Manager was disposed.");
-        //    }
-        //}
-
-        //private void CheckRunning()
-        //{
-        //    //this.CheckStarted();
-
-        //    if (!_isStarted)
-        //    {
-        //        throw new InvalidOperationException("Manager not started.");
-        //    }
-
-        //    this.CheckNotDisposed();
-        //}
-
-        //protected void CheckJobName(string jobName, string jobNameArgumentName)
-        //{
-        //    if (jobName == null)
-        //    {
-        //        throw new ArgumentNullException(jobNameArgumentName);
-        //    }
-
-        //    if (string.IsNullOrWhiteSpace(jobName))
-        //    {
-        //        throw new ArgumentException($"'{jobNameArgumentName}' cannot be empty.", jobNameArgumentName);
-        //    }
-        //}
-
-        //private string GenerateRegistrationId()
-        //{
-        //    var result = Guid.NewGuid().ToString("N");
-        //    return result;
-        //}
-
-        #endregion
-
-        //#region IScheduleManager Members
-
-        //public void Start()
-        //{
-        //    lock (_lock)
-        //    {
-        //        this.CheckNotStarted();
-        //        this.CheckNotDisposed();
-
-        //        _helper.Start();
-        //        _isStarted = true;
-        //    }
-        //}
-
-        //public string Register(AutoStopWorkerBase worker, ISchedule schedule)
-        //{
-        //    if (worker == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(worker));
-        //    }
-
-        //    if (schedule == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(schedule));
-        //    }
-
-        //    lock (_lock)
-        //    {
-        //        this.CheckStarted();
-        //        this.CheckNotDisposed();
-
-        //        if (_workers.Contains(worker))
-        //        {
-        //            throw new NotImplementedException(); // todo dup
-        //        }
-
-        //        var registrationId = this.GenerateRegistrationId();
-        //        var registration = new ScheduleRegistration(registrationId, worker, schedule);
-
-        //        _registrations.Add(registration.RegistrationId, registration);
-        //        _workers.Add(worker);
-
-        //        _helper.OnNewRegistration(registration); // todo: try/catch, remove on exception?
-
-        //        return registrationId;
-        //    }
-        //}
-
-        //public void ChangeSchedule(string registrationId, ISchedule schedule)
-        //{
-        //    lock (_lock)
-        //    {
-        //        this.CheckStarted();
-        //        this.CheckNotDisposed();
-
-        //        throw new NotImplementedException();
-        //    }
-        //}
-
-        //public void Remove(string registrationId)
-        //{
-        //    lock (_lock)
-        //    {
-        //        this.CheckStarted();
-        //        this.CheckNotDisposed();
-
-        //        throw new NotImplementedException();
-        //    }
-        //}
-
-        //public void Enable(string registrationId)
-        //{
-        //    lock (_lock)
-        //    {
-        //        this.CheckStarted();
-        //        this.CheckNotDisposed();
-
-        //        throw new NotImplementedException();
-        //    }
-        //}
-
-        //public void Disable(string registrationId)
-        //{
-        //    lock (_lock)
-        //    {
-        //        this.CheckStarted();
-        //        this.CheckNotDisposed();
-
-        //        throw new NotImplementedException();
-        //    }
-        //}
-
-        //#endregion
 
         #region IJobManager Members
 
         public void Start()
         {
             _vice.Start(); // todo: gracefully handle exception when _vice throws them
-
-            //lock (_lock) // todo: move _lock to Vice, Manager should not bother themselves with this.
-            //{
-            //    this.CheckNotStarted();
-            //    this.CheckNotDisposed();
-
-            //    _vice.Start();
-            //    _isStarted = true; // todo: use _helper's state(s) to detect?
-            //}
         }
 
-        public IJob Create(string jobName)
-        {
-            return _vice.CreateJob(jobName);
+        public IJob Create(string jobName) => _vice.CreateJob(jobName);
 
-            //this.CheckJobName(jobName, nameof(jobName));
+        public IReadOnlyList<string> GetJobNames() => _vice.GetJobNames();
 
-            //lock (_lock)
-            //{
-            //    this.CheckRunning();
-            //    return _vice.CreateJob(jobName);
-            //}
-
-            //this.CheckJobName(jobName, nameof(jobName));
-
-            //lock (_lock)
-            //{
-            //    this.CheckRunning();
-            //    if (_entries.ContainsKey(jobName))
-            //    {
-            //        throw new NotImplementedException();
-            //    }
-
-            //    var worker = new JobWorker(_helper)
-            //    {
-            //        Name = jobName,
-            //    };
-            //    var entry = new JobWorkerEntry(jobName, worker);
-
-            //    _entries.Add(entry.Name, entry);
-
-            //    return entry.Worker.GetJob();
-            //}
-
-            //throw new NotImplementedException();
-        }
-
-        public IReadOnlyList<string> GetJobNames() //=> _helper.GetJobNames(); // todo: resharper warning about sync/lock
-        {
-            return _vice.GetJobNames();
-
-            //lock (_lock)
-            //{
-            //    this.CheckRunning();
-            //    return _vice.GetJobNames();
-
-            //    //return _entries.Keys.ToList();
-            //}
-        }
-
-        //public void Set(string jobName, IJob job)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        public IJob Get(string jobName) //=> _helper.GetJob(jobName);
-        {
-            return _vice.GetJob(jobName);
-
-            //this.CheckJobName(jobName, nameof(jobName));
-
-            //lock (_lock)
-            //{
-            //    //return _entries[jobName].Worker.GetJob();
-            //    return _vice.GetJob(jobName);
-            //}
-        }
-
-        //public void Register(
-        //    string jobName,
-        //    Func<object, TextWriter, CancellationToken, Task> jobTaskCreator,
-        //    ISchedule jobSchedule,
-        //    object parameter)
-        //{
-        //    if (jobName == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(jobName));
-        //    }
-
-        //    if (jobTaskCreator == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(jobTaskCreator));
-        //    }
-
-        //    if (jobSchedule == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(jobSchedule));
-        //    }
-
-        //    lock (_lock)
-        //    {
-        //        this.CheckStarted();
-        //        this.CheckNotDisposed();
-
-        //        var entry = new JobWorkerEntry(jobName, new JobWorker(jobTaskCreator, parameter), jobSchedule);
-        //        _entries.Add(entry.Name, entry); // todo checks
-        //    }
-
-        //    _helper.Reschedule(jobName, jobSchedule); // todo: try/catch, remove on exception?
-        //}
-
-        //public void SetParameter(string jobName, object parameter)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public object GetParameter(string jobName)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public void SetSchedule(string jobName, ISchedule newJobSchedule)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public ISchedule GetSchedule(string jobName)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public void ManualChangeDueTime(string jobName, DateTime? dueTime)
-        //{
-        //    _vice.ManualChangeDueTime(jobName, dueTime);
-        //}
-
-        //public DueTimeInfo GetDueTime(string jobName)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        // todo read-only?
-
-        //public IReadOnlyList<DateTime> GetSchedulePart(string jobName, int length)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        public void ForceStart(string jobName)
-        {
-            throw new NotImplementedException();
-        }
-
-        //public void RedirectOutput(string jobName, TextWriter output)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public bool IsRunning(string jobName)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        public void Cancel(string jobName)
-        {
-            throw new NotImplementedException();
-            //JobWorkerEntry entry;
-            //lock (_lock)
-            //{
-            //    entry = _entries[jobName];
-            //}
-
-            //entry.Worker.CancelCurrentJobRun();
-        }
-
-        //public void Enable(string jobName, bool enable)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public JobInfo GetInfo(string jobName, int? maxRunCount)
-        //{
-        //    return _vice.GetJobInfo(jobName, maxRunCount);
-
-        //    //this.CheckJobName(jobName, nameof(jobName));
-
-        //    //lock (_lock)
-        //    //{
-        //    //    return _vice.GetJobInfo(jobName, maxRunCount);
-
-        //    //    //var entry = _entries[jobName];
-        //    //    //var worker = entry.Worker;
-
-        //    //    //var jobInfoBuilder = worker.GetJobInfoBuilder(maxRunCount);
-
-        //    //    //var jobInfo = jobInfoBuilder.Build();
-        //    //    //return jobInfo;
-        //    //}
-        //}
-
-        //public bool IsEnabled(string jobName)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public JobInfo GetInfo(string jobName, bool includeLog)
-        //{
-        //    throw new NotImplementedException();
-        //}
+        public IJob Get(string jobName) => _vice.GetJob(jobName);
 
         public void Remove(string jobName)
         {
             throw new NotImplementedException();
         }
-
-        public JobRunWaitResult Wait(string jobName, TimeSpan timeout)
-        {
-            throw new NotImplementedException();
-        }
-
-        public event EventHandler<JobChangedEventArgs> JobChanged;
 
         #endregion
 
@@ -459,37 +66,6 @@ namespace TauCode.Working.Jobs
             //    //// todo: dispose workers.
             //}
         }
-
-        #endregion
-
-        #region Internal
-
-        //internal void StartJob(string jobName)
-        //{
-        //    // todo: checks
-        //    // todo: job state
-
-        //    IWorker worker;
-
-        //    lock (_lock)
-        //    {
-        //        var entry = _entries[jobName];
-        //        worker = entry.Worker;
-        //    }
-
-        //    worker.Start();
-        //}
-
-        // todo why need this?
-        //internal ISchedule GetScheduleInternal(string jobName)
-        //{
-        //    // todo checks
-        //    throw new NotImplementedException();
-        //    //lock (_lock)
-        //    //{
-        //    //    return _entries[jobName].Schedule;
-        //    //}
-        //}
 
         #endregion
     }
