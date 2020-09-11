@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
+using TauCode.Working.Jobs.Schedules;
 
 namespace TauCode.Working.Jobs
 {
@@ -19,15 +21,21 @@ namespace TauCode.Working.Jobs
         //private IProgressTracker _progressTracker;
         //private TextWriter _output;
 
+        private ISchedule _schedule;
+        private JobDelegate _routine;
+        private object _parameter;
+        private IProgressTracker _progressTracker;
+        private TextWriter _output;
+
         private readonly Vice _vice;
 
         private StringWriterWithEncoding _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
         private JobRunInfoBuilder _currentJobRunResultBuilder;
 
-        private readonly DueTimeInfoBuilder _dueTimeInfoBuilder;
+        //private readonly DueTimeInfoBuilder _dueTimeInfoBuilder;
 
-        private readonly List<JobRunInfo> _log;
+        private readonly List<JobRunInfo> _runs;
 
         //private Task _currentTask;
 
@@ -35,7 +43,7 @@ namespace TauCode.Working.Jobs
 
         private readonly IJob _job;
 
-        private readonly object _lockIsEnabled;
+        private readonly object _lock;
         private bool _isEnabled;
 
         #endregion
@@ -45,10 +53,18 @@ namespace TauCode.Working.Jobs
         internal Employee(Vice vice)
         {
             _vice = vice;
+
+            _schedule = new NeverSchedule();
+            _routine = JobExtensions.IdleJobRoutine;
+
             _job = new Job(this);
-            _dueTimeInfoBuilder = new DueTimeInfoBuilder();
-            _dueTimeInfoBuilder.UpdateBySchedule(_job.Schedule);
-            _lockIsEnabled = new object();
+
+            //_dueTimeInfoBuilder = new DueTimeInfoBuilder();
+            //_dueTimeInfoBuilder.UpdateBySchedule(_job.Schedule);
+
+            
+
+            _lock = new object();
             _isEnabled = true;
         }
 
@@ -110,7 +126,7 @@ namespace TauCode.Working.Jobs
             _currentRunCancellationTokenSource = null;
 
             var jobRunResult = _currentJobRunResultBuilder.Build();
-            _log.Add(jobRunResult);
+            _runs.Add(jobRunResult);
 
             _currentJobRunResultBuilder = null;
 
@@ -185,7 +201,7 @@ namespace TauCode.Working.Jobs
 
         #region Internal
 
-        internal DueTimeInfoBuilder getDueTimeInfoBuilder() => _dueTimeInfoBuilder;
+        //internal DueTimeInfoBuilder getDueTimeInfoBuilder() => _dueTimeInfoBuilder;
 
         internal void ForceStart()
         {
@@ -221,33 +237,33 @@ namespace TauCode.Working.Jobs
             return value;
         }
 
-        internal JobInfoBuilder GetJobInfoBuilder(int? maxRunCount)
-        {
-            var builder = new JobInfoBuilder(this.Name)
-            {
-                IsEnabled = this.IsEnabled,
-            };
+        //internal JobInfoBuilder GetJobInfoBuilder(int? maxRunCount)
+        //{
+        //    var builder = new JobInfoBuilder(this.Name)
+        //    {
+        //        IsEnabled = this.IsEnabled,
+        //    };
 
-            this.RequestControlLock(() =>
-            {
-                builder.DueTimeInfo = _dueTimeInfoBuilder.Build();
-            });
+        //    //this.RequestControlLock(() =>
+        //    //{
+        //    //    builder.DueTimeInfo = _dueTimeInfoBuilder.Build();
+        //    //});
 
-            return builder;
-        }
+        //    return builder;
+        //}
 
         internal bool IsEnabled
         {
             get
             {
-                lock (_lockIsEnabled)
+                lock (_lock)
                 {
                     return _isEnabled;
                 }
             }
             set
             {
-                lock (_lockIsEnabled)
+                lock (_lock)
                 {
                     _isEnabled = value;
                 }
@@ -255,5 +271,100 @@ namespace TauCode.Working.Jobs
         }
 
         #endregion
+
+        internal JobInfo GetJobInfo(int? maxRunCount)
+        {
+            lock (_lock)
+            {
+                var jobInfoBuilder = new JobInfoBuilder(this.Name);
+                var dueTimeInfo = _vice.GetDueTimeInfo(this.Name);
+                jobInfoBuilder.DueTimeInfo = dueTimeInfo;
+
+                jobInfoBuilder.IsEnabled = _isEnabled;
+
+                return jobInfoBuilder.Build();
+            }
+
+
+
+            //jobInfoBuilder.IsEnabled = 
+
+            //throw new NotImplementedException();
+
+
+        }
+
+        internal ISchedule GetSchedule()
+        {
+            lock (_lock)
+            {
+                return _schedule;
+            }
+        }
+
+        internal void SetSchedule(ISchedule value)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal TextWriter GetOutput()
+        {
+            lock (_lock)
+            {
+                return _output;
+            }
+        }
+
+        internal void SetOutput(TextWriter value)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal IProgressTracker GetProgressTracker()
+        {
+            lock (_lock)
+            {
+                return _progressTracker;
+            }
+        }
+
+        internal void SetProgressTracker(IProgressTracker value)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal object GetParameter()
+        {
+            lock (_lock)
+            {
+                return _parameter;
+            }
+        }
+
+        internal void SetParameter(object value)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal JobDelegate GetRoutine()
+        {
+            lock (_lock)
+            {
+                return _routine;
+            }
+        }
+
+        internal void SetRoutine(JobDelegate value)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void OverrideDueTime(DateTime? dueTime)
+        {
+            lock (_lock)
+            {
+                _vice.OverrideDueTime(this.Name, dueTime, _schedule);
+            }
+        }
     }
 }

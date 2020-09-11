@@ -3,6 +3,6 @@
     public enum DueTimeType
     {
         BySchedule = 1,
-        Manual = 2,
+        Overridden = 2,
     }
 }

@@ -344,10 +344,10 @@ namespace TauCode.Working.Jobs
         //    throw new NotImplementedException();
         //}
 
-        public void ManualChangeDueTime(string jobName, DateTime? dueTime)
-        {
-            throw new NotImplementedException();
-        }
+        //public void ManualChangeDueTime(string jobName, DateTime? dueTime)
+        //{
+        //    _vice.ManualChangeDueTime(jobName, dueTime);
+        //}
 
         //public DueTimeInfo GetDueTime(string jobName)
         //{
@@ -393,25 +393,25 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
-        public JobInfo GetInfo(string jobName, int? maxRunCount)
-        {
-            return _vice.GetJobInfo(jobName, maxRunCount);
+        //public JobInfo GetInfo(string jobName, int? maxRunCount)
+        //{
+        //    return _vice.GetJobInfo(jobName, maxRunCount);
 
-            //this.CheckJobName(jobName, nameof(jobName));
+        //    //this.CheckJobName(jobName, nameof(jobName));
 
-            //lock (_lock)
-            //{
-            //    return _vice.GetJobInfo(jobName, maxRunCount);
+        //    //lock (_lock)
+        //    //{
+        //    //    return _vice.GetJobInfo(jobName, maxRunCount);
 
-            //    //var entry = _entries[jobName];
-            //    //var worker = entry.Worker;
+        //    //    //var entry = _entries[jobName];
+        //    //    //var worker = entry.Worker;
 
-            //    //var jobInfoBuilder = worker.GetJobInfoBuilder(maxRunCount);
+        //    //    //var jobInfoBuilder = worker.GetJobInfoBuilder(maxRunCount);
 
-            //    //var jobInfo = jobInfoBuilder.Build();
-            //    //return jobInfo;
-            //}
-        }
+        //    //    //var jobInfo = jobInfoBuilder.Build();
+        //    //    //return jobInfo;
+        //    //}
+        //}
 
         //public bool IsEnabled(string jobName)
         //{

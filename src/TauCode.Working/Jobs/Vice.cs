@@ -44,9 +44,11 @@ namespace TauCode.Working.Jobs
             internal EmployeeRecord(Employee employee)
             {
                 this.Employee = employee;
+                this.DueTimeBuilder = new DueTimeInfoBuilder();
             }
 
             internal Employee Employee { get; }
+            public DueTimeInfoBuilder DueTimeBuilder { get; }
         }
 
         #endregion
@@ -314,6 +316,7 @@ namespace TauCode.Working.Jobs
                 var record = new EmployeeRecord(employee);
                 _employeeRecords.Add(employee.Name, record);
 
+                record.DueTimeBuilder.UpdateBySchedule(employee.GetSchedule());
                 return employee.GetJob();
             }
         }
@@ -326,19 +329,36 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        internal JobInfo GetJobInfo(string jobName, int? maxRunCount)
-        {
-            lock (_lock)
-            {
-                var record = _employeeRecords[jobName];
-                var employee = record.Employee;
+        //internal JobInfo GetJobInfo(string jobName, int? maxRunCount)
+        //{
+        //    lock (_lock)
+        //    {
+        //        var record = _employeeRecords[jobName];
+        //        var employee = record.Employee;
 
-                var jobInfoBuilder = employee.GetJobInfoBuilder(maxRunCount);
+        //        var jobInfoBuilder = employee.GetJobInfoBuilder(maxRunCount);
 
-                var jobInfo = jobInfoBuilder.Build();
-                return jobInfo;
-            }
-        }
+        //        var jobInfo = jobInfoBuilder.Build();
+        //        return jobInfo;
+        //    }
+        //}
+
+        //internal void ManualChangeDueTime(string jobName, DateTime? dueTime)
+        //{
+        //    lock (_lock)
+        //    {
+        //        throw new NotImplementedException();
+
+        //        //var record = _employeeRecords[jobName];
+        //        //var employee = record.Employee;
+
+        //        //var jobInfoBuilder = employee.GetJobInfoBuilder(maxRunCount);
+
+        //        //var jobInfo = jobInfoBuilder.Build();
+        //        //return jobInfo;
+        //    }
+        //}
+
 
         #endregion
 
@@ -392,5 +412,33 @@ namespace TauCode.Working.Jobs
 
         //    _scheduleChangedEvent.Set();
         //}
+        internal DueTimeInfo GetDueTimeInfo(string jobName)
+        {
+            lock (_lock)
+            {
+                var employeeRecord = _employeeRecords[jobName]; // todo check
+                var dueTimeBuilder = employeeRecord.DueTimeBuilder;
+                return dueTimeBuilder.Build();
+            }
+        }
+
+        internal void OverrideDueTime(string jobName, DateTime? dueTime, ISchedule schedule)
+        {
+            // todo check due time not in past
+            lock (_lock)
+            {
+                var employeeRecord = _employeeRecords[jobName]; // todo check
+                var dueTimeBuilder = employeeRecord.DueTimeBuilder;
+
+                if (dueTime.HasValue)
+                {
+                    dueTimeBuilder.UpdateManually(dueTime.Value);
+                }
+                else
+                {
+                    dueTimeBuilder.UpdateBySchedule(schedule);
+                }
+            }
+        }
     }
 }

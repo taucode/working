@@ -13,8 +13,6 @@ namespace TauCode.Working.Jobs
 
         IJob Get(string jobName);
 
-        void ManualChangeDueTime(string jobName, DateTime? dueTime);
-
         IReadOnlyList<DateTime> GetSchedulePart(string jobName, int length);
 
         void ForceStart(string jobName);
@@ -23,7 +21,7 @@ namespace TauCode.Working.Jobs
 
         void Enable(string jobName, bool enable);
 
-        JobInfo GetInfo(string jobName, int? maxRunCount);
+        //JobInfo GetInfo(string jobName, int? maxRunCount);
 
         void Remove(string jobName);
 

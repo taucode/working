@@ -28,10 +28,14 @@ namespace TauCode.Working.Jobs
 
         internal void UpdateManually(DateTime manualDueTime)
         {
-            throw new NotImplementedException();
+            lock (_lock)
+            {
+                _type = DueTimeType.Overridden;
+                _dueTime = manualDueTime;
+            }
         }
 
-        public DueTimeInfo Build()
+        internal DueTimeInfo Build()
         {
             lock (_lock)
             {

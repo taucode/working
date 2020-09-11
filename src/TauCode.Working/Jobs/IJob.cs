@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace TauCode.Working.Jobs
 {
@@ -9,5 +10,9 @@ namespace TauCode.Working.Jobs
         object Parameter { get; set; }
         IProgressTracker ProgressTracker { get; set; }
         TextWriter Output { get; set; }
+
+        JobInfo GetInfo(int? maxRunCount);
+        void OverrideDueTime(DateTime? dueTime);
+        
     }
 }
