@@ -8,6 +8,10 @@ namespace TauCode.Working.Jobs.Schedules
 
         internal static ISchedule Instance = new NeverSchedule();
 
+        private NeverSchedule()
+        {   
+        }
+
         public string Description
         {
             get => NeverDescription;

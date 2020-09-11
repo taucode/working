@@ -24,12 +24,18 @@ namespace TauCode.Working.Jobs
 
         #endregion
 
+        #region Private
+
+        private void DebugPulse()
+        {
+            _vice.DebugPulse();
+        }
+
+        #endregion
+
         #region IJobManager Members
 
-        public void Start()
-        {
-            _vice.Start(); // todo: gracefully handle exception when _vice throws them
-        }
+        public void Start() => _vice.Start(); // todo: gracefully handle exception when _vice throws them
 
         public IJob Create(string jobName) => _vice.CreateJob(jobName);
 

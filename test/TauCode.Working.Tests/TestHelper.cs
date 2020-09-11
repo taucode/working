@@ -1,20 +1,20 @@
 ﻿using System;
+using System.Reflection;
+using TauCode.Working.Jobs;
 
 namespace TauCode.Working.Tests
 {
     internal static class TestHelper
     {
-        //internal static DateTime Truncat-eMilliseconds(this DateTime dateTime)
-        //{
-        //    return new DateTime(
-        //        dateTime.Year,
-        //        dateTime.Month,
-        //        dateTime.Day,
-        //        dateTime.Hour,
-        //        dateTime.Minute,
-        //        dateTime.Second,
-        //        0,
-        //        dateTime.Kind);
-        //}
+        internal static void DebugPulseJobManager(this IJobManager jobManager)
+        {
+            var method = jobManager.GetType().GetMethod("DebugPulse", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (method == null)
+            {
+                throw new NotSupportedException();
+            }
+
+            method.Invoke(jobManager, new object[] { });
+        }
     }
 }

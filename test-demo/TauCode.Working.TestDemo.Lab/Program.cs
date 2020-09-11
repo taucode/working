@@ -7,6 +7,7 @@ using TauCode.Working.Jobs.Schedules;
 
 namespace TauCode.Working.TestDemo.Lab
 {
+    // todo clean up
     class Program
     {
         static async Task Main(string[] args)
@@ -89,7 +90,6 @@ namespace TauCode.Working.TestDemo.Lab
             Console.WriteLine($"*** AWAITING STARTED ***: {TimeProvider.GetCurrent().FormatTime()}");
             await Task.Delay(timeoutBeforeShowtime - adjustment + ticksToAllow * routineTimeout);
 
-            scheduleManager.Cancel("my-job");
 
             //await Task.Delay(60 * 60 * 1000); // todo
 

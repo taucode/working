@@ -22,10 +22,16 @@ namespace TauCode.Working.Jobs
 
         #region IJob Members (explicit)
 
-        ISchedule IJob.Schedule
+        ISchedule IJob.Schedule => _doer.GetSchedule();
+
+        public bool UpdateSchedule(ISchedule schedule)
         {
-            get => _doer.GetSchedule();
-            set => _doer.SetSchedule(value);
+            if (schedule == null)
+            {
+                throw new ArgumentNullException(nameof(schedule));
+            }
+
+            return _doer.UpdateSchedule(schedule);
         }
 
         JobDelegate IJob.Routine

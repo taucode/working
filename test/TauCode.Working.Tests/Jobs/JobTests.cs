@@ -1,9 +1,12 @@
 ﻿using NUnit.Framework;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Jobs;
+using TauCode.Working.Jobs.Schedules;
 
 namespace TauCode.Working.Tests.Jobs
 {
@@ -101,6 +104,44 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
             Assert.That(run.Output, Does.StartWith("Warning: usage of default idle routine."));
             Assert.That(run.Exception, Is.Null);
+        }
+
+        [Test]
+        public async Task SetSchedule_ValidValue_SetsSchedule()
+        {
+            // Arrange
+            var now = "2020-09-11".ToExactUtcDate().AddHours(3);
+            TimeProvider.Override(now);
+
+            IJobManager jobManager = new JobManager();
+            jobManager.Start();
+
+            var name = "job1";
+            var job = jobManager.Create(name);
+
+            var writer = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = writer;
+
+            // Act
+            var newSchedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, now);
+            job.UpdateSchedule(newSchedule);
+            job.Routine = (parameter, tracker, output, token) =>
+            {
+                output.Write("Hello!");
+                return Task.CompletedTask;
+            };
+
+            var finished = now.AddMinutes(1).AddMilliseconds(1);
+            await Task.Run(async () =>
+            {
+                TimeProvider.Override(finished);
+                jobManager.DebugPulseJobManager();
+                await Task.Delay(100); // todo: job.wait()
+            });
+
+            // Assert
+            Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
+            Assert.That(job.Schedule, Is.SameAs(newSchedule));
         }
     }
 }

@@ -5,42 +5,24 @@ namespace TauCode.Working.Jobs
 {
     internal class DueTimeInfoBuilder
     {
-        private readonly object _lock;
-
-        private DueTimeType _type;
-        private DateTime _dueTime;
-
-        public DueTimeInfoBuilder()
-        {
-            _lock = new object();
-        }
-
         internal void UpdateBySchedule(ISchedule schedule)
         {
-            lock (_lock)
-            {
-                _type = DueTimeType.BySchedule;
-                var now = TimeProvider.GetCurrent();
-                var dueTime = schedule.GetDueTimeAfter(now);
-                _dueTime = dueTime;
-            }
+            Type = DueTimeType.BySchedule;
+            var now = TimeProvider.GetCurrent();
+            var dueTime = schedule.GetDueTimeAfter(now);
+            DueTime = dueTime;
         }
 
         internal void UpdateManually(DateTime manualDueTime)
         {
-            lock (_lock)
-            {
-                _type = DueTimeType.Overridden;
-                _dueTime = manualDueTime;
-            }
+            Type = DueTimeType.Overridden;
+            DueTime = manualDueTime;
         }
 
-        internal DueTimeInfo Build()
-        {
-            lock (_lock)
-            {
-                return new DueTimeInfo(_type, _dueTime);
-            }
-        }
+        internal DateTime DueTime { get; private set; }
+
+        public DueTimeType Type { get; private set; }
+
+        internal DueTimeInfo Build() => new DueTimeInfo(Type, DueTime);
     }
 }
