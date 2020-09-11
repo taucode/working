@@ -13,13 +13,13 @@ namespace TauCode.Working.Jobs
 
         IJob Get(string jobName);
 
-        IReadOnlyList<DateTime> GetSchedulePart(string jobName, int length);
+        //IReadOnlyList<DateTime> GetSchedulePart(string jobName, int length);
 
         void ForceStart(string jobName);
 
         void Cancel(string jobName);
 
-        void Enable(string jobName, bool enable);
+        //void Enable(string jobName, bool enable);
 
         //JobInfo GetInfo(string jobName, int? maxRunCount);
 

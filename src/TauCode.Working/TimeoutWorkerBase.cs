@@ -104,7 +104,7 @@ namespace TauCode.Working
             {
                 TimeSpan? result = null;
 
-                this.RequestControlLock(() =>
+                this.InvokeWithControlLock(() =>
                 {
                     this.CheckState2("Timeout value 'get' is requested.", WorkingExtensions.NonDisposedStates);
                     result = _timeout;
@@ -116,7 +116,7 @@ namespace TauCode.Working
             {
                 this.CheckTimeoutArgument(value);
 
-                this.RequestControlLock(() =>
+                this.InvokeWithControlLock(() =>
                 {
                     this.CheckState2("Timeout value 'set' is requested.", WorkingExtensions.NonDisposedStates);
                     _timeout = value;

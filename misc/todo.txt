@@ -17,3 +17,8 @@
 2020-09-10
 ==========
     1. Check all operations fail on disposed IJobManager
+    
+2020-09-11
+==========
+    1. Rename 'Lab' demo project to 'Playground'.
+    

@@ -10,7 +10,6 @@ namespace TauCode.Working.Jobs
             string name,
             JobRunInfo? currentRun,
             DueTimeInfo dueTimeInfo,
-            bool isEnabled,
             int runCount,
             IEnumerable<JobRunInfo> runs)
         {
@@ -22,7 +21,6 @@ namespace TauCode.Working.Jobs
             this.Name = name;
             this.CurrentRun = currentRun;
             this.DueTimeInfo = dueTimeInfo;
-            this.IsEnabled = isEnabled;
             this.RunCount = runCount;
             this.Runs = runs.ToList();
         }
@@ -30,7 +28,6 @@ namespace TauCode.Working.Jobs
         public string Name { get; }
         public JobRunInfo? CurrentRun { get; }
         public DueTimeInfo DueTimeInfo { get; }
-        public bool IsEnabled { get; }
         public int RunCount { get; }
         public IReadOnlyList<JobRunInfo> Runs { get; }
     }

@@ -11,6 +11,8 @@ namespace TauCode.Working.Jobs
 
         public static DateTime Never = new DateTime(NeverYear, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+        public static bool IsNever(this DueTimeInfo dueTimeInfo) => dueTimeInfo.DueTime.Equals(Never);
+
         internal static Task IdleJobRoutine(object parameter,
             IProgressTracker progressTracker,
             TextWriter output,

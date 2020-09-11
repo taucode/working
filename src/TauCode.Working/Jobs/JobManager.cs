@@ -356,10 +356,10 @@ namespace TauCode.Working.Jobs
 
         // todo read-only?
 
-        public IReadOnlyList<DateTime> GetSchedulePart(string jobName, int length)
-        {
-            throw new NotImplementedException();
-        }
+        //public IReadOnlyList<DateTime> GetSchedulePart(string jobName, int length)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         public void ForceStart(string jobName)
         {
@@ -388,10 +388,10 @@ namespace TauCode.Working.Jobs
             //entry.Worker.CancelCurrentJobRun();
         }
 
-        public void Enable(string jobName, bool enable)
-        {
-            throw new NotImplementedException();
-        }
+        //public void Enable(string jobName, bool enable)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         //public JobInfo GetInfo(string jobName, int? maxRunCount)
         //{

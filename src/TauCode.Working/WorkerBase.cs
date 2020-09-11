@@ -88,7 +88,7 @@ namespace TauCode.Working
             }
         }
 
-        protected void RequestControlLock(Action action)
+        protected void InvokeWithControlLock(Action action)
         {
             lock (_controlLock)
             {

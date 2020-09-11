@@ -1,15 +1,19 @@
-﻿namespace TauCode.Working.Jobs
+﻿using System.Collections.Generic;
+
+namespace TauCode.Working.Jobs
 {
     internal class JobInfoBuilder
     {
         internal JobInfoBuilder(string name)
         {
             this.Name = name;
+            this.Runs = new List<JobRunInfo>();
         }
 
         internal string Name { get; }
+        internal int RunCount { get; set; }
         internal DueTimeInfo DueTimeInfo { get; set; }
-        internal bool IsEnabled { get; set; }
+        internal IList<JobRunInfo> Runs { get; }
 
         internal JobInfo Build()
         {
@@ -17,9 +21,8 @@
                 this.Name,
                 null,
                 this.DueTimeInfo,
-                this.IsEnabled,
-                0,
-                new JobRunInfo[0]);
+                this.RunCount,
+                this.Runs);
         }
     }
 }

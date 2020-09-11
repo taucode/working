@@ -6,6 +6,8 @@ namespace TauCode.Working.Jobs
     {
         public DueTimeInfo(DueTimeType type, DateTime dueTime)
         {
+            // todo: check utc, limit, etc
+
             this.Type = type;
             this.DueTime = dueTime;
         }

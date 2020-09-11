@@ -15,6 +15,7 @@ namespace TauCode.Working.Jobs
             Exception exception)
         {
             // todo checks: positive etc
+            // todo date is valid
 
             this.Index = index;
             this.StartReason = startReason;

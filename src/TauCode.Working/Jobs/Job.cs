@@ -59,6 +59,11 @@ namespace TauCode.Working.Jobs
             _doer.OverrideDueTime(dueTime);
         }
 
+        void IJob.ForceStart()
+        {
+            _doer.ForceStart();
+        }
+
         #endregion
     }
 }

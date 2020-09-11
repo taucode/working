@@ -13,6 +13,6 @@ namespace TauCode.Working.Jobs
 
         JobInfo GetInfo(int? maxRunCount);
         void OverrideDueTime(DateTime? dueTime);
-        
+        void ForceStart();
     }
 }

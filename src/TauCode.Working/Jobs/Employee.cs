@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions;
+using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs.Schedules;
@@ -29,7 +31,8 @@ namespace TauCode.Working.Jobs
 
         private readonly Vice _vice;
 
-        private StringWriterWithEncoding _currentRunTextWriter;
+        //private StringWriterWithEncoding _currentRunTextWriter;
+        private MultiTextWriterLab _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
         private JobRunInfoBuilder _currentJobRunResultBuilder;
 
@@ -44,7 +47,7 @@ namespace TauCode.Working.Jobs
         private readonly IJob _job;
 
         private readonly object _lock;
-        private bool _isEnabled;
+        //private bool _isEnabled;
 
         #endregion
 
@@ -58,14 +61,15 @@ namespace TauCode.Working.Jobs
             _routine = JobExtensions.IdleJobRoutine;
 
             _job = new Job(this);
+            _runs = new List<JobRunInfo>();
 
             //_dueTimeInfoBuilder = new DueTimeInfoBuilder();
             //_dueTimeInfoBuilder.UpdateBySchedule(_job.Schedule);
 
-            
+
 
             _lock = new object();
-            _isEnabled = true;
+            //_isEnabled = true;
         }
 
         #endregion
@@ -76,7 +80,9 @@ namespace TauCode.Working.Jobs
         {
             var now = TimeProvider.GetCurrent();
             _currentJobRunResultBuilder.EndTime = now;
-            _currentJobRunResultBuilder.Output = _currentRunTextWriter.ToString();
+
+            var stringWriter = (StringWriterWithEncoding)_currentRunTextWriter.InnerWriters[0];
+            _currentJobRunResultBuilder.Output = stringWriter.ToString();
 
             switch (task.Status)
             {
@@ -103,22 +109,11 @@ namespace TauCode.Working.Jobs
                     _currentJobRunResultBuilder.Status = JobRunStatus.Canceled;
                     break;
 
-                //case TaskStatus.Created:
-                //    break;
-                //case TaskStatus.Running:
-                //    break;
-                //case TaskStatus.WaitingForActivation:
-                //    break;
-                //case TaskStatus.WaitingForChildrenToComplete:
-                //    break;
-                //case TaskStatus.WaitingToRun:
-                //    break;
-
                 default:
                     throw new ArgumentOutOfRangeException(); // todo.
             }
 
-
+            stringWriter.Dispose();
             _currentRunTextWriter.Dispose();
             _currentRunTextWriter = null;
 
@@ -127,15 +122,9 @@ namespace TauCode.Working.Jobs
 
             var jobRunResult = _currentJobRunResultBuilder.Build();
             _runs.Add(jobRunResult);
-
             _currentJobRunResultBuilder = null;
 
             this.Stop();
-
-
-
-            //throw new NotImplementedException();
-            //return Task.CompletedTask;
         }
 
         #endregion
@@ -144,7 +133,8 @@ namespace TauCode.Working.Jobs
 
         protected override void StartImpl()
         {
-            throw new NotImplementedException();
+            this.ChangeState(WorkerState.Running);
+
             //var now = TimeProvider.GetCurrent(); // todo checks utc
 
             //_currentRunCancellationTokenSource = new CancellationTokenSource();
@@ -205,7 +195,49 @@ namespace TauCode.Working.Jobs
 
         internal void ForceStart()
         {
-            throw new NotImplementedException();
+            this.InvokeWithControlLock(() =>
+            {
+                this.CheckState2("Job force start requested.", WorkerState.Stopped);
+
+                var dueTimeInfo = _vice.GetDueTimeInfo(this.Name);
+                var startTime = TimeProvider.GetCurrent();
+                _currentJobRunResultBuilder = new JobRunInfoBuilder(_runIndex, StartReason.Force, dueTimeInfo, startTime);
+                _currentRunCancellationTokenSource = new CancellationTokenSource();
+
+                var writers = new List<TextWriter>();
+                var runWriter = new StringWriterWithEncoding(Encoding.UTF8);
+                writers.Add(runWriter);
+
+                if (_output != null)
+                {
+                    writers.Add(_output);
+                }
+
+                _currentRunTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
+
+                Task task;
+
+                try
+                {
+                    task = _routine(
+                        _parameter,
+                        _progressTracker,
+                        _currentRunTextWriter,
+                        _currentRunCancellationTokenSource.Token);
+                }
+                catch (Exception ex)
+                {
+                    var jobEx = new JobRunFailedToStartException(ex);
+                    task = Task.FromException(jobEx);
+                }
+
+
+
+                _runIndex++;
+                this.Start();
+
+                task.ContinueWith(this.EndTask);
+            });
         }
 
         internal void DueTimeStart()
@@ -215,7 +247,7 @@ namespace TauCode.Working.Jobs
 
         internal void CancelCurrentJobRun()
         {
-            this.RequestControlLock(() =>
+            this.InvokeWithControlLock(() =>
             {
                 if (this.State != WorkerState.Running)
                 {
@@ -230,12 +262,12 @@ namespace TauCode.Working.Jobs
 
         internal IJob GetJob() => _job;
 
-        internal T GetWithControlLock<T>(Func<T> func)
-        {
-            T value = default;
-            this.RequestControlLock(() => value = func());
-            return value;
-        }
+        //internal T GetWithControlLock<T>(Func<T> func)
+        //{
+        //    T value = default;
+        //    this.InvokeWithControlLock(() => value = func());
+        //    return value;
+        //}
 
         //internal JobInfoBuilder GetJobInfoBuilder(int? maxRunCount)
         //{
@@ -252,46 +284,49 @@ namespace TauCode.Working.Jobs
         //    return builder;
         //}
 
-        internal bool IsEnabled
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _isEnabled;
-                }
-            }
-            set
-            {
-                lock (_lock)
-                {
-                    _isEnabled = value;
-                }
-            }
-        }
+        //internal bool IsEnabled
+        //{
+        //    get
+        //    {
+        //        lock (_lock)
+        //        {
+        //            return _isEnabled;
+        //        }
+        //    }
+        //    set
+        //    {
+        //        lock (_lock)
+        //        {
+        //            _isEnabled = value;
+        //        }
+        //    }
+        //}
 
         #endregion
 
         internal JobInfo GetJobInfo(int? maxRunCount)
         {
+            // todo: check null or non-negative 'maxRunCount'
+
+            // todo: _runIndex is guarded by control lock in other places!
             lock (_lock)
             {
                 var jobInfoBuilder = new JobInfoBuilder(this.Name);
                 var dueTimeInfo = _vice.GetDueTimeInfo(this.Name);
                 jobInfoBuilder.DueTimeInfo = dueTimeInfo;
+                jobInfoBuilder.RunCount = _runIndex;
 
-                jobInfoBuilder.IsEnabled = _isEnabled;
+                var runCountToTake = Math.Min(
+                    _runs.Count,
+                    maxRunCount ?? int.MaxValue);
+
+                for (var i = 0; i < runCountToTake; i++)
+                {
+                    jobInfoBuilder.Runs.Add(_runs[i]);
+                }
 
                 return jobInfoBuilder.Build();
             }
-
-
-
-            //jobInfoBuilder.IsEnabled = 
-
-            //throw new NotImplementedException();
-
-
         }
 
         internal ISchedule GetSchedule()
@@ -366,5 +401,13 @@ namespace TauCode.Working.Jobs
                 _vice.OverrideDueTime(this.Name, dueTime, _schedule);
             }
         }
+
+        //internal void Enable(in bool enable)
+        //{
+        //    lock (_lock)
+        //    {
+        //        _isEnabled = enable;
+        //    }
+        //}
     }
 }
