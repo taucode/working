@@ -1,15 +1,13 @@
 ﻿using System;
-using TauCode.Infrastructure.Time;
 
 namespace TauCode.Working.Jobs
 {
     internal class DueTimeInfoBuilder
     {
-        internal void UpdateBySchedule(ISchedule schedule)
+        internal void UpdateBySchedule(ISchedule schedule, DateTime currentTime)
         {
             Type = DueTimeType.BySchedule;
-            var now = TimeProvider.GetCurrent();
-            var dueTime = schedule.GetDueTimeAfter(now);
+            var dueTime = schedule.GetDueTimeAfter(currentTime);
             DueTime = dueTime;
         }
 

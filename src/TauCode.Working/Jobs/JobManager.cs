@@ -16,7 +16,7 @@ namespace TauCode.Working.Jobs
 
         public JobManager()
         {
-            _vice = new Vice(this)
+            _vice = new Vice()
             {
                 Name = typeof(Vice).FullName,
             };

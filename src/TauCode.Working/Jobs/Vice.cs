@@ -15,7 +15,17 @@ namespace TauCode.Working.Jobs
 
         private const int ScheduleChangedSignalIndex = 1;
 
-        private static readonly TimeSpan InfiniteTimeSpan = TimeSpan.FromMilliseconds(int.MaxValue);
+        private static readonly TimeSpan VeryLongVacation = TimeSpan.FromMilliseconds(int.MaxValue);
+
+        /// <summary>
+        /// Minimal waitable time period is 1 millisecond.
+        /// </summary>
+        private static readonly TimeSpan TimeQuantum = TimeSpan.FromMilliseconds(1);
+        
+        /// <summary>
+        /// If we have a due-time candidate, we've gotta break vacation a little bit before his actual due time.
+        /// </summary>
+        private static readonly TimeSpan Leeway = TimeSpan.FromMilliseconds(10);
 
         #endregion
 
@@ -41,7 +51,7 @@ namespace TauCode.Working.Jobs
 
         #region Fields
 
-        private readonly JobManager _manager;
+        //private readonly ITimeProvider _timeProvider;
         private readonly Dictionary<string, EmployeeRecord> _employeeRecords;
         private AutoResetEvent _scheduleChangedEvent; // disposed by LoopWorkerBase.Shutdown
 
@@ -51,9 +61,9 @@ namespace TauCode.Working.Jobs
 
         #region Constructor
 
-        internal Vice(JobManager manager)
+        internal Vice()
         {
-            _manager = manager;
+            //_timeProvider = timeProvider;
             _employeeRecords = new Dictionary<string, EmployeeRecord>();
             _lock = new object();
         }
@@ -105,13 +115,13 @@ namespace TauCode.Working.Jobs
                 }
                 else
                 {
-                    var now = TimeProvider.GetCurrent();
+                    var now = this.GetCurrentTime();
                     var dueTime = employeeRecord.DueTimeInfoBuilder.DueTime;
 
                     if (dueTime <= now)
                     {
                         // gotta run this job
-                        employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule);
+                        employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
 
                         // todo: check & ut job is not running already.
                         Task.Run(() => employeeRecord.Employee.StartJob(StartReason.DueTime, employeeRecord.DueTimeInfoBuilder.Build()));
@@ -131,24 +141,34 @@ namespace TauCode.Working.Jobs
                 var employeeRecord = this.GetClosestRecord();
                 if (employeeRecord == null)
                 {
-                    vacationTimeout = InfiniteTimeSpan; // no candidates, let's party 'forever'
+                    vacationTimeout = VeryLongVacation; // no candidates, let's party for ~1mo.
                 }
                 else
                 {
                     var dueTime = employeeRecord.DueTimeInfoBuilder.DueTime;
-                    var now = TimeProvider.GetCurrent();
+                    var now = this.GetCurrentTime();
                     if (dueTime <= now)
                     {
-                        // oh, we've got a due time, terminate vacation immediately!
+                        // oh, we've got a due time elapsed, terminate vacation immediately!
                         return Task.FromResult(VacationFinishReason.VacationTimeElapsed);
                     }
                     else
                     {
                         // got some time to have fun before the due time
                         vacationTimeout = dueTime - now;
-                        if (vacationTimeout > InfiniteTimeSpan)
+                        if (vacationTimeout > VeryLongVacation)
                         {
-                            vacationTimeout = InfiniteTimeSpan;
+                            vacationTimeout = VeryLongVacation;
+                        }
+                        else
+                        {
+                            // let's be prepped a bit before due time
+                            vacationTimeout -= Leeway;
+                            if (vacationTimeout <= TimeSpan.Zero)
+                            {
+                                // must be positive
+                                vacationTimeout = TimeQuantum;
+                            }
                         }
                     }
                 }
@@ -205,7 +225,9 @@ namespace TauCode.Working.Jobs
                 var employeeRecord = new EmployeeRecord(employee);
                 _employeeRecords.Add(employee.Name, employeeRecord);
 
-                employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule);
+                var now = this.GetCurrentTime();
+
+                employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
                 _scheduleChangedEvent.Set();
 
                 return employee.GetJob();
@@ -223,6 +245,8 @@ namespace TauCode.Working.Jobs
       
 
         #endregion
+
+        internal DateTime GetCurrentTime() => TimeProvider.GetCurrent();
 
         internal DueTimeInfo GetDueTimeInfo(string jobName)
         {
@@ -246,7 +270,8 @@ namespace TauCode.Working.Jobs
                 }
                 else
                 {
-                    employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule);
+                    var now = this.GetCurrentTime();
+                    employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
                 }
             }
 
@@ -273,8 +298,10 @@ namespace TauCode.Working.Jobs
                     throw new NotImplementedException();
                 }
 
+                var now = this.GetCurrentTime();
+
                 employeeRecord.Schedule = schedule;
-                employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule);
+                employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
             }
 
             _scheduleChangedEvent.Set();

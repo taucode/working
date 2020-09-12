@@ -22,3 +22,7 @@
 ==========
     1. Rename 'Lab' demo project to 'Playground'.
     
+2020-09-12
+==========
+    1. Graceful 'Dispose': Dispose must not throw. E.g. using(myDisposable){} etc. https://stackoverflow.com/questions/1030455/how-to-handle-exception-thrown-from-dispose
+    

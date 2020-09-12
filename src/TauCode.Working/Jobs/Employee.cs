@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Extensions.Lab;
-using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 
 namespace TauCode.Working.Jobs
@@ -16,38 +15,18 @@ namespace TauCode.Working.Jobs
     {
         #region Fields
 
-        //private ISchedule _schedule;
-        //private JobDelegate _routine;
-        //private object _parameter;
-        //private IProgressTracker _progressTracker;
-        //private TextWriter _output;
-
-        //private ISchedule _schedule;
-
         private JobDelegate _routine;
         private object _parameter;
         private IProgressTracker _progressTracker;
         private TextWriter _output;
-
         private readonly Vice _vice;
-
-        //private StringWriterWithEncoding _currentRunTextWriter;
         private MultiTextWriterLab _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
         private JobRunInfoBuilder _currentJobRunResultBuilder;
-
-        //private readonly DueTimeInfoBuilder _dueTimeInfoBuilder;
-
         private readonly List<JobRunInfo> _runs;
-
-        //private Task _currentTask;
-
         private int _runIndex;
-
         private readonly IJob _job;
-
         private readonly object _lock;
-        //private bool _isEnabled;
 
         #endregion
 
@@ -56,20 +35,10 @@ namespace TauCode.Working.Jobs
         internal Employee(Vice vice)
         {
             _vice = vice;
-
-            //_schedule = new NeverSchedule();
             _routine = JobExtensions.IdleJobRoutine;
-
             _job = new Job(this);
             _runs = new List<JobRunInfo>();
-
-            //_dueTimeInfoBuilder = new DueTimeInfoBuilder();
-            //_dueTimeInfoBuilder.UpdateBySchedule(_job.Schedule);
-
-
-
             _lock = new object();
-            //_isEnabled = true;
         }
 
         #endregion
@@ -83,7 +52,7 @@ namespace TauCode.Working.Jobs
 
         private void EndTask(Task task)
         {
-            var now = TimeProvider.GetCurrent();
+            var now = _vice.GetCurrentTime();
             _currentJobRunResultBuilder.EndTime = now;
 
             var stringWriter = (StringWriterWithEncoding)_currentRunTextWriter.InnerWriters[0];
@@ -165,55 +134,7 @@ namespace TauCode.Working.Jobs
 
         #region Internal
 
-        //internal DueTimeInfoBuilder getDueTimeInfoBuilder() => _dueTimeInfoBuilder;
-
         internal void ForceStart() => this.StartJob(StartReason.Force, _vice.GetDueTimeInfo(this.Name));
-
-        //{
-        //    this.InvokeWithControlLock(() =>
-        //    {
-        //        this.CheckState2("Job force start requested.", WorkerState.Stopped);
-
-        //        var dueTimeInfo = _vice.GetDueTimeInfo(this.Name);
-        //        var startTime = TimeProvider.GetCurrent();
-        //        _currentJobRunResultBuilder = new JobRunInfoBuilder(_runIndex, StartReason.Force, dueTimeInfo, startTime);
-        //        _currentRunCancellationTokenSource = new CancellationTokenSource();
-
-        //        var writers = new List<TextWriter>();
-        //        var runWriter = new StringWriterWithEncoding(Encoding.UTF8);
-        //        writers.Add(runWriter);
-
-        //        if (_output != null)
-        //        {
-        //            writers.Add(_output);
-        //        }
-
-        //        _currentRunTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
-
-        //        Task task;
-
-        //        try
-        //        {
-        //            task = _routine(
-        //                _parameter,
-        //                _progressTracker,
-        //                _currentRunTextWriter,
-        //                _currentRunCancellationTokenSource.Token);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            var jobEx = new JobRunFailedToStartException(ex);
-        //            task = Task.FromException(jobEx);
-        //        }
-
-
-
-        //        _runIndex++;
-        //        this.Start();
-
-        //        task.ContinueWith(this.EndTask);
-        //    });
-        //}
 
         internal void DueTimeStart()
         {
@@ -231,51 +152,9 @@ namespace TauCode.Working.Jobs
 
                 _currentRunCancellationTokenSource.Cancel();
             });
-
-            //throw new NotImplementedException();
         }
 
         internal IJob GetJob() => _job;
-
-        //internal T GetWithControlLock<T>(Func<T> func)
-        //{
-        //    T value = default;
-        //    this.InvokeWithControlLock(() => value = func());
-        //    return value;
-        //}
-
-        //internal JobInfoBuilder GetJobInfoBuilder(int? maxRunCount)
-        //{
-        //    var builder = new JobInfoBuilder(this.Name)
-        //    {
-        //        IsEnabled = this.IsEnabled,
-        //    };
-
-        //    //this.RequestControlLock(() =>
-        //    //{
-        //    //    builder.DueTimeInfo = _dueTimeInfoBuilder.Build();
-        //    //});
-
-        //    return builder;
-        //}
-
-        //internal bool IsEnabled
-        //{
-        //    get
-        //    {
-        //        lock (_lock)
-        //        {
-        //            return _isEnabled;
-        //        }
-        //    }
-        //    set
-        //    {
-        //        lock (_lock)
-        //        {
-        //            _isEnabled = value;
-        //        }
-        //    }
-        //}
 
         #endregion
 
@@ -424,7 +303,7 @@ namespace TauCode.Working.Jobs
             {
                 this.CheckState2("Job force start requested.", WorkerState.Stopped);
 
-                var startTime = TimeProvider.GetCurrent();
+                var startTime = _vice.GetCurrentTime();
                 _currentJobRunResultBuilder = new JobRunInfoBuilder(_runIndex, startReason, dueTimeInfo, startTime);
                 _currentRunCancellationTokenSource = new CancellationTokenSource();
 

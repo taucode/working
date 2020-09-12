@@ -134,14 +134,26 @@ namespace TauCode.Working.Tests.Jobs
             var finished = now.AddMinutes(1).AddMilliseconds(1);
             await Task.Run(async () =>
             {
-                TimeProvider.Override(finished);
-                jobManager.DebugPulseJobManager();
-                await Task.Delay(100); // todo: job.wait()
+                TimeProvider.Override(finished); // pretend due time come
+                jobManager.DebugPulseJobManager(); // this will break Vice's vacation
+                await Task.Delay(100); // should be enough for Routine to complete
             });
 
             // Assert
             Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
             Assert.That(job.Schedule, Is.SameAs(newSchedule));
         }
+
+        // todo: IJob.Schedule
+        // - initially, equals to Never
+        // - after was set, changes to new
+        // - after was disposed, throws exception.
+
+        // todo: IJob.UpdateSchedule
+        // - 1. just created, 2. called => changes, due time changes
+        // - 1. forcibly started 2. called => schedule changes, but returns 'false'; job due time changes; current run's due time not changed; after completion, run logs shows 'old' due time, and jobs' due time is next by the schedule.
+        // - like in previous, but started not forcibly but by schedule
+        // - if due time overridden, throws an exception
+        // - after was disposed, throws exception.
     }
 }
