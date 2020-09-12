@@ -37,6 +37,10 @@ namespace TauCode.Working.Jobs
 
         public void Start() => _vice.Start(); // todo: gracefully handle exception when _vice throws them
 
+        public bool IsRunning => throw new NotImplementedException();
+
+        public bool IsDisposed => throw new NotImplementedException();
+
         public IJob Create(string jobName) => _vice.CreateJob(jobName);
 
         public IReadOnlyList<string> GetJobNames() => _vice.GetJobNames();

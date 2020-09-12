@@ -125,7 +125,42 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(job, Is.SameAs(gotJob));
         }
 
-     
-       
+        // todo: IJobManager.Start
+        // - cannot start twice
+        // - cannot start disposed object
+
+        // todo: IJobManager.IsRunning
+        // - false if not started
+        // - true if started
+        // - false if disposed
+
+        // todo: IJobManager.IsDisposed
+        // - false if not started
+        // - false if started
+        // - true if disposed
+
+        // todo: IJobManager.Create
+        // - happy path
+        // - exception if not started
+        // - exception on bad job name
+        // - exception on dup
+        // - exception if disposed
+
+        // todo: IJobManager.GetJobNames
+        // - happy path
+        // - exception if not started
+        // - exception if disposed
+
+        // todo: IJobManager.Get
+        // - happy path
+        // - exception if not started
+        // - exception on bad job name
+        // - exception if disposed
+
+        // todo: IJobManager.Dispose
+        // - happy path on started (serilog)
+        // - happy path on not started (serilog)
+        // - exception if called twice
+
     }
 }

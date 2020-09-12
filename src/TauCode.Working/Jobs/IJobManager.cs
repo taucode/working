@@ -7,12 +7,16 @@ namespace TauCode.Working.Jobs
     {
         void Start();
 
+        bool IsRunning { get; }
+
+        bool IsDisposed { get; }
+
         IJob Create(string jobName);
 
-        IReadOnlyList<string> GetJobNames();
+        IReadOnlyList<string> GetJobNames(); // todo: rename to GetNames()
 
         IJob Get(string jobName);
 
-        void Remove(string jobName);
+        void Remove(string jobName); // todo: IJob.Dispose().
     }
 }
