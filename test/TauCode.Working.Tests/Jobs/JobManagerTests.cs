@@ -10,56 +10,6 @@ namespace TauCode.Working.Tests.Jobs
     [TestFixture]
     public class JobManagerTests
     {
-        //[Test]
-        //public async Task Constructor_NoArguments_RunsSimpleHappyPath()
-        //{
-        //    // Arrange
-        //    IJobManager scheduleManager = new JobManager();
-        //    scheduleManager.Start();
-
-        //    var now = TimeProvider.GetCurrent();
-
-        //    var schedule = new SimpleSchedule(
-        //        SimpleScheduleKind.Hour,
-        //        1,
-        //        now,
-        //        new List<TimeSpan>()
-        //        {
-        //            TimeSpan.FromSeconds(2),
-        //        });
-
-
-
-        //    // Act
-        //    scheduleManager.Register(
-        //        "my-job",
-        //        (parameter, writer, token) => Task.Run(async () =>
-        //            {
-        //                for (int i = 0; i < 10; i++)
-        //                {
-        //                    await writer.WriteLineAsync(TimeProvider.GetCurrent().ToString("O", CultureInfo.InvariantCulture));
-
-        //                    var got = token.WaitHandle.WaitOne(100);
-        //                    if (got)
-        //                    {
-        //                        await writer.WriteLineAsync("Got cancel!");
-        //                        throw new TaskCanceledException();
-        //                    }
-        //                }
-
-        //                return true;
-        //            },
-        //            token),
-        //        schedule,
-        //        10);
-
-        //    await Task.Delay(2001);
-        //    scheduleManager.Cancel("my-job");
-
-        //    // Assert
-        //    scheduleManager.Dispose();
-        //}
-
         [SetUp]
         public void SetUp()
         {
@@ -295,6 +245,14 @@ namespace TauCode.Working.Tests.Jobs
 
             // Assert
             Assert.That(job.Name, Is.EqualTo("job1"));
+
+            var now = TimeProvider.GetCurrent();
+            Assert.That(job.Schedule.GetDueTimeAfter(now), Is.EqualTo(JobExtensions.Never));
+            Assert.That(job.Routine, Is.Not.Null);
+            Assert.That(job.Parameter, Is.Null);
+            Assert.That(job.ProgressTracker, Is.Null);
+            Assert.That(job.Output, Is.Null);
+
         }
 
         [Test]
@@ -485,45 +443,65 @@ namespace TauCode.Working.Tests.Jobs
 
         #endregion
 
+        #region IJobManager.Dispose
+
         [Test]
-        public void Create_ValidJobName_CreatesJob()
+        public void Dispose_NotStarted_Disposes()
         {
             // Arrange
-            IJobManager jobManager = new JobManager();
-            jobManager.Start(); // todo: ut cannot be started twice.
+            using IJobManager jobManager = new JobManager();
 
             // Act
-            var job = jobManager.Create("my-job");
+            jobManager.Dispose();
 
             // Assert
-            var now = TimeProvider.GetCurrent();
-            Assert.That(job.Schedule.GetDueTimeAfter(now), Is.EqualTo(JobExtensions.Never));
-            Assert.That(job.Routine, Is.Not.Null);
-            Assert.That(job.Parameter, Is.Null);
-            Assert.That(job.ProgressTracker, Is.Null);
-            Assert.That(job.Output, Is.Null);
+            Assert.That(jobManager.IsDisposed, Is.True);
         }
 
         [Test]
-        public void Get_ValidName_ReturnsJob()
+        public void Dispose_Started_Disposes()
         {
             // Arrange
-            IJobManager jobManager = new JobManager();
-            jobManager.Start(); // todo: ut cannot be started twice.
-            var job = jobManager.Create("job1");
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
 
             // Act
-            var gotJob = jobManager.Get("job1");
+            jobManager.Dispose();
 
             // Assert
-            Assert.That(job, Is.SameAs(gotJob));
+            Assert.That(jobManager.IsDisposed, Is.True);
         }
 
+        [Test]
+        public void Dispose_AlreadyDisposed_RunsOk()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Dispose();
 
-        // todo: IJobManager.Dispose
-        // - happy path on started (serilog)
-        // - happy path on not started (serilog)
-        // - exception if called twice
-        // - all jobs are cancelled and disposed
+            // Act
+            jobManager.Dispose();
+
+            // Assert
+            Assert.That(jobManager.IsDisposed, Is.True);
+        }
+
+        [Test]
+        public void Dispose_JobsCreated_DisposesAndJobsAreCanceledAndDisposed()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            jobManager.Create("job1");
+            jobManager.Create("job2");
+
+            // Act
+            var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.Get("non-existing"));
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo("Job not found: 'non-existing'."));
+        }
+
+        #endregion
     }
 }

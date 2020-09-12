@@ -1,14 +1,13 @@
-﻿using Serilog;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Serilog;
 using TauCode.Working.Exceptions;
 
-namespace TauCode.Working
+namespace TauCode.Working.Workers
 {
     // todo clean
     public abstract class WorkerBase : IWorker

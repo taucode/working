@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Jobs;
-using TauCode.Working.Jobs.Schedules;
+using TauCode.Working.Schedules;
+using TauCode.Working.Workers;
 
 namespace TauCode.Working.TestDemo.Lab
 {

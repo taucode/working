@@ -6,7 +6,7 @@ using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Jobs;
-using TauCode.Working.Jobs.Schedules;
+using TauCode.Working.Schedules;
 
 namespace TauCode.Working.Tests.Jobs
 {

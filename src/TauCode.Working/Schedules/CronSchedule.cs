@@ -1,6 +1,7 @@
 ﻿using System;
+using TauCode.Working.Jobs;
 
-namespace TauCode.Working.Jobs.Schedules
+namespace TauCode.Working.Schedules
 {
     public class CronSchedule : ISchedule
     {

@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Working.Exceptions;
 
-namespace TauCode.Working
+namespace TauCode.Working.Workers
 {
     // todo remove
     public abstract class QueueWorkerBaseOld<TAssignment> : WorkerBase, IQueueWorker<TAssignment>

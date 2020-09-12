@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Working.Exceptions;
+using TauCode.Working.Schedules;
+using TauCode.Working.Workers;
 
 namespace TauCode.Working.Jobs
 {

@@ -2,7 +2,7 @@
 using System.Windows.Forms;
 using TauCode.Extensions.Lab;
 using TauCode.Working.Jobs;
-using TauCode.Working.Jobs.Schedules;
+using TauCode.Working.Schedules;
 using TauCode.Working.TestDemo.Gui.Common;
 using TauCode.Working.TestDemo.Gui.Server.Dialogs;
 

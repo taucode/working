@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace TauCode.Working
+namespace TauCode.Working.Workers
 {
     public sealed class FuncTimeoutWorker : TimeoutWorkerBase
     {

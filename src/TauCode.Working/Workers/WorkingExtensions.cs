@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace TauCode.Working
+namespace TauCode.Working.Workers
 {
     public static class WorkingExtensions
     {

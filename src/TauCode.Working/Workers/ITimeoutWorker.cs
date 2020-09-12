@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TauCode.Working
+namespace TauCode.Working.Workers
 {
     public interface ITimeoutWorker
     {

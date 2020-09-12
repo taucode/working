@@ -1,6 +1,7 @@
 ﻿using System;
+using TauCode.Working.Jobs;
 
-namespace TauCode.Working.Jobs.Schedules
+namespace TauCode.Working.Schedules
 {
     internal sealed class NeverSchedule : ISchedule
     {

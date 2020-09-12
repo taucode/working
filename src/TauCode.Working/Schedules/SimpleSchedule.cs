@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using TauCode.Extensions;
+using TauCode.Working.Jobs;
 
-namespace TauCode.Working.Jobs.Schedules
+namespace TauCode.Working.Schedules
 {
     // todo clean up
     public class SimpleSchedule : ISchedule

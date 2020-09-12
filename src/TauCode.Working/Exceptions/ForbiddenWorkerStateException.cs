@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using TauCode.Working.Workers;
 
 namespace TauCode.Working.Exceptions
 {

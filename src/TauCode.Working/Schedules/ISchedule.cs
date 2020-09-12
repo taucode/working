@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TauCode.Working.Jobs
+namespace TauCode.Working.Schedules
 {
     public interface ISchedule
     {

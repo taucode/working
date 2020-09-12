@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 // todo clean up
-namespace TauCode.Working
+namespace TauCode.Working.Workers
 {
     public abstract class TimeoutWorkerBase : LoopWorkerBase, ITimeoutWorker
     {

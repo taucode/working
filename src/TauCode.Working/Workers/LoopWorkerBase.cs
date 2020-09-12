@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TauCode.Working
+namespace TauCode.Working.Workers
 {
     public abstract class LoopWorkerBase : WorkerBase
     {

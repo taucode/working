@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TauCode.Working
+namespace TauCode.Working.Workers
 {
     public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase, IQueueWorker<TAssignment>
     {

@@ -1,4 +1,4 @@
-﻿namespace TauCode.Working
+﻿namespace TauCode.Working.Workers
 {
     public enum WorkerState
     {
