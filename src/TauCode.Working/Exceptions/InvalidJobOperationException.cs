@@ -6,10 +6,6 @@ namespace TauCode.Working.Exceptions
     [Serializable]
     public class InvalidJobOperationException : JobException
     {
-        public InvalidJobOperationException()
-        {
-        }
-
         public InvalidJobOperationException(string message)
             : base(message)
         {

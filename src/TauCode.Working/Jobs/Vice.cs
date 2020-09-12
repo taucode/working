@@ -118,7 +118,7 @@ namespace TauCode.Working.Jobs
 
                 if (employeeRecord == null && mustExist)
                 {
-                    throw new NotImplementedException(); // todo: proper ex.
+                    throw new InvalidJobOperationException($"Job not found: '{jobName}'.");
                 }
 
                 return employeeRecord;

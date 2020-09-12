@@ -349,6 +349,142 @@ namespace TauCode.Working.Tests.Jobs
 
         #endregion
 
+        #region IJobManager.GetNames
+
+        [Test]
+        public void GetNames_NotStarted_ThrowsInvalidJobOperationException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+
+            // Act
+            var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.GetNames());
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' not started."));
+        }
+
+        [Test]
+        public void GetNames_Started_ReturnsJobNames()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            jobManager.Create("job1");
+            jobManager.Create("job2");
+
+            // Act
+            var jobNames = jobManager.GetNames();
+
+            // Assert
+            CollectionAssert.AreEquivalent(new string[] {"job1", "job2"}, jobNames);
+        }
+
+        [Test]
+        public void GetNames_Disposed_ThrowsJobObjectIsDisposedException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            jobManager.Create("job1");
+            jobManager.Create("job2");
+            jobManager.Dispose();
+
+            // Act
+            var ex = Assert.Throws<JobObjectDisposedException>(() => jobManager.GetNames());
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo(typeof(IJobManager).FullName));
+        }
+
+        #endregion
+
+        #region IJobManager.Get
+
+        [Test]
+        public void Get_NotStarted_ThrowsInvalidJobOperationException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+
+            // Act
+            var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.Get("my-job"));
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' not started."));
+        }
+
+        [Test]
+        public void Get_Started_ReturnsJob()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            var job1 = jobManager.Create("job1");
+            var job2 = jobManager.Create("job2");
+
+            // Act
+            var gotJob1 = jobManager.Get("job1");
+
+            // Assert
+            Assert.That(gotJob1, Is.SameAs(job1));
+        }
+
+        [Test]
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase(" ")]
+        public void Get_BadJobName_ThrowsArgumentException(string badJobName)
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+
+            // Act
+            var ex = Assert.Throws<ArgumentException>(() => jobManager.Get(badJobName));
+
+            // Assert
+            Assert.That(ex.Message, Does.StartWith("Job name cannot be null or empty."));
+            Assert.That(ex.ParamName, Is.EqualTo("jobName"));
+        }
+
+        [Test]
+        public void Get_NonExistingJobName_ThrowsInvalidJobOperationException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            jobManager.Create("job1");
+            jobManager.Create("job2");
+
+            // Act
+            var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.Get("non-existing"));
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo("Job not found: 'non-existing'."));
+        }
+
+        [Test]
+        public void Get_Disposed_ThrowsJobObjectDisposedException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            jobManager.Create("job1");
+            jobManager.Create("job2");
+            jobManager.Dispose();
+
+            // Act
+            var ex = Assert.Throws<JobObjectDisposedException>(() => jobManager.Get("job1"));
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo(typeof(IJobManager).FullName));
+        }
+
+        #endregion
+
         [Test]
         public void Create_ValidJobName_CreatesJob()
         {
@@ -369,22 +505,6 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
-        public void GetJobNames_NoArguments_ReturnsJobNames()
-        {
-            // Arrange
-            IJobManager jobManager = new JobManager();
-            jobManager.Start(); // todo: ut cannot be started twice.
-            jobManager.Create("job1");
-            jobManager.Create("job2");
-
-            // Act
-            var names = jobManager.GetNames();
-
-            // Assert
-            CollectionAssert.AreEquivalent(new[] { "job1", "job2" }, names);
-        }
-
-        [Test]
         public void Get_ValidName_ReturnsJob()
         {
             // Arrange
@@ -400,22 +520,10 @@ namespace TauCode.Working.Tests.Jobs
         }
 
 
-
-        // todo: IJobManager.GetJobNames
-        // - happy path
-        // - exception if not started
-        // - exception if disposed
-
-        // todo: IJobManager.Get
-        // - happy path
-        // - exception if not started
-        // - exception on bad job name
-        // - exception if disposed
-
         // todo: IJobManager.Dispose
         // - happy path on started (serilog)
         // - happy path on not started (serilog)
         // - exception if called twice
-
+        // - all jobs are cancelled and disposed
     }
 }
