@@ -38,14 +38,15 @@ namespace TauCode.Working.TestDemo.Gui.Server.Forms
 
         private void RemoveJob()
         {
-            try
-            {
-                _jobManager.Remove(_jobName);
-            }
-            catch (Exception ex)
-            {
-                ex.ToMessageBox();
-            }
+            throw new NotImplementedException();
+            //try
+            //{
+            //    _jobManager.Remove(_jobName);
+            //}
+            //catch (Exception ex)
+            //{
+            //    ex.ToMessageBox();
+            //}
         }
     }
 }

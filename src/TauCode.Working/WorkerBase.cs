@@ -98,8 +98,6 @@ namespace TauCode.Working
 
         protected WorkingException CreateInternalErrorException() => new WorkingException("Internal error.");
 
-        // todo rename and get rid of two others.
-
         // todo: consider HashSet.
         protected void CheckState(string preamble, params WorkerState[] acceptedStates)
         {
@@ -121,7 +119,11 @@ namespace TauCode.Working
                 sb.AppendLine($"'{nameof(this.State)}' is expected to be one of the following: [{acceptedStatesString}].");
                 sb.Append($"Actual value: {state}.");
 
-                throw new WorkingException(sb.ToString());
+                throw new ForbiddenWorkerStateException(
+                    this.Name,
+                    acceptedStates,
+                    state,
+                    sb.ToString());
             }
         }
 

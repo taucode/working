@@ -94,5 +94,14 @@ namespace TauCode.Working
             return worker.State == WorkerState.Disposed;
         }
 
+        public static bool IsWorkerRunning(this IWorker worker)
+        {
+            if (worker == null)
+            {
+                throw new ArgumentNullException(nameof(worker));
+            }
+
+            return worker.State == WorkerState.Running;
+        }
     }
 }

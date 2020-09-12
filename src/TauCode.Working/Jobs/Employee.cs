@@ -62,7 +62,7 @@ namespace TauCode.Working.Jobs
             {
                 case TaskStatus.Faulted:
                     var ex = task.Exception.InnerException;
-                    if (ex is JobRunFailedToStartException)
+                    if (ex is JobFailedToStartException)
                     {
                         _currentJobRunResultBuilder.Status = JobRunStatus.FailedToStart;
                     }
@@ -314,7 +314,7 @@ namespace TauCode.Working.Jobs
                 }
                 catch (Exception ex)
                 {
-                    var jobEx = new JobRunFailedToStartException(ex);
+                    var jobEx = new JobFailedToStartException(ex);
                     task = Task.FromException(jobEx);
                 }
 

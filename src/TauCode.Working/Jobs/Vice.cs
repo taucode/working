@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Infrastructure.Time;
+using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs.Schedules;
 
 namespace TauCode.Working.Jobs
@@ -55,7 +56,6 @@ namespace TauCode.Working.Jobs
         private AutoResetEvent _scheduleChangedSignal; // disposed by LoopWorkerBase.Shutdown
 
         private readonly object _lock;
-        private bool _isDisposed;
 
         #endregion
 
@@ -74,7 +74,7 @@ namespace TauCode.Working.Jobs
         // todo: cached roster of closest records
         private EmployeeRecord GetClosestRecord()
         {
-            if (_isDisposed)
+            if (this.IsWorkerDisposed())
             {
                 return null; // Don't throw exception, just return. Because it's an internal method used in routine loop.
             }
@@ -103,12 +103,9 @@ namespace TauCode.Working.Jobs
 
         private void CheckNotDisposed()
         {
-            lock (_lock)
+            if (this.IsWorkerDisposed())
             {
-                if (_isDisposed)
-                {
-                    throw new ObjectDisposedException(this.GetType().FullName, "Object was disposed.");
-                }
+                throw new JobObjectDisposedException(typeof(IJobManager).FullName);
             }
         }
 
@@ -231,14 +228,21 @@ namespace TauCode.Working.Jobs
 
         protected override void DisposeImpl()
         {
+            IList<Employee> employeesToFire;
+
             lock (_lock)
             {
-                _isDisposed = true;
+                employeesToFire = _employeeRecords
+                    .Values
+                    .Select(x => x.Employee)
+                    .ToList();
 
-                foreach (var employeeRecord in _employeeRecords.Values)
-                {
-                    employeeRecord.Employee.Dispose();
-                }
+                _employeeRecords.Clear();
+            }
+
+            foreach (var employee in employeesToFire)
+            {
+                employee.Dispose();
             }
 
             base.DisposeImpl();
@@ -267,7 +271,7 @@ namespace TauCode.Working.Jobs
                 var existing = this.TryGetEmployeeRecord(jobName, false);
                 if (existing != null)
                 {
-                    throw new NotImplementedException(); // dup!
+                    throw new InvalidJobOperationException($"Job '{jobName}' already exists.");
                 }
 
                 var employee = new Employee(this)

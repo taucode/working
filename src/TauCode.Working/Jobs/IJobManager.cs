@@ -16,7 +16,5 @@ namespace TauCode.Working.Jobs
         IReadOnlyList<string> GetNames();
 
         IJob Get(string jobName);
-
-        void Remove(string jobName); // todo: IJob.Dispose().
     }
 }

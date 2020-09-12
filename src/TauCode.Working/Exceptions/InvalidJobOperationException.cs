@@ -4,23 +4,23 @@ using System.Runtime.Serialization;
 namespace TauCode.Working.Exceptions
 {
     [Serializable]
-    public class JobException : WorkingException
+    public class InvalidJobOperationException : JobException
     {
-        public JobException()
+        public InvalidJobOperationException()
         {
         }
 
-        public JobException(string message)
+        public InvalidJobOperationException(string message)
             : base(message)
         {
         }
 
-        public JobException(string message, Exception inner)
+        public InvalidJobOperationException(string message, Exception inner)
             : base(message, inner)
         {
         }
 
-        protected JobException(
+        protected InvalidJobOperationException(
             SerializationInfo info,
             StreamingContext context) : base(info, context)
         {

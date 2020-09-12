@@ -1,5 +1,7 @@
 ﻿using NUnit.Framework;
+using System;
 using TauCode.Infrastructure.Time;
+using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs;
 
 // todo clean up
@@ -64,6 +66,22 @@ namespace TauCode.Working.Tests.Jobs
             TimeProvider.Reset();
         }
 
+        #region JobManager.ctor
+
+        /// <summary>
+        /// ===========
+        /// Arrange:
+        /// 
+        /// ===========
+        /// Act: 
+        /// 1. Instance of <see cref="JobManager"/> is created.
+        ///
+        /// ===========
+        /// Assert:
+        /// 1. Instance is not started.
+        /// 2. Instance is not disposed.
+        /// 3. GetNames() returns 0 elements.
+        /// </summary>
         [Test]
         public void Constructor_NoArguments_CreatesInstance()
         {
@@ -73,7 +91,263 @@ namespace TauCode.Working.Tests.Jobs
             IJobManager jobManager = new JobManager();
 
             // Assert
+            Assert.That(jobManager.IsRunning, Is.False);
+            Assert.That(jobManager.IsDisposed, Is.False);
+
+            jobManager.Dispose();
         }
+
+
+        #endregion
+
+        #region IJobManager.Start
+
+        [Test]
+        public void Start_NotStarted_Starts()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+
+            // Act
+            jobManager.Start();
+
+            // Assert
+            Assert.That(jobManager.IsRunning, Is.True);
+            Assert.That(jobManager.IsDisposed, Is.False);
+            Assert.That(jobManager.GetNames(), Has.Count.Zero);
+        }
+
+        [Test]
+        public void Start_AlreadyStarted_ThrowsInvalidJobOperationException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+
+            // Act
+            var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.Start());
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' is already running"));
+        }
+
+        [Test]
+        public void Start_AlreadyDisposed_ThrowsException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Dispose();
+
+            // Act
+            var ex = Assert.Throws<JobObjectDisposedException>(() => jobManager.Start());
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo(typeof(IJobManager).FullName));
+        }
+
+        #endregion
+
+        #region IJobManager.IsRunning
+
+        [Test]
+        public void IsRunning_NotStarted_ReturnsFalse()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+
+            // Act
+            var isRunning = jobManager.IsRunning;
+
+            // Assert
+            Assert.That(isRunning, Is.False);
+        }
+
+        [Test]
+        public void IsRunning_Started_ReturnsTrue()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+
+            // Act
+            var isRunning = jobManager.IsRunning;
+
+            // Assert
+            Assert.That(isRunning, Is.True);
+        }
+
+        [Test]
+        public void IsRunning_NotStartedThenDisposed_ReturnsFalse()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Dispose();
+
+            // Act
+            var isRunning = jobManager.IsRunning;
+
+            // Assert
+            Assert.That(isRunning, Is.False);
+        }
+
+        [Test]
+        public void IsRunning_StartedThenDisposed_ReturnsFalse()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            jobManager.Dispose();
+
+            // Act
+            var isRunning = jobManager.IsRunning;
+
+            // Assert
+            Assert.That(isRunning, Is.False);
+        }
+
+        #endregion
+
+        #region IJobManager.IsDisposed
+
+        [Test]
+        public void IsDisposed_NotStarted_ReturnsFalse()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+
+            // Act
+            var isDisposed = jobManager.IsDisposed;
+
+            // Assert
+            Assert.That(isDisposed, Is.False);
+        }
+
+        [Test]
+        public void IsDisposed_Started_ReturnsFalse()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+
+            // Act
+            var isDisposed = jobManager.IsDisposed;
+
+            // Assert
+            Assert.That(isDisposed, Is.False);
+        }
+
+        [Test]
+        public void IsDisposed_NotStartedThenDisposed_ReturnsTrue()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Dispose();
+
+            // Act
+            var isDisposed = jobManager.IsDisposed;
+
+            // Assert
+            Assert.That(isDisposed, Is.True);
+        }
+
+        [Test]
+        public void IsDisposed_StartedThenDisposed_ReturnsTrue()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            jobManager.Dispose();
+
+            // Act
+            var isDisposed = jobManager.IsDisposed;
+
+            // Assert
+            Assert.That(isDisposed, Is.True);
+        }
+
+        #endregion
+
+        #region IJobManager.Create
+
+        [Test]
+        public void Create_NotStarted_ThrowsInvalidJobOperationException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+
+            // Act
+            var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.Create("job1"));
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' not started."));
+        }
+
+        [Test]
+        public void Create_Started_ReturnsJob()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+
+            // Act
+            var job = jobManager.Create("job1");
+
+            // Assert
+            Assert.That(job.Name, Is.EqualTo("job1"));
+        }
+
+        [Test]
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase(" ")]
+        public void Create_BadJobName_ThrowsArgumentException(string badJobName)
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+
+            // Act
+            var ex = Assert.Throws<ArgumentException>(() => jobManager.Create(badJobName));
+
+            // Assert
+            Assert.That(ex.Message, Does.StartWith("Job name cannot be null or empty."));
+            Assert.That(ex.ParamName, Is.EqualTo("jobName"));
+        }
+
+        [Test]
+        public void Create_NameAlreadyExists_ThrowsInvalidJobOperationException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Start();
+            var name = "job1";
+            jobManager.Create(name);
+
+            // Act
+            var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.Create(name));
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo($"Job '{name}' already exists."));
+        }
+
+        [Test]
+        public void Create_Disposed_ThrowsJobObjectIsDisposedException()
+        {
+            // Arrange
+            using IJobManager jobManager = new JobManager();
+            jobManager.Dispose();
+
+            // Act
+            var ex = Assert.Throws<JobObjectDisposedException>(() => jobManager.Create("job1"));
+
+            // Assert
+            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo(typeof(IJobManager).FullName));
+
+        }
+
+        #endregion
 
         [Test]
         public void Create_ValidJobName_CreatesJob()
@@ -125,26 +399,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(job, Is.SameAs(gotJob));
         }
 
-        // todo: IJobManager.Start
-        // - cannot start twice
-        // - cannot start disposed object
 
-        // todo: IJobManager.IsRunning
-        // - false if not started
-        // - true if started
-        // - false if disposed
-
-        // todo: IJobManager.IsDisposed
-        // - false if not started
-        // - false if started
-        // - true if disposed
-
-        // todo: IJobManager.Create
-        // - happy path
-        // - exception if not started
-        // - exception on bad job name
-        // - exception on dup
-        // - exception if disposed
 
         // todo: IJobManager.GetJobNames
         // - happy path

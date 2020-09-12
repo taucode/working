@@ -5,6 +5,7 @@ namespace TauCode.Working.Jobs
 {
     public interface IJob : IDisposable
     {
+        string Name { get; }
         ISchedule Schedule { get; }
         bool UpdateSchedule(ISchedule schedule);
         JobDelegate Routine { get; set; }

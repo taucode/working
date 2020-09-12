@@ -20,7 +20,7 @@
     
 2020-09-11
 ==========
-    1. Rename 'Lab' demo project to 'Playground'.
+x   1. Rename 'Lab' demo project to 'Playground'.
     
 2020-09-12
 ==========

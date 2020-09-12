@@ -22,6 +22,8 @@ namespace TauCode.Working.Jobs
 
         #region IJob Members (explicit)
 
+        string IJob.Name => _employee.Name;
+
         ISchedule IJob.Schedule => _employee.GetSchedule();
 
         public bool UpdateSchedule(ISchedule schedule)
