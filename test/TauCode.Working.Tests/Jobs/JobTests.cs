@@ -39,7 +39,7 @@ namespace TauCode.Working.Tests.Jobs
 
             // Assert
             Assert.That(schedule, Is.Not.Null);
-            Assert.That(schedule.GetType().FullName, Is.EqualTo("TauCode.Working.Jobs.Schedules.NeverSchedule"));
+            Assert.That(schedule.GetType().FullName, Is.EqualTo("TauCode.Working.Schedules.NeverSchedule"));
 
             mgr.Dispose();
         }
