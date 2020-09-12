@@ -3,7 +3,7 @@ using System.IO;
 
 namespace TauCode.Working.Jobs
 {
-    public interface IJob
+    public interface IJob : IDisposable
     {
         ISchedule Schedule { get; }
         bool UpdateSchedule(ISchedule schedule);

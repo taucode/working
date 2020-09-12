@@ -163,7 +163,7 @@ namespace TauCode.Working
 
         public void Enqueue(TAssignment assignment)
         {
-            this.CheckState2(
+            this.CheckState(
                 $"'{nameof(Enqueue)}' requested.",
                 WorkerState.Starting,
                 WorkerState.Running,

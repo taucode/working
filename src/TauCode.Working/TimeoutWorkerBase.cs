@@ -106,7 +106,7 @@ namespace TauCode.Working
 
                 this.InvokeWithControlLock(() =>
                 {
-                    this.CheckState2("Timeout value 'get' is requested.", WorkingExtensions.NonDisposedStates);
+                    this.CheckState("Timeout value 'get' is requested.", WorkingExtensions.NonDisposedStates);
                     result = _timeout;
                 });
 
@@ -118,7 +118,7 @@ namespace TauCode.Working
 
                 this.InvokeWithControlLock(() =>
                 {
-                    this.CheckState2("Timeout value 'set' is requested.", WorkingExtensions.NonDisposedStates);
+                    this.CheckState("Timeout value 'set' is requested.", WorkingExtensions.NonDisposedStates);
                     _timeout = value;
                     _changeTimeoutSignal?.Set();
                 });

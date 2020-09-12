@@ -7,22 +7,22 @@ namespace TauCode.Working.Jobs
     {
         #region Fields
 
-        private readonly Employee _doer;
+        private readonly Employee _employee;
 
         #endregion
 
         #region Constructor
 
-        internal Job(Employee doer)
+        internal Job(Employee employee)
         {
-            _doer = doer;
+            _employee = employee;
         }
 
         #endregion
 
         #region IJob Members (explicit)
 
-        ISchedule IJob.Schedule => _doer.GetSchedule();
+        ISchedule IJob.Schedule => _employee.GetSchedule();
 
         public bool UpdateSchedule(ISchedule schedule)
         {
@@ -31,44 +31,50 @@ namespace TauCode.Working.Jobs
                 throw new ArgumentNullException(nameof(schedule));
             }
 
-            return _doer.UpdateSchedule(schedule);
+            return _employee.UpdateSchedule(schedule);
         }
 
         JobDelegate IJob.Routine
         {
-            get => _doer.GetRoutine();
-            set => _doer.SetRoutine(value);
+            get => _employee.GetRoutine();
+            set => _employee.SetRoutine(value);
         }
 
         object IJob.Parameter
         {
-            get => _doer.GetParameter();
-            set => _doer.SetParameter(value);
+            get => _employee.GetParameter();
+            set => _employee.SetParameter(value);
         }
 
         IProgressTracker IJob.ProgressTracker
         {
-            get => _doer.GetProgressTracker();
-            set => _doer.SetProgressTracker(value);
+            get => _employee.GetProgressTracker();
+            set => _employee.SetProgressTracker(value);
         }
 
         TextWriter IJob.Output
         {
-            get => _doer.GetOutput();
-            set => _doer.SetOutput(value);
+            get => _employee.GetOutput();
+            set => _employee.SetOutput(value);
         }
 
-        JobInfo IJob.GetInfo(int? maxRunCount) => _doer.GetJobInfo(maxRunCount);
+        JobInfo IJob.GetInfo(int? maxRunCount) => _employee.GetJobInfo(maxRunCount);
 
         void IJob.OverrideDueTime(DateTime? dueTime)
         {
-            _doer.OverrideDueTime(dueTime);
+            _employee.OverrideDueTime(dueTime);
         }
 
         void IJob.ForceStart()
         {
-            _doer.ForceStart();
+            _employee.ForceStart();
         }
+
+        #endregion
+
+        #region IDisposable Members (explicit)
+
+        void IDisposable.Dispose() => _employee.GetFired();
 
         #endregion
     }

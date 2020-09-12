@@ -43,7 +43,7 @@ namespace TauCode.Working.Jobs
 
         public IJob Create(string jobName) => _vice.CreateJob(jobName);
 
-        public IReadOnlyList<string> GetJobNames() => _vice.GetJobNames();
+        public IReadOnlyList<string> GetNames() => _vice.GetJobNames();
 
         public IJob Get(string jobName) => _vice.GetJob(jobName);
 
@@ -56,26 +56,7 @@ namespace TauCode.Working.Jobs
 
         #region IDisposable Members
 
-        public void Dispose()
-        {
-            throw new NotImplementedException(); // todo ut. dispose vice and employees.
-
-            //lock (_lock)
-            //{
-            //    throw new NotImplementedException();
-            //    //this.CheckNotDisposed();
-
-            //    //_helper.Dispose();
-            //    //_isDisposed = true;
-
-            //    //foreach (var entry in _entries)
-            //    //{
-            //    //    entry.Value.Worker.Dispose();
-            //    //}
-
-            //    //// todo: dispose workers.
-            //}
-        }
+        public void Dispose() => _vice.Dispose();
 
         #endregion
     }

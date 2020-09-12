@@ -20,6 +20,35 @@ namespace TauCode.Working.Tests.Jobs
             TimeProvider.Reset();
         }
 
+        #region IJob.Schedule
+
+        /// <summary>
+        /// Test script:
+        /// Create a job and check its schedule is 'Never'
+        /// </summary>
+        [Test]
+        public void Schedule_JustCreatedJob_ReturnsNeverSchedule()
+        {
+            // Arrange
+            var mgr = new JobManager();
+            mgr.Start();
+            var job = mgr.Create("my-job");
+
+            // Act
+            var schedule = job.Schedule;
+
+            // Assert
+            Assert.That(schedule, Is.Not.Null);
+            Assert.That(schedule.GetType().FullName, Is.EqualTo("TauCode.Working.Jobs.Schedules.NeverSchedule"));
+
+            mgr.Dispose();
+        }
+
+        #endregion
+
+
+        //====================================================================================
+
         [Test]
         public void GetInfo_NoArguments_ReturnsJobInfo()
         {

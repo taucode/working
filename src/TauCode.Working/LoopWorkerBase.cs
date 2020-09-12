@@ -45,7 +45,7 @@ namespace TauCode.Working
 
         #region Abstract
 
-        protected abstract Task<WorkFinishReason> DoWorkAsyncImpl();
+        protected abstract Task<WorkFinishReason> DoWorkAsyncImpl(); // todo: cancellation token.
 
         protected abstract Task<VacationFinishReason> TakeVacationAsyncImpl();
 
@@ -61,12 +61,12 @@ namespace TauCode.Working
 
             message = $"'{nameof(Routine)}' started.";
             this.LogDebug(message, 3);
-            this.CheckState2(message, WorkerState.Starting);
+            this.CheckState(message, WorkerState.Starting);
 
             message = $"Acknowledging control thread that {nameof(Routine)} is ready to go.";
             this.LogDebug(message, 3);
             WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
-            this.CheckState2(message, WorkerState.Running);
+            this.CheckState(message, WorkerState.Running);
 
             var goOn = true;
 
@@ -141,7 +141,7 @@ namespace TauCode.Working
         {
             var message = "Continuing after control signal.";
             this.LogDebug(message);
-            this.CheckState2(message, expectedStates);
+            this.CheckState(message, expectedStates);
 
             this.LogDebug("Sending signal to control thread and awaiting response signal.");
             WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
@@ -152,7 +152,7 @@ namespace TauCode.Working
                 .Select(WorkingExtensions.GetStableWorkerState)
                 .ToArray();
 
-            this.CheckState2(message, stableStates);
+            this.CheckState(message, stableStates);
 
             var state = this.State;
 

@@ -13,7 +13,7 @@ namespace TauCode.Working.Jobs
 
         IJob Create(string jobName);
 
-        IReadOnlyList<string> GetJobNames(); // todo: rename to GetNames()
+        IReadOnlyList<string> GetNames();
 
         IJob Get(string jobName);
 

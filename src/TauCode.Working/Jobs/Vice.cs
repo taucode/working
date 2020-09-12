@@ -51,11 +51,11 @@ namespace TauCode.Working.Jobs
 
         #region Fields
 
-        //private readonly ITimeProvider _timeProvider;
         private readonly Dictionary<string, EmployeeRecord> _employeeRecords;
-        private AutoResetEvent _scheduleChangedEvent; // disposed by LoopWorkerBase.Shutdown
+        private AutoResetEvent _scheduleChangedSignal; // disposed by LoopWorkerBase.Shutdown
 
         private readonly object _lock;
+        private bool _isDisposed;
 
         #endregion
 
@@ -63,7 +63,6 @@ namespace TauCode.Working.Jobs
 
         internal Vice()
         {
-            //_timeProvider = timeProvider;
             _employeeRecords = new Dictionary<string, EmployeeRecord>();
             _lock = new object();
         }
@@ -72,32 +71,63 @@ namespace TauCode.Working.Jobs
 
         #region Private
         
+        // todo: cached roster of closest records
         private EmployeeRecord GetClosestRecord()
         {
-            lock (_lock) // todo: excessive locking?
+            if (_isDisposed)
             {
-                if (_employeeRecords.Count == 0)
+                return null; // Don't throw exception, just return. Because it's an internal method used in routine loop.
+            }
+
+            if (_employeeRecords.Count == 0)
+            {
+                return null; // no candidates.
+            }
+
+            var min = JobExtensions.Never;
+            EmployeeRecord bestRecord = null;
+
+            foreach (var employeeRecords in _employeeRecords.Values)
+            {
+                var recordDueTime = employeeRecords.DueTimeInfoBuilder.DueTime;
+
+                if (recordDueTime < min)
                 {
-                    return null;
+                    bestRecord = employeeRecords;
+                    min = recordDueTime;
                 }
+            }
 
-                var min = JobExtensions.Never;
-                EmployeeRecord bestRecord = null;
+            return bestRecord;
+        }
 
-                foreach (var employeeRecords in _employeeRecords.Values)
+        private void CheckNotDisposed()
+        {
+            lock (_lock)
+            {
+                if (_isDisposed)
                 {
-                    var recordDueTime = employeeRecords.DueTimeInfoBuilder.DueTime;
-
-                    if (recordDueTime < min)
-                    {
-                        bestRecord = employeeRecords;
-                        min = recordDueTime;
-                    }
+                    throw new ObjectDisposedException(this.GetType().FullName, "Object was disposed.");
                 }
-
-                return bestRecord;
             }
         }
+
+        private EmployeeRecord TryGetEmployeeRecord(string jobName, bool mustExist)
+        {
+            lock (_lock)
+            {
+                this.CheckNotDisposed();
+                _employeeRecords.TryGetValue(jobName, out var employeeRecord);
+
+                if (employeeRecord == null && mustExist)
+                {
+                    throw new NotImplementedException(); // todo: proper ex.
+                }
+
+                return employeeRecord;
+            }
+        }
+
         #endregion
 
         #region Overridden
@@ -195,8 +225,23 @@ namespace TauCode.Working.Jobs
 
         protected override IList<AutoResetEvent> CreateExtraSignals()
         {
-            _scheduleChangedEvent = new AutoResetEvent(false);
-            return new[] { _scheduleChangedEvent };
+            _scheduleChangedSignal = new AutoResetEvent(false);
+            return new[] { _scheduleChangedSignal };
+        }
+
+        protected override void DisposeImpl()
+        {
+            lock (_lock)
+            {
+                _isDisposed = true;
+
+                foreach (var employeeRecord in _employeeRecords.Values)
+                {
+                    employeeRecord.Employee.Dispose();
+                }
+            }
+
+            base.DisposeImpl();
         }
 
         #endregion
@@ -208,6 +253,7 @@ namespace TauCode.Working.Jobs
         {
             lock (_lock)
             {
+                this.CheckNotDisposed();
                 return _employeeRecords.Keys.ToList();
             }
         }
@@ -216,7 +262,14 @@ namespace TauCode.Working.Jobs
         {
             lock (_lock)
             {
-                // todo: check name doesn't exist
+                this.CheckNotDisposed();
+
+                var existing = this.TryGetEmployeeRecord(jobName, false);
+                if (existing != null)
+                {
+                    throw new NotImplementedException(); // dup!
+                }
+
                 var employee = new Employee(this)
                 {
                     Name = jobName,
@@ -228,21 +281,13 @@ namespace TauCode.Working.Jobs
                 var now = this.GetCurrentTime();
 
                 employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
-                _scheduleChangedEvent.Set();
+                _scheduleChangedSignal.Set();
 
                 return employee.GetJob();
             }
         }
 
-        internal IJob GetJob(string jobName)
-        {
-            lock (_lock)
-            {
-                return _employeeRecords[jobName].Employee.GetJob(); // todo check exists, here & anywhere.
-            }
-        }
-
-      
+        internal IJob GetJob(string jobName) => this.TryGetEmployeeRecord(jobName, true).Employee.GetJob();
 
         #endregion
 
@@ -252,17 +297,17 @@ namespace TauCode.Working.Jobs
         {
             lock (_lock)
             {
-                var employeeRecord = _employeeRecords[jobName]; // todo check
+                var employeeRecord = this.TryGetEmployeeRecord(jobName, true);
                 return employeeRecord.DueTimeInfoBuilder.Build();
             }
         }
 
         internal void OverrideDueTime(string jobName, DateTime? dueTime)
         {
-            // todo check due time not in past
+            // todo check due time not in past (+ut)
             lock (_lock)
             {
-                var employeeRecord = _employeeRecords[jobName]; // todo check
+                var employeeRecord = this.TryGetEmployeeRecord(jobName, true);
 
                 if (dueTime.HasValue)
                 {
@@ -275,23 +320,23 @@ namespace TauCode.Working.Jobs
                 }
             }
 
-            _scheduleChangedEvent.Set();
+            _scheduleChangedSignal.Set();
         }
 
-        internal ISchedule GetSchedule(string name)
+        internal ISchedule GetSchedule(string jobName)
         {
             lock (_lock)
             {
-                var employeeRecord = _employeeRecords[name];
+                var employeeRecord = this.TryGetEmployeeRecord(jobName, true);
                 return employeeRecord.Schedule;
             }
         }
 
-        internal void UpdateSchedule(string name, ISchedule schedule)
+        internal void UpdateSchedule(string jobName, ISchedule schedule)
         {
             lock (_lock)
             {
-                var employeeRecord = _employeeRecords[name]; // todo check
+                var employeeRecord = this.TryGetEmployeeRecord(jobName, true);
 
                 if (employeeRecord.DueTimeInfoBuilder.Type == DueTimeType.Overridden)
                 {
@@ -304,12 +349,23 @@ namespace TauCode.Working.Jobs
                 employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
             }
 
-            _scheduleChangedEvent.Set();
+            _scheduleChangedSignal.Set();
         }
 
         internal void DebugPulse()
         {
-            _scheduleChangedEvent.Set();
+            _scheduleChangedSignal.Set();
+        }
+
+        internal void Fire(string jobName)
+        {
+            lock (_lock)
+            {
+                this.CheckNotDisposed();
+
+                _employeeRecords.Remove(jobName);
+                _scheduleChangedSignal.Set();
+            }
         }
     }
 }

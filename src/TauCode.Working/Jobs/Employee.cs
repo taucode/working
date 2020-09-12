@@ -47,10 +47,10 @@ namespace TauCode.Working.Jobs
 
         private void CheckStopped(string preamble)
         {
-            this.CheckState2(preamble, WorkerState.Stopped);
+            this.CheckState(preamble, WorkerState.Stopped);
         }
 
-        private void EndTask(Task task)
+        private void EndJob(Task task)
         {
             var now = _vice.GetCurrentTime();
             _currentJobRunResultBuilder.EndTime = now;
@@ -98,7 +98,22 @@ namespace TauCode.Working.Jobs
             _runs.Add(jobRunResult);
             _currentJobRunResultBuilder = null;
 
-            this.Stop();
+            // it might appear task was cancelled due to a dispose request.
+            var state = this.State;
+            if (state.IsIn(WorkerState.Disposing, WorkerState.Disposed))
+            {
+                return;
+            }
+
+            // stop worker.
+            try
+            {
+                this.Stop();
+            }
+            catch
+            {
+                // todo: catch 'InvalidWorkerStateException', which will be thrown by WorkerBase.CheckState.
+            }
         }
 
         #endregion
@@ -127,6 +142,15 @@ namespace TauCode.Working.Jobs
 
         protected override void DisposeImpl()
         {
+            var currentState = this.State;
+
+            this.ChangeState(WorkerState.Disposing);
+
+            if (currentState == WorkerState.Running)
+            {
+                _currentRunCancellationTokenSource.Cancel();
+            }
+
             this.ChangeState(WorkerState.Disposed);
         }
 
@@ -135,24 +159,6 @@ namespace TauCode.Working.Jobs
         #region Internal
 
         internal void ForceStart() => this.StartJob(StartReason.Force, _vice.GetDueTimeInfo(this.Name));
-
-        internal void DueTimeStart()
-        {
-            throw new NotImplementedException();
-        }
-
-        internal void CancelCurrentJobRun()
-        {
-            this.InvokeWithControlLock(() =>
-            {
-                if (this.State != WorkerState.Running)
-                {
-                    throw new NotImplementedException();
-                }
-
-                _currentRunCancellationTokenSource.Cancel();
-            });
-        }
 
         internal IJob GetJob() => _job;
 
@@ -183,29 +189,7 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        internal ISchedule GetSchedule() => _vice.GetSchedule(this.Name); // todo: check resharper warning disappeared.
-        //{
-        //    // todo: lock with _scheduleLock
-        //    ISchedule result = default;
-
-        //    this.InvokeWithControlLock(() =>
-        //    {
-        //        result = _schedule;
-        //    });
-
-        //    return result;
-        //}
-
-        //internal void SetSchedule(ISchedule schedule)
-        //{
-        //    // todo: lock with _scheduleLock
-        //    this.InvokeWithControlLock(() =>
-        //    {
-        //        this.CheckStopped($"Set '{nameof(IJob.Schedule)}' requested.");
-
-        //        _schedule = schedule ?? throw new ArgumentNullException(nameof(schedule));
-        //    });
-        //}
+        internal ISchedule GetSchedule() => _vice.GetSchedule(this.Name);
 
         internal TextWriter GetOutput()
         {
@@ -296,12 +280,12 @@ namespace TauCode.Working.Jobs
         }
 
         internal void OverrideDueTime(DateTime? dueTime) => _vice.OverrideDueTime(this.Name, dueTime);
-        
+
         internal void StartJob(StartReason startReason, DueTimeInfo dueTimeInfo)
         {
             this.InvokeWithControlLock(() =>
             {
-                this.CheckState2("Job force start requested.", WorkerState.Stopped);
+                this.CheckState($"Job start requested with reason '{startReason}'.", WorkerState.Stopped);
 
                 var startTime = _vice.GetCurrentTime();
                 _currentJobRunResultBuilder = new JobRunInfoBuilder(_runIndex, startReason, dueTimeInfo, startTime);
@@ -337,7 +321,7 @@ namespace TauCode.Working.Jobs
                 _runIndex++;
                 this.Start();
 
-                task.ContinueWith(this.EndTask);
+                task.ContinueWith(this.EndJob);
             });
         }
 
@@ -348,6 +332,20 @@ namespace TauCode.Working.Jobs
             _vice.UpdateSchedule(this.Name, schedule);
             var willApply = this.State != WorkerState.Running;
             return willApply;
+        }
+
+        internal void GetFired()
+        {
+            this.InvokeWithControlLock(() =>
+            {
+                if (this.IsWorkerDisposed())
+                {
+                    return;
+                }
+
+                _vice.Fire(this.Name);
+                this.Dispose();
+            });
         }
     }
 }

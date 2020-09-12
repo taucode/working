@@ -98,79 +98,10 @@ namespace TauCode.Working
 
         protected WorkingException CreateInternalErrorException() => new WorkingException("Internal error.");
 
-        protected void CheckInternalIntegrity(bool condition)
-        {
-            if (!condition)
-            {
-                throw this.CreateInternalErrorException();
-            }
-        }
-
-        //protected void CheckStateForOperation(params WorkerState[] acceptedStates)
-        //{
-        //    var state = this.State;
-
-        //    if (!acceptedStates.Contains(state))
-        //    {
-        //        var sb = new StringBuilder();
-        //        sb.Append($"To perform this operation, '{nameof(State)}' must be ");
-
-        //        for (var i = 0; i < acceptedStates.Length; i++)
-        //        {
-        //            var acceptedState = acceptedStates[i];
-        //            sb.Append($"'{acceptedState}'");
-
-        //            if (i < acceptedStates.Length - 2)
-        //            {
-        //                sb.Append(", ");
-        //            }
-        //            else if (i < acceptedStates.Length - 1)
-        //            {
-        //                sb.Append(" or ");
-        //            }
-        //        }
-
-        //        sb.Append($" while actually it is '{state}'.");
-
-        //        throw new WorkingException(sb.ToString());
-        //    }
-        //}
-
-        //// todo: CheckStateForOperation and CheckState are almost copy/paste.
-        //protected void CheckState(params WorkerState[] acceptedStates)
-        //{
-        //    var state = this.State;
-
-        //    if (!acceptedStates.Contains(state))
-        //    {
-        //        var sb = new StringBuilder();
-        //        sb.Append($"'{nameof(State)}' is expected to be ");
-
-        //        for (var i = 0; i < acceptedStates.Length; i++)
-        //        {
-        //            var acceptedState = acceptedStates[i];
-        //            sb.Append($"'{acceptedState}'");
-
-        //            if (i < acceptedStates.Length - 2)
-        //            {
-        //                sb.Append(", ");
-        //            }
-        //            else if (i < acceptedStates.Length - 1)
-        //            {
-        //                sb.Append(" or ");
-        //            }
-        //        }
-
-        //        sb.Append($" while actually it is '{state}'.");
-
-        //        throw new WorkingException(sb.ToString());
-        //    }
-        //}
-
         // todo rename and get rid of two others.
 
         // todo: consider HashSet.
-        protected void CheckState2(string preamble, params WorkerState[] acceptedStates)
+        protected void CheckState(string preamble, params WorkerState[] acceptedStates)
         {
             var state = this.State;
             if (acceptedStates.Contains(state))
@@ -233,13 +164,13 @@ namespace TauCode.Working
             {
                 var message = $"'{nameof(Start)}' requested.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Stopped);
+                this.CheckState(message, WorkerState.Stopped);
 
                 this.StartImpl();
 
                 message = $"'{nameof(StartImpl)}' executed.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Running);
+                this.CheckState(message, WorkerState.Running);
             }
         }
 
@@ -250,13 +181,13 @@ namespace TauCode.Working
             {
                 var message = $"'{nameof(Pause)}' requested.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Running);
+                this.CheckState(message, WorkerState.Running);
 
                 this.PauseImpl();
 
                 message = $"'{nameof(PauseImpl)}' executed.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Paused);
+                this.CheckState(message, WorkerState.Paused);
             }
         }
 
@@ -266,13 +197,13 @@ namespace TauCode.Working
             {
                 var message = $"'{nameof(Resume)}' requested.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Paused);
+                this.CheckState(message, WorkerState.Paused);
 
                 this.ResumeImpl();
 
                 message = $"'{nameof(ResumeImpl)}' executed.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Running);
+                this.CheckState(message, WorkerState.Running);
             }
         }
 
@@ -282,13 +213,13 @@ namespace TauCode.Working
             {
                 var message = $"'{nameof(Stop)}' requested.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Running, WorkerState.Paused);
+                this.CheckState(message, WorkerState.Running, WorkerState.Paused);
 
                 this.StopImpl();
 
                 message = $"'{nameof(StopImpl)}' executed.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Stopped);
+                this.CheckState(message, WorkerState.Stopped);
             }
         }
 
@@ -346,15 +277,20 @@ namespace TauCode.Working
         {
             lock (_controlLock)
             {
+                if (_state == WorkerState.Disposed)
+                {
+                    return; // already disposed
+                }
+
                 var message = $"'{nameof(Dispose)}' requested.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Stopped, WorkerState.Running, WorkerState.Paused);
+                this.CheckState(message, WorkerState.Stopped, WorkerState.Running, WorkerState.Paused);
                 
                 this.DisposeImpl();
 
                 message = $"'{nameof(DisposeImpl)}' executed.";
                 this.LogDebug(message);
-                this.CheckState2(message, WorkerState.Disposed);
+                this.CheckState(message, WorkerState.Disposed);
 
                 foreach (var signal in _stateSignals.Values)
                 {

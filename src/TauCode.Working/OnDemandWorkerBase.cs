@@ -11,7 +11,7 @@ namespace TauCode.Working
         {
             var message = "Check before doing the job.";
             this.LogDebug(message);
-            this.CheckState2(message, WorkerState.Running);
+            this.CheckState(message, WorkerState.Running);
         }
 
         protected override void StartImpl()

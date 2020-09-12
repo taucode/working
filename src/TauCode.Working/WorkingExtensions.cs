@@ -84,5 +84,15 @@ namespace TauCode.Working
             return dateTime.ToString("O", CultureInfo.InvariantCulture);
         }
 
+        public static bool IsWorkerDisposed(this IWorker worker)
+        {
+            if (worker == null)
+            {
+                throw new ArgumentNullException(nameof(worker));
+            }
+
+            return worker.State == WorkerState.Disposed;
+        }
+
     }
 }

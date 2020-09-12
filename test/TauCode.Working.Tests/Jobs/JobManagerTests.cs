@@ -104,7 +104,7 @@ namespace TauCode.Working.Tests.Jobs
             jobManager.Create("job2");
 
             // Act
-            var names = jobManager.GetJobNames();
+            var names = jobManager.GetNames();
 
             // Assert
             CollectionAssert.AreEquivalent(new[] { "job1", "job2" }, names);
