@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 
 namespace TauCode.Working.Workers
@@ -64,7 +63,7 @@ namespace TauCode.Working.Workers
             return stableWorkerState;
         }
 
-        public static bool IsWorkerDisposed(this IWorker worker)
+        public static bool WorkerIsDisposed(this IWorker worker)
         {
             if (worker == null)
             {
@@ -74,7 +73,7 @@ namespace TauCode.Working.Workers
             return worker.State == WorkerState.Disposed;
         }
 
-        public static bool IsWorkerRunning(this IWorker worker)
+        public static bool WorkerIsRunning(this IWorker worker)
         {
             if (worker == null)
             {
@@ -83,5 +82,16 @@ namespace TauCode.Working.Workers
 
             return worker.State == WorkerState.Running;
         }
+
+        public static bool WorkerIsStopped(this IWorker worker)
+        {
+            if (worker == null)
+            {
+                throw new ArgumentNullException(nameof(worker));
+            }
+
+            return worker.State == WorkerState.Stopped;
+        }
+
     }
 }

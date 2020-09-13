@@ -90,9 +90,9 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        public bool IsRunning => _vice.IsWorkerRunning();
+        public bool IsRunning => _vice.WorkerIsRunning();
 
-        public bool IsDisposed => _vice.IsWorkerDisposed();
+        public bool IsDisposed => _vice.WorkerIsDisposed();
 
         public IJob Create(string jobName)
         {

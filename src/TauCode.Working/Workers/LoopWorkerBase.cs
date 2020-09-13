@@ -55,29 +55,36 @@ namespace TauCode.Working.Workers
 
         #region Private
 
-        private async Task Routine()
+        private async Task LoopRoutine()
         {
             string message;
 
-            message = $"'{nameof(Routine)}' started.";
-            this.LogDebug(message, 3);
+            message = $"'{nameof(LoopRoutine)}' started.";
+            //this.LogDebug(message, 3);
+            this.GetLogger().Debug(message, nameof(LoopRoutine));
+
             this.CheckState(message, WorkerState.Starting);
 
-            message = $"Acknowledging control thread that {nameof(Routine)} is ready to go.";
-            this.LogDebug(message, 3);
+            message = $"Acknowledging control thread that {nameof(LoopRoutine)} is ready to go.";
+            //this.LogDebug(message, 3);
+            this.GetLogger().Debug(message, nameof(LoopRoutine));
+
             WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
             this.CheckState(message, WorkerState.Running);
 
             var goOn = true;
 
-            message = $"Entering '{nameof(Routine)}' loop.";
-            this.LogDebug(message, 3);
+            message = $"Entering '{nameof(LoopRoutine)}' loop.";
+            //this.LogDebug(message, 3);
+            this.GetLogger().Debug(message, nameof(LoopRoutine));
 
 
             while (goOn)
             {
                 var workFinishReason = await this.DoWorkAsync();
-                this.LogDebug($"{nameof(DoWorkAsync)} result: {workFinishReason}.", 3);
+                message = $"{nameof(DoWorkAsync)} result: {workFinishReason}.";
+                //this.LogDebug(, 3);
+                this.GetLogger().Debug(message, nameof(LoopRoutine));
 
                 if (workFinishReason == WorkFinishReason.GotControlSignal)
                 {
@@ -86,7 +93,9 @@ namespace TauCode.Working.Workers
                 else if (workFinishReason == WorkFinishReason.WorkIsDone)
                 {
                     var vacationFinishedReason = await this.TakeVacationAsync();
-                    this.LogDebug($"{nameof(TakeVacationAsync)} result: {vacationFinishedReason}.", 3);
+                    message = $"{nameof(TakeVacationAsync)} result: {vacationFinishedReason}.";
+                    //this.LogDebug(, 3);
+                    this.GetLogger().Debug(message, nameof(LoopRoutine));
 
                     switch (vacationFinishedReason)
                     {
@@ -198,15 +207,15 @@ namespace TauCode.Working.Workers
 
         protected virtual void Shutdown(WorkerState shutdownState)
         {
-            this.LogDebug($"Sending signal to {nameof(Routine)}.");
+            this.LogDebug($"Sending signal to {nameof(LoopRoutine)}.");
             WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
 
             this.ChangeState(shutdownState);
             _controlSignal.Set();
 
-            this.LogDebug($"Waiting {nameof(Routine)} to terminate.");
+            this.LogDebug($"Waiting {nameof(LoopRoutine)} to terminate.");
             this._routineTask.Wait();
-            this.LogDebug($"{nameof(Routine)} terminated.");
+            this.LogDebug($"{nameof(LoopRoutine)} terminated.");
 
             this._routineTask.Dispose();
             this._routineTask = null;
@@ -260,7 +269,7 @@ namespace TauCode.Working.Workers
                 .ToArray();
 
 
-            this._routineTask = Task.Factory.StartNew(this.Routine);
+            this._routineTask = Task.Factory.StartNew(this.LoopRoutine);
 
             // wait signal from routine that routine has started
             _routineSignal.WaitOne();

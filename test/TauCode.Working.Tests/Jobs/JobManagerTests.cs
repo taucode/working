@@ -1,8 +1,15 @@
 ﻿using NUnit.Framework;
 using System;
+using System.IO;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using TauCode.Extensions;
+using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs;
+using TauCode.Working.Schedules;
 
 // todo clean up
 namespace TauCode.Working.Tests.Jobs
@@ -335,7 +342,7 @@ namespace TauCode.Working.Tests.Jobs
             var jobNames = jobManager.GetNames();
 
             // Assert
-            CollectionAssert.AreEquivalent(new string[] {"job1", "job2"}, jobNames);
+            CollectionAssert.AreEquivalent(new string[] { "job1", "job2" }, jobNames);
         }
 
         [Test]
@@ -487,21 +494,69 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
-        public void Dispose_JobsCreated_DisposesAndJobsAreCanceledAndDisposed()
+        public async Task Dispose_JobsCreated_DisposesAndJobsAreCanceledAndDisposed()
         {
             // Arrange
+            var fakeNow = "2020-01-01Z".ToUtcDayOffset();
+            TimeProvider.Override(ShiftedTimeProvider.CreateTimeMachine(fakeNow));
+
             using IJobManager jobManager = new JobManager();
             jobManager.Start();
             var job1 = jobManager.Create("job1");
             var job2 = jobManager.Create("job2");
 
+            job1.Output = new StringWriterWithEncoding(Encoding.UTF8);
+            job2.Output = new StringWriterWithEncoding(Encoding.UTF8);
 
+            async Task Routine(object parameter, IProgressTracker tracker, TextWriter output, CancellationToken token)
+            {
+                for (var i = 0; i < 100; i++)
+                {
+                    var time = TimeProvider.GetCurrent();
+                    await output.WriteLineAsync($"Iteration {i}: {time.Second:D2}:{time.Millisecond:D3}");
+
+                    try
+                    {
+                        await Task.Delay(1000, token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        time = TimeProvider.GetCurrent();
+                        await output.WriteLineAsync($"Canceled! {time.Second:D2}:{time.Millisecond:D3}");
+                        throw;
+                    }
+                }
+            }
+
+            ISchedule schedule = new SimpleSchedule(
+                SimpleScheduleKind.Second,
+                1,
+                fakeNow.AddMilliseconds(400));
+
+            //var ke = TimeProvider.GetCurrent();
+            //var kk = 3;
+
+            job1.UpdateSchedule(schedule);
+            job2.UpdateSchedule(schedule);
+
+            job1.Routine = Routine;
+            job2.Routine = Routine;
+
+            await Task.Delay(2500); // 2 iterations should be completed
 
             // Act
-            var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.Get("non-existing"));
+            var jobInfoBeforeDispose1 = job1.GetInfo(null);
+            var jobInfoBeforeDispose2 = job2.GetInfo(null);
+
+            jobManager.Dispose();
 
             // Assert
-            Assert.That(ex.Message, Is.EqualTo("Job not found: 'non-existing'."));
+            throw new NotImplementedException();
+
+            //foreach (var job in new IJob[] {job1, job2})
+            //{
+            //    //Assert.That(ex.Message, Is.EqualTo("Job not found: 'non-existing'."));
+            //}
         }
 
         #endregion

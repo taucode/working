@@ -23,7 +23,7 @@ namespace TauCode.Working.Jobs
         /// Minimal waitable time period is 1 millisecond.
         /// </summary>
         private static readonly TimeSpan TimeQuantum = TimeSpan.FromMilliseconds(1);
-        
+
         /// <summary>
         /// If we have a due-time candidate, we've gotta break vacation a little bit before his actual due time.
         /// </summary>
@@ -71,11 +71,11 @@ namespace TauCode.Working.Jobs
         #endregion
 
         #region Private
-        
+
         // todo: cached roster of closest records
         private EmployeeRecord GetClosestRecord()
         {
-            if (this.IsWorkerDisposed())
+            if (this.WorkerIsDisposed())
             {
                 return null; // Don't throw exception, just return. Because it's an internal method used in routine loop.
             }
@@ -104,7 +104,7 @@ namespace TauCode.Working.Jobs
 
         private void CheckNotDisposed()
         {
-            if (this.IsWorkerDisposed())
+            if (this.WorkerIsDisposed())
             {
                 throw new JobObjectDisposedException(typeof(IJobManager).FullName);
             }
@@ -132,28 +132,55 @@ namespace TauCode.Working.Jobs
 
         protected override Task<WorkFinishReason> DoWorkAsyncImpl()
         {
+            EmployeeRecord employeeRecord;
+
             lock (_lock)
             {
-                var employeeRecord = this.GetClosestRecord();
+                employeeRecord = this.GetClosestRecord();
 
                 if (employeeRecord == null)
                 {
                     // nothing to work on.
                     return Task.FromResult(WorkFinishReason.WorkIsDone);
                 }
-                else
+            }
+
+            //var now = this.GetCurrentTime();
+            var now = TimeProvider.GetCurrent();
+            var dueTime = employeeRecord.DueTimeInfoBuilder.DueTime;
+
+            if (dueTime <= now)
+            {
+                // gotta run this job
+                var dueTimeInfo = employeeRecord.DueTimeInfoBuilder.Build();
+                var jobStartResult = employeeRecord.Employee.StartJob(
+                    StartReason.DueTime,
+                    dueTimeInfo);
+
+                // job now has new due time
+                employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
+
+                // let's analyze job start result
+                switch (jobStartResult)
                 {
-                    var now = this.GetCurrentTime();
-                    var dueTime = employeeRecord.DueTimeInfoBuilder.DueTime;
+                    case JobStartResult.AlreadyStartedByDueTime:
+                        throw new NotImplementedException();
+                        break;
 
-                    if (dueTime <= now)
-                    {
-                        // gotta run this job
-                        employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
+                    case JobStartResult.AlreadyStartedByForce:
+                        throw new NotImplementedException();
+                        break;
 
-                        // todo: check & ut job is not running already.
-                        Task.Run(() => employeeRecord.Employee.StartJob(StartReason.DueTime, employeeRecord.DueTimeInfoBuilder.Build()));
-                    }
+                    case JobStartResult.Started:
+                        throw new NotImplementedException();
+                        break;
+
+                    case JobStartResult.AlreadyDisposed:
+                        throw new NotImplementedException();
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
 
@@ -174,7 +201,8 @@ namespace TauCode.Working.Jobs
                 else
                 {
                     var dueTime = employeeRecord.DueTimeInfoBuilder.DueTime;
-                    var now = this.GetCurrentTime();
+                    //var now = this.GetCurrentTime();
+                    var now = TimeProvider.GetCurrent();
                     if (dueTime <= now)
                     {
                         // oh, we've got a due time elapsed, terminate vacation immediately!
@@ -243,7 +271,7 @@ namespace TauCode.Working.Jobs
 
             foreach (var employee in employeesToFire)
             {
-                employee.Dispose();
+                employee.Dispose(); // must not throw, 'Dispose' is graceful (I hope)
             }
 
             base.DisposeImpl();
@@ -283,7 +311,7 @@ namespace TauCode.Working.Jobs
                 var employeeRecord = new EmployeeRecord(employee);
                 _employeeRecords.Add(employee.Name, employeeRecord);
 
-                var now = this.GetCurrentTime();
+                var now = TimeProvider.GetCurrent();
 
                 employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
                 _scheduleChangedSignal.Set();
@@ -296,7 +324,7 @@ namespace TauCode.Working.Jobs
 
         #endregion
 
-        internal DateTimeOffset GetCurrentTime() => TimeProvider.GetCurrent();
+        //internal DateTimeOffset GetCurrentTime() => TimeProvider.GetCurrent();
 
         internal DueTimeInfo GetDueTimeInfo(string jobName)
         {
@@ -320,7 +348,8 @@ namespace TauCode.Working.Jobs
                 }
                 else
                 {
-                    var now = this.GetCurrentTime();
+                    //var now = this.GetCurrentTime();
+                    var now = TimeProvider.GetCurrent();
                     employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
                 }
             }
@@ -348,7 +377,7 @@ namespace TauCode.Working.Jobs
                     throw new NotImplementedException();
                 }
 
-                var now = this.GetCurrentTime();
+                var now = TimeProvider.GetCurrent();
 
                 employeeRecord.Schedule = schedule;
                 employeeRecord.DueTimeInfoBuilder.UpdateBySchedule(employeeRecord.Schedule, now);
@@ -364,13 +393,22 @@ namespace TauCode.Working.Jobs
 
         internal void Fire(string jobName)
         {
-            lock (_lock)
+            this.InvokeWithControlLock(() => // don't let 'Dispose' myself while I am firing an employee, so '_scheduleChangedSignal' is 'alive'.
             {
-                this.CheckNotDisposed();
+                if (this.WorkerIsDisposed())
+                {
+                    // Pal (Employee instance), I am disposed myself. And this means you will be fired (disposed) in a while, too.
+                    // If you want to get fired (and not yet), just feel free to go. I won't throw any exceptions.
+                    return;
+                }
 
-                _employeeRecords.Remove(jobName);
+                lock (_lock)
+                {
+                    _employeeRecords.Remove(jobName);
+                }
+
                 _scheduleChangedSignal.Set();
-            }
+            });
         }
     }
 }

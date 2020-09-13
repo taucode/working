@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using TauCode.Working.Jobs;
 
 namespace TauCode.Working.Tests
@@ -15,6 +17,18 @@ namespace TauCode.Working.Tests
             }
 
             method.Invoke(jobManager, new object[] { });
+        }
+
+        // todo move to taucode.infra
+        internal static async Task WaitUntil(DateTimeOffset now, DateTimeOffset moment, CancellationToken cancellationToken = default)
+        {
+            var timeout = moment - now;
+            if (timeout < TimeSpan.Zero)
+            {
+                return;
+            }
+
+            await Task.Delay(timeout, cancellationToken);
         }
     }
 }

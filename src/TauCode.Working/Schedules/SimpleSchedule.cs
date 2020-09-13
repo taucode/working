@@ -87,11 +87,11 @@ namespace TauCode.Working.Schedules
 
         public DateTimeOffset GetDueTimeAfter(DateTimeOffset after)
         {
-            if (after == this.BaseTime)
+            if (after <= this.BaseTime)
             {
-                return after.Add(this.TimeSpan);
+                return this.BaseTime;
             }
-            else if (after > this.BaseTime)
+            else
             {
                 var spanCount = (int) ((after - this.BaseTime).TotalMilliseconds / this.TimeSpan.TotalMilliseconds);
                 var result = this.BaseTime.AddMilliseconds(spanCount * this.TimeSpan.TotalMilliseconds);
@@ -114,10 +114,6 @@ namespace TauCode.Working.Schedules
 
                     result = result.AddMilliseconds(this.TimeSpan.TotalMilliseconds);
                 }
-            }
-            else
-            {
-                throw new NotImplementedException();
             }
         }
     }
