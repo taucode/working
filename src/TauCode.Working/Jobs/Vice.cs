@@ -296,7 +296,7 @@ namespace TauCode.Working.Jobs
 
         #endregion
 
-        internal DateTime GetCurrentTime() => TimeProvider.GetCurrent();
+        internal DateTimeOffset GetCurrentTime() => TimeProvider.GetCurrent();
 
         internal DueTimeInfo GetDueTimeInfo(string jobName)
         {
@@ -307,7 +307,7 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        internal void OverrideDueTime(string jobName, DateTime? dueTime)
+        internal void OverrideDueTime(string jobName, DateTimeOffset? dueTime)
         {
             // todo check due time not in past (+ut)
             lock (_lock)

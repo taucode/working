@@ -8,7 +8,7 @@ namespace TauCode.Working.Jobs
             int runIndex,
             StartReason startReason,
             DueTimeInfo dueTimeInfo,
-            DateTime startTime)
+            DateTimeOffset startTime)
         {
             this.RunIndex = runIndex;
             this.StartReason = startReason;
@@ -20,8 +20,8 @@ namespace TauCode.Working.Jobs
         internal int RunIndex { get; }
         internal StartReason StartReason { get; }
         internal DueTimeInfo DueTimeInfo { get; }
-        internal DateTime StartTime { get; }
-        internal DateTime? EndTime { get; set; }
+        internal DateTimeOffset StartTime { get; }
+        internal DateTimeOffset? EndTime { get; set; }
         internal JobRunStatus? Status { get; set; }
         internal Exception Exception { get; set; }
         internal string Output { get; set; }

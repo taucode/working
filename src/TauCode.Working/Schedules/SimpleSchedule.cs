@@ -2,27 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using TauCode.Extensions;
-using TauCode.Working.Jobs;
 
 namespace TauCode.Working.Schedules
 {
     // todo clean up
     public class SimpleSchedule : ISchedule
     {
-        private readonly IList<DateTime> _concreteMoments;
+        private readonly IList<DateTimeOffset> _concreteMoments;
 
-        public SimpleSchedule(SimpleScheduleKind kind, int multiplier, DateTime baseTime, IEnumerable<TimeSpan> concreteOffsets = null)
+        public SimpleSchedule(
+            SimpleScheduleKind kind,
+            int multiplier,
+            DateTimeOffset baseTime,
+            IEnumerable<TimeSpan> concreteOffsets = null)
         {
-            if (baseTime.Kind != DateTimeKind.Utc)
-            {
-                throw new NotImplementedException(); // todo
-            }
-
-            //if (baseTime.Millisecond != 0)
-            //{
-            //    throw new NotImplementedException(); // todo
-            //}
-
             if (multiplier <= 0)
             {
                 throw new NotImplementedException(); // todo
@@ -34,7 +27,7 @@ namespace TauCode.Working.Schedules
 
             this.TimeSpan = this.CalculateTimeSpan();
 
-            var concreteMoments = new List<DateTime>();
+            var concreteMoments = new List<DateTimeOffset>();
 
             if (concreteOffsets != null)
             {
@@ -86,26 +79,21 @@ namespace TauCode.Working.Schedules
 
         public int Multiplier { get; }
 
-        public DateTime BaseTime { get; }
+        public DateTimeOffset BaseTime { get; }
 
         public TimeSpan TimeSpan { get; }
 
         public string Description { get; set; }
 
-        public DateTime GetDueTimeAfter(DateTime after)
+        public DateTimeOffset GetDueTimeAfter(DateTimeOffset after)
         {
-            if (after.Kind != DateTimeKind.Utc)
-            {
-                throw new NotImplementedException(); // todo
-            }
-
             if (after == this.BaseTime)
             {
                 return after.Add(this.TimeSpan);
             }
             else if (after > this.BaseTime)
             {
-                var spanCount = (int)((after - this.BaseTime).TotalMilliseconds / this.TimeSpan.TotalMilliseconds);
+                var spanCount = (int) ((after - this.BaseTime).TotalMilliseconds / this.TimeSpan.TotalMilliseconds);
                 var result = this.BaseTime.AddMilliseconds(spanCount * this.TimeSpan.TotalMilliseconds);
 
                 while (true)

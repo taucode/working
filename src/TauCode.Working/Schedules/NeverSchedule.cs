@@ -19,6 +19,6 @@ namespace TauCode.Working.Schedules
             set => throw new NotSupportedException();
         }
 
-        public DateTime GetDueTimeAfter(DateTime after) => JobExtensions.Never; // todo: check argument
+        public DateTimeOffset GetDueTimeAfter(DateTimeOffset after) => JobExtensions.Never; // todo: check argument
     }
 }

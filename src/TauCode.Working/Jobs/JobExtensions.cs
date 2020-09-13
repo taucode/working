@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using TauCode.Extensions.Lab;
 
 namespace TauCode.Working.Jobs
 {
@@ -9,7 +10,12 @@ namespace TauCode.Working.Jobs
     {
         private const int NeverYear = 9000;
 
-        public static DateTime Never = new DateTime(NeverYear, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        public static readonly DateTimeOffset Never;
+
+        static JobExtensions()
+        {
+            Never = $"{NeverYear}-01-01Z".ToUtcDayOffset();
+        }
 
         public static bool IsNever(this DueTimeInfo dueTimeInfo) => dueTimeInfo.DueTime.Equals(Never);
 

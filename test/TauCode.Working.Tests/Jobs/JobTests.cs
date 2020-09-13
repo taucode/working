@@ -81,10 +81,10 @@ namespace TauCode.Working.Tests.Jobs
             jobManager.Start();
             var job = jobManager.Create("job1");
 
-            var now = "2020-09-11".ToExactUtcDate().AddHours(11);
+            var now = "2020-09-11Z".ToUtcDayOffset().AddHours(11);
             TimeProvider.Override(now);
 
-            var manualDueTime = "2020-10-12".ToExactUtcDate().AddHours(1);
+            var manualDueTime = "2020-10-12Z".ToUtcDayOffset().AddHours(1);
 
             // Act
             job.OverrideDueTime(manualDueTime);
@@ -99,7 +99,7 @@ namespace TauCode.Working.Tests.Jobs
         public async Task ForceStart_NotStarted_RunsSuccessfully()
         {
             // Arrange
-            var now = "2020-09-11".ToExactUtcDate();
+            var now = "2020-09-11Z".ToUtcDayOffset();
             TimeProvider.Override(now);
 
             IJobManager jobManager = new JobManager();
@@ -139,7 +139,7 @@ namespace TauCode.Working.Tests.Jobs
         public async Task SetSchedule_ValidValue_SetsSchedule()
         {
             // Arrange
-            var now = "2020-09-11".ToExactUtcDate().AddHours(3);
+            var now = "2020-09-11Z".ToUtcDayOffset().AddHours(3);
             TimeProvider.Override(now);
 
             IJobManager jobManager = new JobManager();

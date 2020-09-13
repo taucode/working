@@ -4,17 +4,15 @@ namespace TauCode.Extensions.Lab
 {
     public static class DateTimeExtensionsLab
     {
-        public static DateTime ToExactUtcDate(this string dateString)
+        public static DateTimeOffset ToUtcDayOffset(this string timeString)
         {
-            var date = DateTime.Parse(dateString);
+            var time = DateTimeOffset.Parse(timeString);
+            if (time.Offset != TimeSpan.Zero)
+            {
+                throw new ArgumentException($"'{timeString}' does not represent a UTC date with zero day time.", nameof(timeString));
+            }
 
-            var result = DateTime.SpecifyKind(date, DateTimeKind.Utc);
-            return result;
-        }
-
-        public static DateTimeInterval ToExactUtcDateTimeInterval(this string dateIntervalString)
-        {
-            throw new NotImplementedException();
+            return time;
         }
     }
 }

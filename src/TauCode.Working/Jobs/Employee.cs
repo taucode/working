@@ -281,7 +281,7 @@ namespace TauCode.Working.Jobs
             });
         }
 
-        internal void OverrideDueTime(DateTime? dueTime) => _vice.OverrideDueTime(this.Name, dueTime);
+        internal void OverrideDueTime(DateTimeOffset? dueTime) => _vice.OverrideDueTime(this.Name, dueTime);
 
         internal void StartJob(StartReason startReason, DueTimeInfo dueTimeInfo)
         {

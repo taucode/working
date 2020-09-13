@@ -63,7 +63,7 @@ namespace TauCode.Working.Jobs
 
         JobInfo IJob.GetInfo(int? maxRunCount) => _employee.GetJobInfo(maxRunCount);
 
-        void IJob.OverrideDueTime(DateTime? dueTime)
+        void IJob.OverrideDueTime(DateTimeOffset? dueTime)
         {
             _employee.OverrideDueTime(dueTime);
         }

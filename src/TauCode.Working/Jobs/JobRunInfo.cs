@@ -8,8 +8,8 @@ namespace TauCode.Working.Jobs
             int index,
             StartReason startReason,
             DueTimeInfo dueTimeInfo,
-            DateTime startTime,
-            DateTime? endTime,
+            DateTimeOffset startTime,
+            DateTimeOffset? endTime,
             JobRunStatus status,
             string output,
             Exception exception)
@@ -30,8 +30,8 @@ namespace TauCode.Working.Jobs
         public int Index { get; }
         public StartReason StartReason { get; }
         public DueTimeInfo DueTimeInfo { get; }
-        public DateTime StartTime { get; }
-        public DateTime? EndTime { get; }
+        public DateTimeOffset StartTime { get; }
+        public DateTimeOffset? EndTime { get; }
         public JobRunStatus Status { get; }
         public string Output { get; }
         public Exception Exception { get; }

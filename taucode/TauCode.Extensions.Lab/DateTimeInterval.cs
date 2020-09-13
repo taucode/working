@@ -2,25 +2,45 @@
 
 namespace TauCode.Extensions.Lab
 {
-    public readonly struct DateTimeInterval
+    // todo ut-s
+    public readonly struct DateTimeOffsetInterval
     {
-        public DateTimeInterval(DateTime start, DateTime end)
+        public DateTimeOffsetInterval(DateTimeOffset start, DateTimeOffset end)
         {
-            if (start.Kind != end.Kind)
-            {
-                throw new ArgumentException($"'{nameof(start)}' and '{nameof(end)}' must be of same kind.");
-            }
-
             if (start > end)
             {
-                throw new ArgumentException($"'{nameof(start)}' must be not greater than '{nameof(end)}'.");
+                throw new ArgumentException($"'{nameof(end)}' must be not earlier than '{nameof(start)}'.", nameof(end));
             }
 
             this.Start = start;
             this.End = end;
         }
 
-        public DateTime Start { get; }
-        public DateTime End { get; }
+        public DateTimeOffset Start { get; }
+        public DateTimeOffset End { get; }
+
+        public static DateTimeOffsetInterval Parse(string intervalString)
+        {
+            if (intervalString == null)
+            {
+                throw new ArgumentNullException(nameof(intervalString));
+            }
+
+            var parts = intervalString.Split(' ');
+            if (parts.Length != 2)
+            {
+                throw new ArgumentException($"'{nameof(intervalString)}' must be in format '<start> <end>.'");
+            }
+
+            var startString = parts[0];
+            var endString = parts[1];
+
+            var start = DateTimeOffset.Parse(startString);
+            var end = DateTimeOffset.Parse(endString);
+
+            var result = new DateTimeOffsetInterval(start, end);
+
+            return result;
+        }
     }
 }

@@ -492,8 +492,10 @@ namespace TauCode.Working.Tests.Jobs
             // Arrange
             using IJobManager jobManager = new JobManager();
             jobManager.Start();
-            jobManager.Create("job1");
-            jobManager.Create("job2");
+            var job1 = jobManager.Create("job1");
+            var job2 = jobManager.Create("job2");
+
+
 
             // Act
             var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.Get("non-existing"));

@@ -35,7 +35,7 @@ namespace TauCode.Working.TestDemo.Gui.Server.Forms
 
             if (result == DialogResult.OK)
             {
-                var schedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, "2020-01-01".ToExactUtcDate()); // todo temp
+                var schedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, "2020-01-01".ToUtcDayOffset()); // todo temp
                 var parameter = 1488; // todo temp
                 this.DoRegisterJob(dialog.JobName, schedule, parameter);
             }

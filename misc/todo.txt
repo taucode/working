@@ -2,6 +2,8 @@
 ==========
     1. Consider this: https://github.com/msgpack/msgpack-cli
     2. Consider this: https://github.com/ElectronNET/Electron.NET/
+    3. https://stackoverflow.com/questions/16442484/datetime-unspecified-kind
+    4. https://nodatime.org/
 
 2020-09-06
 ==========

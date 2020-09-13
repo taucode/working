@@ -64,26 +64,6 @@ namespace TauCode.Working.Workers
             return stableWorkerState;
         }
 
-        //internal static DateTime Trunca-teMilliseconds(this DateTime dateTime)
-        //{
-        //    return new DateTime(
-        //        dateTime.Year,
-        //        dateTime.Month,
-        //        dateTime.Day,
-        //        dateTime.Hour,
-        //        dateTime.Minute,
-        //        dateTime.Second,
-        //        0,
-        //        dateTime.Kind);
-        //}
-
-
-        // todo temp
-        public static string FormatTime(this DateTime dateTime)
-        {
-            return dateTime.ToString("O", CultureInfo.InvariantCulture);
-        }
-
         public static bool IsWorkerDisposed(this IWorker worker)
         {
             if (worker == null)

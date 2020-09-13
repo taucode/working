@@ -14,7 +14,7 @@ namespace TauCode.Working.Jobs
         IProgressTracker ProgressTracker { get; set; }
         TextWriter Output { get; set; }
         JobInfo GetInfo(int? maxRunCount);
-        void OverrideDueTime(DateTime? dueTime);
+        void OverrideDueTime(DateTimeOffset? dueTime);
         void ForceStart();
     }
 }

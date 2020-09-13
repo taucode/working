@@ -50,7 +50,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.TestDemo.Cu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.TestDemo.Gui.Server", "test-demo\gui\TauCode.Working.TestDemo.Gui.Server\TauCode.Working.TestDemo.Gui.Server.csproj", "{93FEA821-6A6E-4F92-96C4-4EB23092231C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TauCode.Working.TestDemo.Gui.Common", "test-demo\gui\TauCode.Working.TestDemo.Gui.Common\TauCode.Working.TestDemo.Gui.Common.csproj", "{C8509B08-5C98-4870-9F36-6905B1AC50C1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TauCode.Working.TestDemo.Gui.Common", "test-demo\gui\TauCode.Working.TestDemo.Gui.Common\TauCode.Working.TestDemo.Gui.Common.csproj", "{C8509B08-5C98-4870-9F36-6905B1AC50C1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
