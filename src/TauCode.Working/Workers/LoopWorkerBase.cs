@@ -121,26 +121,37 @@ namespace TauCode.Working.Workers
 
         private Task<WorkFinishReason> DoWorkAsync()
         {
-            this.LogDebug($"Entered.");
+            var message = "Entered.";
+            //this.LogDebug($"Entered.");
+            this.GetLogger().Debug(message, nameof(DoWorkAsync));
+
             return this.DoWorkAsyncImpl();
         }
 
         private Task<VacationFinishReason> TakeVacationAsync()
         {
-            this.LogDebug($"Entered.");
+            var message = "Entered.";
+            //this.LogDebug($"Entered.");
+            this.GetLogger().Debug(message, nameof(TakeVacationAsync));
+
             return this.TakeVacationAsyncImpl();
         }
 
         private void PauseRoutine()
         {
-            this.LogDebug($"Entered.");
+            var message = "Entered.";
+            //this.LogDebug($"Entered.");
+            this.GetLogger().Debug(message, nameof(PauseRoutine));
 
             while (true)
             {
                 var gotControlSignal = _controlSignal.WaitOne(PauseTimeoutMilliseconds);
                 if (gotControlSignal)
                 {
-                    this.LogDebug("Got control signal.");
+                    message = "Got control signal.";
+                    //this.LogDebug("Got control signal.");
+                    this.GetLogger().Debug(message, nameof(PauseRoutine));
+
                     return;
                 }
             }
@@ -149,14 +160,23 @@ namespace TauCode.Working.Workers
         private bool ContinueAfterControlSignal(params WorkerState[] expectedStates)
         {
             var message = "Continuing after control signal.";
-            this.LogDebug(message);
+            //this.LogDebug(message);
+            this.GetLogger().Debug(message, nameof(ContinueAfterControlSignal));
+
+
             this.CheckState(message, expectedStates);
 
-            this.LogDebug("Sending signal to control thread and awaiting response signal.");
+            message = "Sending signal to control thread and awaiting response signal.";
+            //this.LogDebug("Sending signal to control thread and awaiting response signal.");
+            this.GetLogger().Debug(message, nameof(ContinueAfterControlSignal));
+
+
             WaitHandle.SignalAndWait(_routineSignal, _controlSignal);
 
             message = "Got response signal from control thread.";
-            this.LogDebug(message);
+            //this.LogDebug(message);
+            this.GetLogger().Debug(message, nameof(ContinueAfterControlSignal));
+
             var stableStates = expectedStates
                 .Select(WorkingExtensions.GetStableWorkerState)
                 .ToArray();
@@ -207,15 +227,25 @@ namespace TauCode.Working.Workers
 
         protected virtual void Shutdown(WorkerState shutdownState)
         {
-            this.LogDebug($"Sending signal to {nameof(LoopRoutine)}.");
+            var message = $"Sending signal to {nameof(LoopRoutine)}.";
+            //this.LogDebug($"Sending signal to {nameof(LoopRoutine)}.");
+            this.GetLogger().Debug(message, nameof(Shutdown));
+
+
             WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
 
             this.ChangeState(shutdownState);
             _controlSignal.Set();
 
-            this.LogDebug($"Waiting {nameof(LoopRoutine)} to terminate.");
+            message = $"Waiting {nameof(LoopRoutine)} to terminate.";
+            //this.LogDebug($"Waiting {nameof(LoopRoutine)} to terminate.");
+            this.GetLogger().Debug(message, nameof(Shutdown));
+
             this._routineTask.Wait();
-            this.LogDebug($"{nameof(LoopRoutine)} terminated.");
+
+            message = $"{nameof(LoopRoutine)} terminated.";
+            //this.LogDebug($"{nameof(LoopRoutine)} terminated.");
+            this.GetLogger().Debug(message, nameof(Shutdown));
 
             this._routineTask.Dispose();
             this._routineTask = null;
@@ -232,7 +262,9 @@ namespace TauCode.Working.Workers
             _routineSignal.Dispose();
             _routineSignal = null;
 
-            this.LogDebug("OS Resources disposed.");
+            message = "OS Resources disposed.";
+            //this.LogDebug("OS Resources disposed.");
+            this.GetLogger().Debug(message, nameof(Shutdown));
         }
 
         #endregion
@@ -314,7 +346,11 @@ namespace TauCode.Working.Workers
 
             if (previousState == WorkerState.Stopped)
             {
-                this.LogDebug("Worker was stopped, nothing to dispose.");
+                var message = "Worker was stopped, nothing to dispose.";
+                //this.LogDebug("Worker was stopped, nothing to dispose.");
+                this.GetLogger().Debug(message, nameof(DisposeImpl));
+
+
                 this.ChangeState(WorkerState.Disposed);
                 return;
             }
