@@ -10,7 +10,9 @@ namespace TauCode.Working.Workers
         protected void CheckCanDoJob()
         {
             var message = "Check before doing the job.";
-            this.LogDebug(message);
+            //this.LogDebug(message);
+            this.GetLogger().Debug(message, nameof(CheckCanDoJob));
+
             this.CheckState(message, WorkerState.Running);
         }
 

@@ -81,7 +81,9 @@ namespace TauCode.Working.Workers
                 }
                 catch (Exception ex)
                 {
-                    this.LogError($"Assignment {assignment} caused an exception: {ex}.");
+                    var message = $"Assignment '{assignment}' caused an exception: {ex}.";
+                    //this.LogError($"Assignment {assignment} caused an exception: {ex}.");
+                    this.GetLogger().Error(message, nameof(DoWorkAsyncImpl), ex);
                 }
 
                 // got more assignments?

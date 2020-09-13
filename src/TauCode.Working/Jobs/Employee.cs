@@ -159,7 +159,11 @@ namespace TauCode.Working.Jobs
 
         #region Internal
 
-        internal void ForceStart() => this.StartJob(StartReason.Force, _vice.GetDueTimeInfo(this.Name), true);
+        internal void ForceStart()
+        {
+            var jobStartResult = this.StartJob(StartReason.Force, _vice.GetDueTimeInfo(this.Name));
+            throw new NotImplementedException();
+        }
 
         internal IJob GetJob() => _job;
 
@@ -284,8 +288,6 @@ namespace TauCode.Working.Jobs
 
         internal JobStartResult StartJob(StartReason startReason, DueTimeInfo dueTimeInfo)
         {
-            //var startTime = _vice.GetCurrentTime();
-
             var jobStartResult = this.GetWithControlLock(() =>
             {
                 if (this.WorkerIsDisposed())
@@ -308,7 +310,7 @@ namespace TauCode.Working.Jobs
                     }
                 }
 
-                if (this.WorkerIsStopped())
+                if (!this.WorkerIsStopped())
                 {
                     return JobStartResult.Unknown; // should never happen, it's an error.
                 }
