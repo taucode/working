@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using TauCode.Labor;
+using TauCode.Working.Exceptions;
 
 namespace TauCode.Working.Jobs.Omicron
 {
@@ -11,6 +12,27 @@ namespace TauCode.Working.Jobs.Omicron
         private OmicronJobManager()
         {
             _vice = new OmicronVice();
+        }
+
+        private void CheckJobName(string jobName, string jobNameParamName)
+        {
+            if (string.IsNullOrWhiteSpace(jobName))
+            {
+                throw new ArgumentException("Job name cannot be null or empty.", jobNameParamName);
+            }
+        }
+
+        private void CheckCanWork()
+        {
+            if (this.IsDisposed)
+            {
+                throw new JobObjectDisposedException(typeof(IJobManager).FullName);
+            }
+
+            if (!this.IsRunning)
+            {
+                throw new InvalidJobOperationException($"'{typeof(IJobManager).FullName}' not started.");
+            }
         }
 
         public static IJobManager CreateJobManager() => new OmicronJobManager();
@@ -43,7 +65,10 @@ namespace TauCode.Working.Jobs.Omicron
 
         public IJob Create(string jobName)
         {
-            throw new NotImplementedException();
+            this.CheckJobName(jobName, nameof(jobName));
+            this.CheckCanWork();
+
+            return _vice.CreateJob(jobName);
         }
 
         public IReadOnlyList<string> GetNames() => throw new NotImplementedException();
