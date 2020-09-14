@@ -15,25 +15,113 @@ namespace TauCode.Working.Jobs.Omicron
         private IProgressTracker _progressTracker;
         private TextWriter _output;
 
+        private readonly object _lock;
+
         internal OmicronEmployee(OmicronVice vice)
         {
             _vice = vice;
             _job = new OmicronJob(this);
             _schedule = NeverSchedule.Instance;
             _routine = JobExtensions.IdleJobRoutine;
+
+            _lock = new object();
         }
 
         internal IJob GetJob() => _job;
 
         internal ISchedule Schedule => _schedule;
 
-        internal JobDelegate Routine => _routine;
+        internal JobDelegate Routine
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _routine;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    if (this.State == ProlState.Running)
+                    {
+                        throw new NotImplementedException();
+                    }
 
-        internal object Parameter => _parameter;
+                    _routine = value;
+                }
+            }
+        }
 
-        internal IProgressTracker ProgressTracker => _progressTracker;
+        internal object Parameter
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _parameter;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    if (this.State == ProlState.Running)
+                    {
+                        throw new NotImplementedException();
+                    }
 
-        internal TextWriter Output => _output;
+                    _parameter = value;
+                }
+            }
+        }
+
+        internal IProgressTracker ProgressTracker
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _progressTracker;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    if (this.State == ProlState.Running)
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    _progressTracker = value;
+                }
+            }
+        }
+
+        internal TextWriter Output
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _output;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    if (this.State == ProlState.Running)
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    _output = value;
+                }
+            }
+        }
     }
 
     internal class OmicronJob : IJob
@@ -79,7 +167,7 @@ namespace TauCode.Working.Jobs.Omicron
         public TextWriter Output
         {
             get => _employee.Output;
-            set => throw new NotImplementedException();
+            set => _employee.Output = value;
         }
 
         public JobInfo GetInfo(int? maxRunCount)

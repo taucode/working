@@ -70,26 +70,27 @@ namespace TauCode.Working.Jobs
 
         public void Start()
         {
-            try
-            {
-                _vice.Start();
-            }
-            catch (ForbiddenWorkerStateException ex) when (ex.WorkerName == typeof(Vice).FullName)
-            {
-                if (
-                    ex.ActualState == WorkerState.Disposed)
-                {
-                    throw new JobObjectDisposedException(typeof(IJobManager).FullName);
-                }
-                else if (
-                    ex.ActualState == WorkerState.Running &&
-                    TauCode.Extensions.Lab.CollectionExtensionsLab.ListsAreEquivalent(ex.AcceptableStates, StatesStopped, false))
-                {
-                    throw new InvalidJobOperationException($"'{typeof(IJobManager).FullName}' is already running");
-                }
+            throw new NotImplementedException();
+            //try
+            //{
+            //    _vice.Start();
+            //}
+            //catch (ForbiddenWorkerStateException ex) when (ex.WorkerName == typeof(Vice).FullName)
+            //{
+            //    if (
+            //        ex.ActualState == WorkerState.Disposed)
+            //    {
+            //        throw new JobObjectDisposedException(typeof(IJobManager).FullName);
+            //    }
+            //    else if (
+            //        ex.ActualState == WorkerState.Running &&
+            //        TauCode.Extensions.Lab.CollectionExtensionsLab.ListsAreEquivalent(ex.AcceptableStates, StatesStopped, false))
+            //    {
+            //        throw new InvalidJobOperationException($"'{typeof(IJobManager).FullName}' is already running");
+            //    }
 
-                throw;
-            }
+            //    throw;
+            //}
         }
 
         public bool IsRunning => _vice.WorkerIsRunning();

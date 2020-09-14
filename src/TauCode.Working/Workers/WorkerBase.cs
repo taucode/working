@@ -138,11 +138,12 @@ namespace TauCode.Working.Workers
                 sb.AppendLine($"'{nameof(this.State)}' is expected to be one of the following: [{acceptedStatesString}].");
                 sb.Append($"Actual value: {state}.");
 
-                throw new ForbiddenWorkerStateException(
-                    this.Name,
-                    acceptedStates,
-                    state,
-                    sb.ToString());
+                throw new NotImplementedException();
+                //throw new ForbiddenWorkerStateException(
+                //    this.Name,
+                //    acceptedStates,
+                //    state,
+                //    sb.ToString());
             }
         }
 

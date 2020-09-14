@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Labor;
@@ -39,6 +40,28 @@ namespace TauCode.Working.Jobs.Omicron
 
                 _employees.Add(employee.Name, employee);
                 return employee.GetJob();
+            }
+        }
+
+        internal IJob GetJob(string jobName)
+        {
+            lock (_lock)
+            {
+                var employee = _employees.GetValueOrDefault(jobName);
+                if (employee == null)
+                {
+                    throw new InvalidJobOperationException($"Job not found: '{jobName}'.");
+                }
+
+                return employee.GetJob();
+            }
+        }
+
+        internal IReadOnlyList<string> GetJobNames()
+        {
+            lock (_lock)
+            {
+                return _employees.Keys.ToList();
             }
         }
     }

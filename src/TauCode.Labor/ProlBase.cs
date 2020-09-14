@@ -108,7 +108,7 @@ namespace TauCode.Labor
             {
                 if (this.GetIsDisposed())
                 {
-                    throw new NotImplementedException(); // cannot start
+                    throw new ObjectDisposedException(this.Name);
                 }
 
                 if (this.GetState() != ProlState.Stopped)

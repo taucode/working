@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using TauCode.Labor;
+using TauCode.Labor.Exceptions;
 using TauCode.Working.Exceptions;
 
 namespace TauCode.Working.Jobs.Omicron
@@ -44,7 +45,18 @@ namespace TauCode.Working.Jobs.Omicron
 
         public void Start()
         {
-            _vice.Start();
+            try
+            {
+                _vice.Start();
+            }
+            catch (ObjectDisposedException)
+            {
+                throw new JobObjectDisposedException($"{typeof(IJobManager).FullName}");
+            }
+            catch (InappropriateProlStateException)
+            {
+                throw new InvalidJobOperationException($"'{typeof(IJobManager).FullName}' is already running.");
+            }
         }
 
         public bool IsRunning
@@ -71,11 +83,18 @@ namespace TauCode.Working.Jobs.Omicron
             return _vice.CreateJob(jobName);
         }
 
-        public IReadOnlyList<string> GetNames() => throw new NotImplementedException();
+        public IReadOnlyList<string> GetNames()
+        {
+            this.CheckCanWork();
+            return _vice.GetJobNames();
+        }
 
         public IJob Get(string jobName)
         {
-            throw new NotImplementedException();
+            this.CheckJobName(jobName, nameof(jobName));
+            this.CheckCanWork();
+
+            return _vice.GetJob(jobName);
         }
     }
 }

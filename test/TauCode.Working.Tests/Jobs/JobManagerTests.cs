@@ -86,7 +86,7 @@ namespace TauCode.Working.Tests.Jobs
             var ex = Assert.Throws<InvalidJobOperationException>(() => jobManager.Start());
 
             // Assert
-            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' is already running"));
+            Assert.That(ex.Message, Is.EqualTo($"'{typeof(IJobManager).FullName}' is already running."));
             jobManager.Dispose();
         }
 
@@ -543,31 +543,28 @@ namespace TauCode.Working.Tests.Jobs
                 1,
                 fakeNow.AddMilliseconds(400));
 
-            //var ke = TimeProvider.GetCurrent();
-            //var kk = 3;
 
+            job1.Schedule = schedule;
+            job2.Schedule = schedule;
+
+            job1.Routine = Routine;
+            job2.Routine = Routine;
+
+            await Task.Delay(2500); // 2 iterations should be completed
+
+            // Act
+            var jobInfoBeforeDispose1 = job1.GetInfo(null);
+            var jobInfoBeforeDispose2 = job2.GetInfo(null);
+
+            jobManager.Dispose();
+
+            // Assert
             throw new NotImplementedException();
-            //job1.UpdateSchedule(schedule);
-            //job2.UpdateSchedule(schedule);
 
-            //job1.Routine = Routine;
-            //job2.Routine = Routine;
-
-            //await Task.Delay(2500); // 2 iterations should be completed
-
-            //// Act
-            //var jobInfoBeforeDispose1 = job1.GetInfo(null);
-            //var jobInfoBeforeDispose2 = job2.GetInfo(null);
-
-            //jobManager.Dispose();
-
-            //// Assert
-            //throw new NotImplementedException();
-
-            ////foreach (var job in new IJob[] {job1, job2})
-            ////{
-            ////    //Assert.That(ex.Message, Is.EqualTo("Job not found: 'non-existing'."));
-            ////}
+            //foreach (var job in new IJob[] {job1, job2})
+            //{
+            //    //Assert.That(ex.Message, Is.EqualTo("Job not found: 'non-existing'."));
+            //}
         }
 
         #endregion
