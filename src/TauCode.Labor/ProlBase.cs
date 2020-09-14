@@ -12,6 +12,7 @@ namespace TauCode.Labor
         private long _isDisposedValue;
 
         private string _name;
+        private readonly object _nameLock;
 
         private readonly object _lock;
 
@@ -21,7 +22,9 @@ namespace TauCode.Labor
 
         public ProlBase()
         {
-            this._lock = new object();
+            _lock = new object();
+            _nameLock = new object();
+
             this.SetState(ProlState.Stopped);
             this.SetIsDisposed(false);
         }
@@ -78,6 +81,8 @@ namespace TauCode.Labor
             // idle
         }
 
+        // todo: OnDisposed()/OnDisposing()
+
         #endregion
 
         #region IProl Members
@@ -86,14 +91,14 @@ namespace TauCode.Labor
         {
             get
             {
-                lock (_lock)
+                lock (_nameLock)
                 {
                     return _name;
                 }
             }
             set
             {
-                lock (_lock)
+                lock (_nameLock)
                 {
                     _name = value;
                 }
@@ -104,7 +109,7 @@ namespace TauCode.Labor
 
         public void Start()
         {
-            lock (this._lock)
+            lock (_lock)
             {
                 if (this.GetIsDisposed())
                 {
@@ -126,7 +131,7 @@ namespace TauCode.Labor
 
         public void Stop()
         {
-            lock (this._lock)
+            lock (_lock)
             {
                 if (this.GetIsDisposed())
                 {
@@ -154,7 +159,7 @@ namespace TauCode.Labor
 
         public void Dispose()
         {
-            lock (this._lock)
+            lock (_lock)
             {
                 if (this.GetIsDisposed())
                 {

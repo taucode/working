@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TauCode.Extensions.Lab;
+using TauCode.Infrastructure.Time;
 using TauCode.Labor;
 using TauCode.Working.Exceptions;
 
@@ -21,7 +23,44 @@ namespace TauCode.Working.Jobs.Omicron
 
         protected override Task<TimeSpan> DoWork(CancellationToken token)
         {
-            return Task.FromResult(TimeSpan.MaxValue); // todo0
+            var now = TimeProvider.GetCurrent();
+            var employeesToWakeUp = new List<OmicronEmployee>();
+            var earliest = JobExtensions.Never;
+
+            lock (_lock)
+            {
+                foreach (var employee in _employees.Values)
+                {
+                    var dueTime = employee.GetDueTimeForVice();
+                    if (!dueTime.HasValue)
+                    {
+                        continue;
+                    }
+
+                    if (now >= dueTime.Value)
+                    {
+                        // due time has come!
+                        employeesToWakeUp.Add(employee);
+                    }
+                    else
+                    {
+                        earliest = DateTimeExtensionsLab.Min(earliest, dueTime.Value);
+                    }
+                }
+            }
+
+            foreach (var employee in employeesToWakeUp)
+            {
+                // todo: log on exception
+                employee.WakeUp(token); // todo: log if already was started etc
+            }
+
+            var vacationTimeout = earliest - now;
+            return Task.FromResult(vacationTimeout);
+
+            //_vacationtimeout = datetimeextensionslab.min(_vacationtimeout, verylongvacation);
+
+            //return task.fromresult(workfinishreason.workisdone);
         }
 
         internal IJob CreateJob(string jobName)
@@ -64,5 +103,7 @@ namespace TauCode.Working.Jobs.Omicron
                 return _employees.Keys.ToList();
             }
         }
+
+        internal void OnScheduleChanged() => this.WorkArrived();
     }
 }

@@ -550,7 +550,7 @@ namespace TauCode.Working.Tests.Jobs
             job1.Routine = Routine;
             job2.Routine = Routine;
 
-            await Task.Delay(2500); // 2 iterations should be completed
+            await Task.Delay(2500); // 3 iterations should be completed: ~400, ~1400, ~2400
 
             // Act
             var jobInfoBeforeDispose1 = job1.GetInfo(null);
