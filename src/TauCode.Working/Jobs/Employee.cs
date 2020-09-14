@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions;
@@ -18,17 +17,22 @@ namespace TauCode.Working.Jobs
     {
         #region Fields
 
+        private readonly Vice _vice;
+        private readonly IJob _job;
+
+        private ISchedule _schedule;
+        private DateTimeOffset _effectiveDueTime;
+        private DateTimeOffset? _overriddenDueTime;
+
         private JobDelegate _routine;
         private object _parameter;
         private IProgressTracker _progressTracker;
         private TextWriter _output;
-        private readonly Vice _vice;
         private MultiTextWriterLab _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
         private JobRunInfoBuilder _currentJobRunResultBuilder;
         private readonly List<JobRunInfo> _runs;
         private int _runIndex;
-        private readonly IJob _job;
 
         #endregion
 
@@ -37,9 +41,14 @@ namespace TauCode.Working.Jobs
         internal Employee(Vice vice)
         {
             _vice = vice;
-            _routine = JobExtensions.IdleJobRoutine;
             _job = new Job(this);
+
+            _schedule = NeverSchedule.Instance;
+
+            _routine = JobExtensions.IdleJobRoutine;
             _runs = new List<JobRunInfo>();
+
+            this.UpdateEffectiveDueTime();
         }
 
         #endregion
@@ -48,7 +57,19 @@ namespace TauCode.Working.Jobs
 
         private void CheckStopped(string preamble)
         {
+            this.CheckNotDisposed();
             this.CheckState(preamble, WorkerState.Stopped);
+        }
+
+        /// <summary>
+        /// Should always be called from 'InvokeWithControlLock'
+        /// </summary>
+        private void CheckNotDisposed()
+        {
+            if (this.State == WorkerState.Disposed)
+            {
+                throw new JobObjectDisposedException($"{nameof(IJob)} '{this.Name}'");
+            }
         }
 
         private void EndJob(Task task)
@@ -99,23 +120,57 @@ namespace TauCode.Working.Jobs
             _runs.Add(jobRunResult);
             _currentJobRunResultBuilder = null;
 
-            // it might appear task was cancelled due to a dispose request.
-            var state = this.State;
-            if (state.IsIn(WorkerState.Disposing, WorkerState.Disposed))
+            this.InvokeWithControlLock(() =>
             {
-                return;
-            }
+                // may be in disposing process already.
+                if (this.State == WorkerState.Running)
+                {
+                    this.Stop();
+                }
+            });
 
-            // stop worker.
-            try
-            {
-                this.Stop();
-            }
-            catch
-            {
-                // todo: catch 'InvalidWorkerStateException', which will be thrown by WorkerBase.CheckState.
-            }
+            //// it might appear task was cancelled due to a dispose request.
+            //var state = this.State;
+            //if (state.IsIn(WorkerState.Dispo-sing, WorkerState.Disposed))
+            //{
+            //    return;
+            //}
+
+            //// stop worker.
+            //try
+            //{
+            //    this.Sto-p();
+            //}
+            //catch
+            //{
+            //    // todo: catch 'InvalidWorkerStateException', which will be thrown by WorkerBase.CheckState.
+            //}
         }
+
+        private void UpdateEffectiveDueTime()
+        {
+            var now = TimeProvider.GetCurrent();
+            _effectiveDueTime = _overriddenDueTime ?? _schedule.GetDueTimeAfter(now);
+        }
+
+        //private T GetIfNotDisposed<T>(Func<T> getter)
+        //{
+        //    return this.GetWithControlLock(() =>
+        //    {
+        //        this.CheckNotDisposed();
+        //        var value = getter();
+        //        return value;
+        //    });
+        //}
+
+        //private void InvokeIfNotDisposed(Action action)
+        //{
+        //    this.InvokeWithControlLock(() =>
+        //    {
+        //        this.CheckNotDisposed();
+        //        action();
+        //    });
+        //}
 
         #endregion
 
@@ -143,11 +198,7 @@ namespace TauCode.Working.Jobs
 
         protected override void DisposeImpl()
         {
-            var currentState = this.State;
-
-            this.ChangeState(WorkerState.Disposing);
-
-            if (currentState == WorkerState.Running)
+            if (this.State == WorkerState.Running)
             {
                 _currentRunCancellationTokenSource.Cancel();
             }
@@ -159,120 +210,53 @@ namespace TauCode.Working.Jobs
 
         #region Internal
 
-        internal void ForceStart()
-        {
-            var jobStartResult = this.StartJob(StartReason.Force, _vice.GetDueTimeInfo(this.Name));
-            throw new NotImplementedException();
-        }
+        //internal void ForceStart()
+        //{
+        //    throw new NotImplementedException();
+        //    //var jobStartResult = this.StartJob(StartReason.Force, _vice.GetDueTimeInfo(this.Name));
+        //    //throw new NotImplementedException();
+        //}
+
+
+
+        #endregion
+
+        #region Internal - called by Vice
 
         internal IJob GetJob() => _job;
 
         #endregion
 
-        internal JobInfo GetJobInfo(int? maxRunCount)
+        #region Internal - called by IJob (can throw)
+
+        internal ISchedule GetSchedule()
         {
-            // todo: check null or non-negative 'maxRunCount'
-            var jobInfo = this.GetWithControlLock(() =>
+            return this.GetWithControlLock(() =>
             {
-                var jobInfoBuilder = new JobInfoBuilder(this.Name);
-                var dueTimeInfo = _vice.GetDueTimeInfo(this.Name);
-                jobInfoBuilder.DueTimeInfo = dueTimeInfo;
-                jobInfoBuilder.RunCount = _runIndex;
-
-                var runCountToTake = Math.Min(
-                    _runs.Count,
-                    maxRunCount ?? int.MaxValue);
-
-                for (var i = 0; i < runCountToTake; i++)
-                {
-                    jobInfoBuilder.Runs.Add(_runs[i]);
-                }
-
-                return jobInfoBuilder.Build();
+                this.CheckNotDisposed();
+                return _schedule;
             });
-
-            return jobInfo;
         }
 
-        internal ISchedule GetSchedule() => _vice.GetSchedule(this.Name);
-
-        internal TextWriter GetOutput() => this.GetWithControlLock(() => _output);
-        //{
-        //    TextWriter result = default;
-
-        //    this.InvokeWithControlLock(() =>
-        //    {
-        //        result = _output;
-        //    });
-
-        //    return result;
-        //}
-
-        internal void SetOutput(TextWriter output)
+        internal void UpdateSchedule(ISchedule schedule)
         {
             this.InvokeWithControlLock(() =>
             {
-                this.CheckStopped($"Set '{nameof(IJob.Output)}' requested.");
-
-                _output = output ?? throw new ArgumentNullException(nameof(output));
+                this.CheckNotDisposed();
+                _schedule = schedule;
+                _vice.OnScheduleChanged();
             });
+
         }
 
-        internal IProgressTracker GetProgressTracker() => this.GetWithControlLock(() => _progressTracker);
-        //{
-        //    IProgressTracker result = default;
-
-        //    this.InvokeWithControlLock(() =>
-        //    {
-        //        result = _progressTracker;
-        //    });
-
-        //    return result;
-        //}
-
-        internal void SetProgressTracker(IProgressTracker progressTracker)
+        internal JobDelegate GetRoutine()
         {
-            this.InvokeWithControlLock(() =>
+            return this.GetWithControlLock(() =>
             {
-                this.CheckStopped($"Set '{nameof(IJob.ProgressTracker)}' requested.");
-
-                _progressTracker = progressTracker ?? throw new ArgumentNullException(nameof(progressTracker));
+                this.CheckNotDisposed();
+                return _routine;
             });
         }
-
-        internal object GetParameter() => this.GetWithControlLock(() => _parameter);
-        //{
-        //    object result = default;
-
-        //    this.InvokeWithControlLock(() =>
-        //    {
-        //        result = _parameter;
-        //    });
-
-        //    return result;
-        //}
-
-        internal void SetParameter(object parameter)
-        {
-            this.InvokeWithControlLock(() =>
-            {
-                this.CheckStopped($"Set '{nameof(IJob.Parameter)}' requested.");
-
-                _parameter = parameter; // can be null
-            });
-        }
-
-        internal JobDelegate GetRoutine() => this.GetWithControlLock(() => _routine);
-        //{
-        //    JobDelegate result = default;
-
-        //    this.InvokeWithControlLock(() =>
-        //    {
-        //        result = _routine;
-        //    });
-
-        //    return result;
-        //}
 
         internal void SetRoutine(JobDelegate routine)
         {
@@ -284,86 +268,180 @@ namespace TauCode.Working.Jobs
             });
         }
 
+        internal object GetParameter()
+        {
+            return this.GetWithControlLock(() =>
+            {
+                this.CheckNotDisposed();
+                return _parameter;
+            });
+        }
+
+        internal void SetParameter(object parameter)
+        {
+            this.InvokeWithControlLock(() =>
+            {
+                this.CheckStopped($"Set '{nameof(IJob.Parameter)}' requested.");
+
+                _parameter = parameter; // can be null
+            });
+        }
+
+        internal IProgressTracker GetProgressTracker()
+        {
+            return this.GetWithControlLock(() =>
+            {
+                this.CheckNotDisposed();
+                return _progressTracker;
+            });
+        }
+
+        internal void SetProgressTracker(IProgressTracker progressTracker)
+        {
+            this.InvokeWithControlLock(() =>
+            {
+                this.CheckStopped($"Set '{nameof(IJob.ProgressTracker)}' requested.");
+
+                _progressTracker = progressTracker ?? throw new ArgumentNullException(nameof(progressTracker));
+            });
+        }
+
+        internal TextWriter GetOutput()
+        {
+            return this.GetWithControlLock(() =>
+            {
+                this.CheckNotDisposed();
+                return _output;
+            });
+        }
+
+        internal void SetOutput(TextWriter output)
+        {
+            this.InvokeWithControlLock(() =>
+            {
+                this.CheckStopped($"Set '{nameof(IJob.Output)}' requested.");
+
+                _output = output ?? throw new ArgumentNullException(nameof(output));
+            });
+        }
+
+        internal JobInfo GetJobInfo(int? maxRunCount)
+        {
+            throw new NotImplementedException();
+
+            //if (maxRunCount.HasValue && maxRunCount.Value < 0)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(maxRunCount));
+            //}
+
+            //var jobInfo = this.GetWithControlLock(() =>
+            //{
+            //    this.CheckNotDisposed();
+
+            //    var jobInfoBuilder = new JobInfoBuilder();
+            //    var dueTimeInfo = _vice.GetNextDueTimeInfo(this.Name);
+            //    jobInfoBuilder.DueTimeInfo = dueTimeInfo;
+            //    jobInfoBuilder.RunCount = _runIndex;
+
+            //    var runCountToTake = Math.Min(
+            //        _runs.Count,
+            //        maxRunCount ?? int.MaxValue);
+
+            //    for (var i = 0; i < runCountToTake; i++)
+            //    {
+            //        jobInfoBuilder.Runs.Add(_runs[i]);
+            //    }
+
+            //    return jobInfoBuilder.Build();
+            //});
+
+            //return jobInfo;
+        }
+
+        #endregion
+
+        #region Internal - interface to Vice
+
         internal void OverrideDueTime(DateTimeOffset? dueTime) => _vice.OverrideDueTime(this.Name, dueTime);
 
-        internal JobStartResult StartJob(StartReason startReason, DueTimeInfo dueTimeInfo)
-        {
-            var jobStartResult = this.GetWithControlLock(() =>
-            {
-                if (this.WorkerIsDisposed())
-                {
-                    return JobStartResult.AlreadyDisposed;
-                }
+        #endregion
 
-                if (this.WorkerIsRunning())
-                {
-                    switch (_currentJobRunResultBuilder.StartReason)
-                    {
-                        case StartReason.DueTime:
-                            return JobStartResult.AlreadyStartedByDueTime;
 
-                        case StartReason.Force:
-                            return JobStartResult.AlreadyStartedByForce;
+        
 
-                        default:
-                            return JobStartResult.Unknown; // should never happen, it's an error.
-                    }
-                }
 
-                if (!this.WorkerIsStopped())
-                {
-                    return JobStartResult.Unknown; // should never happen, it's an error.
-                }
 
-                var startTime = TimeProvider.GetCurrent();
-                _currentJobRunResultBuilder = new JobRunInfoBuilder(_runIndex, startReason, dueTimeInfo, startTime);
-                _currentRunCancellationTokenSource = new CancellationTokenSource();
+        //internal JobStartResult StartJob(JobStartReason startReason, DueTimeInfo dueTimeInfo)
+        //{
+        //    var jobStartResult = this.GetWithControlLock(() =>
+        //    {
+        //        if (this.WorkerIsDisposed())
+        //        {
+        //            return JobStartResult.AlreadyDisposed;
+        //        }
 
-                var writers = new List<TextWriter>();
-                var runWriter = new StringWriterWithEncoding(Encoding.UTF8);
-                writers.Add(runWriter);
+        //        if (this.WorkerIsRunning())
+        //        {
+        //            switch (_currentJobRunResultBuilder.StartReason)
+        //            {
+        //                case JobStartReason.DueTime:
+        //                    return JobStartResult.AlreadyStartedByDueTime;
 
-                if (_output != null)
-                {
-                    writers.Add(_output);
-                }
+        //                case JobStartReason.Force:
+        //                    return JobStartResult.AlreadyStartedByForce;
 
-                _currentRunTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
+        //                default:
+        //                    return JobStartResult.Unknown; // should never happen, it's an error.
+        //            }
+        //        }
 
-                Task task;
+        //        if (!this.WorkerIsStopped())
+        //        {
+        //            return JobStartResult.Unknown; // should never happen, it's an error.
+        //        }
 
-                try
-                {
-                    task = _routine(
-                        _parameter,
-                        _progressTracker,
-                        _currentRunTextWriter,
-                        _currentRunCancellationTokenSource.Token);
-                }
-                catch (Exception ex)
-                {
-                    var jobEx = new JobFailedToStartException(ex);
-                    task = Task.FromException(jobEx);
-                }
+        //        var startTime = TimeProvider.GetCurrent();
+        //        _currentJobRunResultBuilder = new JobRunInfoBuilder(_runIndex, startReason, dueTimeInfo, startTime);
+        //        _currentRunCancellationTokenSource = new CancellationTokenSource();
 
-                _runIndex++;
-                this.Start();
+        //        var writers = new List<TextWriter>();
+        //        var runWriter = new StringWriterWithEncoding(Encoding.UTF8);
+        //        writers.Add(runWriter);
 
-                task.ContinueWith(this.EndJob);
-                return JobStartResult.Started;
-            });
+        //        if (_output != null)
+        //        {
+        //            writers.Add(_output);
+        //        }
 
-            return jobStartResult;
-        }
+        //        _currentRunTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
 
-        internal bool UpdateSchedule(ISchedule schedule)
-        {
-            // todo: check not disposed, here & anywhere
+        //        Task task;
 
-            _vice.UpdateSchedule(this.Name, schedule);
-            var willApply = this.State != WorkerState.Running;
-            return willApply;
-        }
+        //        try
+        //        {
+        //            task = _routine(
+        //                _parameter,
+        //                _progressTracker,
+        //                _currentRunTextWriter,
+        //                _currentRunCancellationTokenSource.Token);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            var jobEx = new JobFailedToStartException(ex);
+        //            task = Task.FromException(jobEx);
+        //        }
+
+        //        _runIndex++;
+        //        this.Start();
+
+        //        task.ContinueWith(this.EndJob);
+        //        return JobStartResult.Started;
+        //    });
+
+        //    return jobStartResult;
+        //}
+
+        
 
         internal void GetFired()
         {
@@ -374,9 +452,16 @@ namespace TauCode.Working.Jobs
                     return;
                 }
 
-                _vice.Fire(this.Name);
+                _vice.FireMe(this.Name);
                 this.Dispose();
             });
+        }
+
+        public DateTimeOffset? GetDueTimeForVice() => this.WorkerIsDisposed() ? (DateTimeOffset?)null : _effectiveDueTime;
+
+        public void WakeUp()
+        {
+            throw new NotImplementedException();
         }
     }
 }

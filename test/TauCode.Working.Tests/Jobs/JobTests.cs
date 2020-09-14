@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -62,15 +63,14 @@ namespace TauCode.Working.Tests.Jobs
             var info = job.GetInfo(null);
 
             // Assert
-            Assert.That(info.Name, Is.EqualTo(name));
             Assert.That(info.CurrentRun, Is.Null);
+            throw new NotImplementedException();
+            //Assert.That(info.NextDueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
+            //Assert.That(info.NextDueTimeInfo.DueTime, Is.EqualTo(JobExtensions.Never));
 
-            Assert.That(info.DueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
-            Assert.That(info.DueTimeInfo.DueTime, Is.EqualTo(JobExtensions.Never));
-
-            //Assert.That(info.IsEnabled, Is.True);
-            Assert.That(info.RunCount, Is.Zero);
-            Assert.That(info.Runs, Is.Empty);
+            ////Assert.That(info.IsEnabled, Is.True);
+            //Assert.That(info.RunCount, Is.Zero);
+            //Assert.That(info.Runs, Is.Empty);
         }
 
         [Test]
@@ -91,8 +91,9 @@ namespace TauCode.Working.Tests.Jobs
 
             // Assert
             var info = job.GetInfo(null);
-            Assert.That(info.DueTimeInfo.Type, Is.EqualTo(DueTimeType.Overridden));
-            Assert.That(info.DueTimeInfo.DueTime, Is.EqualTo(manualDueTime));
+            //Assert.That(info.NextDueTimeInfo.Type, Is.EqualTo(DueTimeType.Overridden));
+            //Assert.That(info.NextDueTimeInfo.DueTime, Is.EqualTo(manualDueTime));
+            throw new NotImplementedException();
         }
 
         [Test]
@@ -116,23 +117,24 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(info.CurrentRun, Is.Null);
             Assert.That(info.RunCount, Is.EqualTo(1));
 
-            Assert.That(info.DueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
-            Assert.That(info.DueTimeInfo.IsNever(), Is.True);
+            throw new NotImplementedException();
+            //Assert.That(info.NextDueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
+            //Assert.That(info.NextDueTimeInfo.IsNever(), Is.True);
 
-            Assert.That(info.Runs, Has.Count.EqualTo(1));
-            var run = info.Runs.Single();
+            //Assert.That(info.Runs, Has.Count.EqualTo(1));
+            //var run = info.Runs.Single();
 
-            Assert.That(run.Index, Is.EqualTo(0));
-            Assert.That(run.StartReason, Is.EqualTo(StartReason.Force));
+            //Assert.That(run.Index, Is.EqualTo(0));
+            //Assert.That(run.StartReason, Is.EqualTo(JobStartReason.Force));
 
-            Assert.That(run.DueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
-            Assert.That(run.DueTimeInfo.IsNever(), Is.True);
+            //Assert.That(run.DueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
+            //Assert.That(run.DueTimeInfo.IsNever(), Is.True);
 
-            Assert.That(run.StartTime, Is.EqualTo(now));
-            Assert.That(run.EndTime, Is.EqualTo(now));
-            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
-            Assert.That(run.Output, Does.StartWith("Warning: usage of default idle routine."));
-            Assert.That(run.Exception, Is.Null);
+            //Assert.That(run.StartTime, Is.EqualTo(now));
+            //Assert.That(run.EndTime, Is.EqualTo(now));
+            //Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            //Assert.That(run.Output, Does.StartWith("Warning: usage of default idle routine."));
+            //Assert.That(run.Exception, Is.Null);
         }
 
         [Test]
@@ -152,25 +154,26 @@ namespace TauCode.Working.Tests.Jobs
             job.Output = writer;
 
             // Act
-            var newSchedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, now);
-            job.UpdateSchedule(newSchedule);
-            job.Routine = (parameter, tracker, output, token) =>
-            {
-                output.Write("Hello!");
-                return Task.CompletedTask;
-            };
+            throw new NotImplementedException();
+            //var newSchedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, now);
+            //job.UpdateSchedule(newSchedule);
+            //job.Routine = (parameter, tracker, output, token) =>
+            //{
+            //    output.Write("Hello!");
+            //    return Task.CompletedTask;
+            //};
 
-            var finished = now.AddMinutes(1).AddMilliseconds(1);
-            await Task.Run(async () =>
-            {
-                TimeProvider.Override(finished); // pretend due time come
-                jobManager.DebugPulseJobManager(); // this will break Vice's vacation
-                await Task.Delay(100); // should be enough for Routine to complete
-            });
+            //var finished = now.AddMinutes(1).AddMilliseconds(1);
+            //await Task.Run(async () =>
+            //{
+            //    TimeProvider.Override(finished); // pretend due time come
+            //    jobManager.DebugPulseJobManager(); // this will break Vice's vacation
+            //    await Task.Delay(100); // should be enough for Routine to complete
+            //});
 
-            // Assert
-            Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
-            Assert.That(job.Schedule, Is.SameAs(newSchedule));
+            //// Assert
+            //Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
+            //Assert.That(job.Schedule, Is.SameAs(newSchedule));
         }
 
         // todo: IJob.Schedule

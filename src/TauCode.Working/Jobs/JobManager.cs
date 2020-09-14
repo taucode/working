@@ -112,7 +112,9 @@ namespace TauCode.Working.Jobs
         {
             this.CheckJobName(jobName, nameof(jobName));
             this.CheckCanWork();
-            return _vice.GetJob(jobName);
+
+            throw new NotImplementedException();
+            //return _vice.GetJob(jobName);
         }
 
         #endregion

@@ -2,10 +2,11 @@
 {
     internal enum JobStartResult
     {
-        Unknown = 0,
-        AlreadyStartedByDueTime = 1,
-        AlreadyStartedByForce = 2,
-        Started =  3,
-        AlreadyDisposed = 4,
+        Unknown2 = 0,
+        AlreadyStartedByScheduleDueTime = 1,
+        AlreadyStartedByOverriddenDueTime = 2,
+        AlreadyStartedByForce2 = 3,
+        Started2 =  3,
+        AlreadyDisposed2 = 4,
     }
 }

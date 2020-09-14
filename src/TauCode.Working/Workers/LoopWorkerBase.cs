@@ -78,7 +78,8 @@ namespace TauCode.Working.Workers
             //this.LogDebug(message, 3);
             this.GetLogger().Debug(message, nameof(LoopRoutine));
 
-
+            
+            
             while (goOn)
             {
                 var workFinishReason = await this.DoWorkAsync();
@@ -231,7 +232,7 @@ namespace TauCode.Working.Workers
             //this.LogDebug($"Sending signal to {nameof(LoopRoutine)}.");
             this.GetLogger().Debug(message, nameof(Shutdown));
 
-
+            // todo0: here hangs unit tests.
             WaitHandle.SignalAndWait(_controlSignal, _routineSignal);
 
             this.ChangeState(shutdownState);

@@ -6,20 +6,20 @@ namespace TauCode.Working.Jobs
     {
         internal JobRunInfoBuilder(
             int runIndex,
-            StartReason startReason,
-            DueTimeInfo dueTimeInfo,
+            JobStartReason startReason,
+            //DueTimeInfo dueTimeInfo,
             DateTimeOffset startTime)
         {
             this.RunIndex = runIndex;
             this.StartReason = startReason;
-            this.DueTimeInfo = dueTimeInfo;
+            //this.DueTimeInfo = dueTimeInfo;
             this.StartTime = startTime;
         }
 
 
         internal int RunIndex { get; }
-        internal StartReason StartReason { get; }
-        internal DueTimeInfo DueTimeInfo { get; }
+        internal JobStartReason StartReason { get; }
+        //internal DueTimeInfo DueTimeInfo { get; }
         internal DateTimeOffset StartTime { get; }
         internal DateTimeOffset? EndTime { get; set; }
         internal JobRunStatus? Status { get; set; }
@@ -28,17 +28,19 @@ namespace TauCode.Working.Jobs
 
         internal JobRunInfo Build()
         {
-            var jobRunResult = new JobRunInfo(
-                this.RunIndex,
-                this.StartReason,
-                this.DueTimeInfo,
-                this.StartTime,
-                this.EndTime,
-                this.Status ?? throw new NotImplementedException(),
-                this.Output,
-                this.Exception);
+            throw new NotImplementedException();
 
-            return jobRunResult;
+            //var jobRunResult = new JobRunInfo(
+            //    this.RunIndex,
+            //    this.StartReason,
+            //    this.DueTimeInfo,
+            //    this.StartTime,
+            //    this.EndTime,
+            //    this.Status ?? throw new NotImplementedException(),
+            //    this.Output,
+            //    this.Exception);
+
+            //return jobRunResult;
         }
     }
 }

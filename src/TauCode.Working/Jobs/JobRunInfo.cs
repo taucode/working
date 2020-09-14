@@ -6,8 +6,8 @@ namespace TauCode.Working.Jobs
     {
         public JobRunInfo(
             int index,
-            StartReason startReason,
-            DueTimeInfo dueTimeInfo,
+            JobStartReason startReason,
+            //DueTimeInfo dueTimeInfo,
             DateTimeOffset startTime,
             DateTimeOffset? endTime,
             JobRunStatus status,
@@ -19,7 +19,7 @@ namespace TauCode.Working.Jobs
 
             this.Index = index;
             this.StartReason = startReason;
-            this.DueTimeInfo = dueTimeInfo;
+            //this.DueTimeInfo = dueTimeInfo;
             this.StartTime = startTime;
             this.EndTime = endTime;
             this.Status = status;
@@ -28,8 +28,8 @@ namespace TauCode.Working.Jobs
         }
 
         public int Index { get; }
-        public StartReason StartReason { get; }
-        public DueTimeInfo DueTimeInfo { get; }
+        public JobStartReason StartReason { get; }
+        //public DueTimeInfo DueTimeInfo { get; }
         public DateTimeOffset StartTime { get; }
         public DateTimeOffset? EndTime { get; }
         public JobRunStatus Status { get; }

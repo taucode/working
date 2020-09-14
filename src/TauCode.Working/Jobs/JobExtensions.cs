@@ -17,7 +17,7 @@ namespace TauCode.Working.Jobs
             Never = $"{NeverYear}-01-01Z".ToUtcDayOffset();
         }
 
-        public static bool IsNever(this DueTimeInfo dueTimeInfo) => dueTimeInfo.DueTime.Equals(Never);
+        //public static bool IsNever(this DueTimeInfo dueTimeInfo) => dueTimeInfo.DueTime.Equals(Never);
 
         internal static Task IdleJobRoutine(
             object parameter,

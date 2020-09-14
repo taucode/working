@@ -2,6 +2,7 @@
 using System.IO;
 using TauCode.Working.Schedules;
 
+// todo clean
 namespace TauCode.Working.Jobs
 {
     internal class Job : IJob
@@ -25,17 +26,21 @@ namespace TauCode.Working.Jobs
 
         string IJob.Name => _employee.Name;
 
-        ISchedule IJob.Schedule => _employee.GetSchedule();
-
-        public bool UpdateSchedule(ISchedule schedule)
+        ISchedule IJob.Schedule
         {
-            if (schedule == null)
-            {
-                throw new ArgumentNullException(nameof(schedule));
-            }
-
-            return _employee.UpdateSchedule(schedule);
+            get => _employee.GetSchedule();
+            set => _employee.UpdateSchedule(value ?? throw new ArgumentNullException(nameof(IJob.Schedule)));
         }
+
+        //public void UpdateSchedule(ISchedule schedule)
+        //{
+        //    if (schedule == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(schedule));
+        //    }
+
+        //    _employee.UpdateSchedule(schedule);
+        //}
 
         JobDelegate IJob.Routine
         {
@@ -70,7 +75,8 @@ namespace TauCode.Working.Jobs
 
         void IJob.ForceStart()
         {
-            _employee.ForceStart();
+            throw new NotImplementedException();
+            //_employee.ForceStart();
         }
 
         #endregion
