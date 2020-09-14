@@ -1,13 +1,11 @@
-﻿using System;
-using NUnit.Framework;
-using System.Linq;
+﻿using NUnit.Framework;
+using System;
 using System.Text;
 using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Jobs;
-using TauCode.Working.Schedules;
 
 namespace TauCode.Working.Tests.Jobs
 {
@@ -31,9 +29,9 @@ namespace TauCode.Working.Tests.Jobs
         public void Schedule_JustCreatedJob_ReturnsNeverSchedule()
         {
             // Arrange
-            var mgr = new JobManager();
-            mgr.Start();
-            var job = mgr.Create("my-job");
+            IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
 
             // Act
             var schedule = job.Schedule;
@@ -42,7 +40,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(schedule, Is.Not.Null);
             Assert.That(schedule.GetType().FullName, Is.EqualTo("TauCode.Working.Schedules.NeverSchedule"));
 
-            mgr.Dispose();
+            jobManager.Dispose();
         }
 
         #endregion
@@ -54,7 +52,7 @@ namespace TauCode.Working.Tests.Jobs
         public void GetInfo_NoArguments_ReturnsJobInfo()
         {
             // Arrange
-            IJobManager jobManager = new JobManager();
+            IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
             var name = "job1";
             var job = jobManager.Create(name);
@@ -77,7 +75,7 @@ namespace TauCode.Working.Tests.Jobs
         public void ManualChangeDueTime_NotNull_DueTimeIsChanged()
         {
             // Arrange
-            IJobManager jobManager = new JobManager();
+            IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
             var job = jobManager.Create("job1");
 
@@ -103,7 +101,7 @@ namespace TauCode.Working.Tests.Jobs
             var now = "2020-09-11Z".ToUtcDayOffset();
             TimeProvider.Override(now);
 
-            IJobManager jobManager = new JobManager();
+            IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
             var job = jobManager.Create("job1");
 
@@ -144,7 +142,7 @@ namespace TauCode.Working.Tests.Jobs
             var now = "2020-09-11Z".ToUtcDayOffset().AddHours(3);
             TimeProvider.Override(now);
 
-            IJobManager jobManager = new JobManager();
+            IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
 
             var name = "job1";

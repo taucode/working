@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Working.Jobs;
+using TauCode.Working.Jobs.Omicron;
 
 namespace TauCode.Working.Tests
 {
@@ -30,5 +31,8 @@ namespace TauCode.Working.Tests
 
             await Task.Delay(timeout, cancellationToken);
         }
+
+        //internal static IJobManager CreateJobManager() => JobManager.CreateJobManager();
+        internal static IJobManager CreateJobManager() => OmicronJobManager.CreateJobManager();
     }
 }

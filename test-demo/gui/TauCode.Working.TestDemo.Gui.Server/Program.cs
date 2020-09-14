@@ -83,7 +83,8 @@ namespace TauCode.Working.TestDemo.Gui.Server
 
         private IJobManager CreateJobManager()
         {
-            return new JobManager();
+            throw new NotImplementedException();
+            //return new JobManager();
         }
 
         private IBus CreateBus()

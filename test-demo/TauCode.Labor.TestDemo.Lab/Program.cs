@@ -1,36 +1,24 @@
 ﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using TauCode.Labor.Exceptions;
+using TauCode.Working.Jobs;
+using TauCode.Working.Jobs.Omicron;
 
 namespace TauCode.Labor.TestDemo.Lab
 {
     class Program
     {
-        static Task Main(string[] args)
+        static void Main(string[] args)
         {
-            var cyc = new CycleProlBase();
-
-            Task.Run(() =>
+            var cnt = 10000;
+            for (int i = 0; i < cnt; i++)
             {
-                Thread.Sleep(100);
+                IJobManager jobManager = OmicronJobManager.CreateJobManager();
+                jobManager.Start();
 
-                try
-                {
-                    cyc.Start();
-                }
-                catch (InappropriateProlStateException ex)
-                {
-                    Console.WriteLine($"[{Thread.CurrentThread.ManagedThreadId}] Failed to start: {ex}.");
-                }
-            });
+                // Act
+                jobManager.Dispose();
 
-            cyc.Start();
-            Console.WriteLine("Started.");
-
-
-            return Task.CompletedTask;
+                Console.WriteLine(i);
+            }
         }
-
     }
 }

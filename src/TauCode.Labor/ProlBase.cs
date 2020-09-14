@@ -116,7 +116,7 @@ namespace TauCode.Labor
 
                 if (this.GetState() != ProlState.Running)
                 {
-                    throw new NotImplementedException();
+                    throw new InappropriateProlStateException(); // todo
                 }
 
                 this.SetState(ProlState.Stopping);
@@ -135,7 +135,22 @@ namespace TauCode.Labor
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            lock (this.Lock)
+            {
+                if (this.GetIsDisposed())
+                {
+                    return; // won't dispose twice
+                }
+
+                var state = this.GetState();
+
+                if (state == ProlState.Running)
+                {
+                    this.Stop();
+                }
+
+                this.SetIsDisposed(true);
+            }
         }
 
         #endregion

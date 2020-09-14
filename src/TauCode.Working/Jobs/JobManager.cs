@@ -24,13 +24,15 @@ namespace TauCode.Working.Jobs
 
         #region Constructor
 
-        public JobManager()
+        private JobManager()
         {
             _vice = new Vice
             {
                 Name = typeof(Vice).FullName,
             };
         }
+
+        public static IJobManager CreateJobManager() => new JobManager();
 
         #endregion
 

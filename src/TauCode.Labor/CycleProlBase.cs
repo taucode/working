@@ -7,46 +7,81 @@ namespace TauCode.Labor
 {
     public abstract class CycleProlBase : ProlBase
     {
+        #region Constants
+
         protected readonly TimeSpan VeryLongVacation = TimeSpan.FromMilliseconds(int.MaxValue);
         protected readonly TimeSpan TimeQuantum = TimeSpan.FromMilliseconds(1);
 
-        private Thread _thread;
+        #endregion
 
-        protected void NewWorkArrived()
+        #region Fields
+
+        private Thread _thread;
+        private readonly object _threadLock;
+
+        #endregion
+
+        #region Constructor
+
+        protected CycleProlBase()
         {
-            lock (this.Lock)
-            {
-                Monitor.Pulse(this.Lock);
-            }
+            _threadLock = new object();
         }
+
+        #endregion
+
+        #region Abstract
+
+        protected abstract Task<TimeSpan> DoWork(CancellationToken token);
+
+        #endregion
+
+        #region Overridden
 
         protected override void OnStarting()
         {
             // todo: check '_thread' is null
             _thread = new Thread(CycleRoutine);
-            _thread.Start();
 
-            Monitor.Wait(this.Lock);
+            lock (_threadLock)
+            {
+                _thread.Start();
+                Monitor.Wait(_threadLock);
+            }
         }
 
         protected override void OnStopping()
         {
-            lock (this.Lock)
+            lock (_threadLock)
             {
-                Monitor.Pulse(this.Lock);
+                Monitor.Pulse(_threadLock);
             }
 
             _thread.Join();
             _thread = null;
         }
 
-        protected abstract Task<TimeSpan> DoWork(CancellationToken token);
+        #endregion
+
+        #region Protected
+
+        //protected void NewWorkArrived()
+        //{
+        //    lock (this.Loc-k)
+        //    {
+        //        Monitor.Pulse(this.Loc-k);
+        //    }
+        //}
+
+        #endregion
+
+        #region Private
 
         private void CycleRoutine()
         {
-            lock (this.Lock)
+            lock (_threadLock)
             {
-                Monitor.Pulse(this.Lock);
+                Monitor.Pulse(_threadLock);
             }
 
             var source = new CancellationTokenSource();
@@ -78,17 +113,24 @@ namespace TauCode.Labor
                     }
                 }
 
-                lock (this.Lock)
+
+                lock (_threadLock)
                 {
-                    Monitor.Wait(this.Lock, vacation);
+                    if (this.State != ProlState.Running)
+                    {
+                        break;
+                    }
+
+                    Monitor.Wait(_threadLock, vacation);
                 }
 
                 if (this.State != ProlState.Running)
                 {
-                    source.Cancel();
                     break;
                 }
             }
+
+            source.Cancel();
 
             taskEndedSignal.Wait();
 
@@ -99,12 +141,15 @@ namespace TauCode.Labor
         private void EndWork(Task initialTask, object taskEndedSignalObject)
         {
             var taskEndedSignal = (ManualResetEventSlim)taskEndedSignalObject;
-            taskEndedSignal.Set();
 
-            lock (this.Lock)
+            lock (_threadLock)
             {
-                Monitor.Pulse(this.Lock);
+                Monitor.Pulse(_threadLock);
             }
+
+            taskEndedSignal.Set();
         }
+
+        #endregion
     }
 }
