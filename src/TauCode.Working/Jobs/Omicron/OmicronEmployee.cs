@@ -420,6 +420,8 @@ namespace TauCode.Working.Jobs.Omicron
             }
             catch (Exception ex)
             {
+                // todo: wrong. _routine might throw exception intentionally.
+                // todo: deal with completed tasks?
                 var jobEx = new JobFailedToStartException(ex);
                 task = Task.FromException(jobEx);
             }
@@ -442,7 +444,7 @@ namespace TauCode.Working.Jobs.Omicron
             }
         }
 
-        internal void Cancel()
+        internal bool Cancel()
         {
             throw new NotImplementedException();
         }

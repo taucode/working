@@ -173,19 +173,87 @@ namespace TauCode.Working.Tests.Jobs
 
         // todo: IJob.IsEnabled
         // - initially, false
-        // - todo0
+        // - when changed to true, changes.
+        // - when changed to false, changes.
+        // - when disposed, still can be read.
+        // - when disposed, cannot be set - throws.
 
         // todo: IJob.Schedule
         // - initially, equals to Never
-        // - after was set, changes to new
-        // - after 
+        // - cannot be set to null, throws.
+        // - after was set, changes to new, be IJob instance enabled or disabled.
+        // - after was set, is reflected im get-info
+        // - after was set and IJob started => reflected in current-run, and get-info is updated to next calculated.
+        // - after was set and IJob started and completed => reflected in old runs.
+        // - after was set and IJob started and canceled => reflected in old runs.
+        // - after was set and IJob started and faulted => reflected in old runs.
+        // - after was set, discards overridden due time.
+        // - after was set, discards previous schedule's due time.
         // - after was disposed, equals to last.
+        // - after was disposed, cannot be set, throws.
+        // - if schedule produces strange results (throws, date before 'now', date after 'never') then sets due time to 'never' and adds a virtual run entry describing the problem.
 
-        // todo: IJob.UpdateSchedule
-        // - 1. just created, 2. called => changes, due time changes
-        // - 1. forcibly started 2. called => schedule changes, but returns 'false'; job due time changes; current run's due time not changed; after completion, run logs shows 'old' due time, and jobs' due time is next by the schedule.
-        // - like in previous, but started not forcibly but by schedule
-        // - if due time overridden, throws an exception
-        // - after was disposed, throws exception.
+
+        // todo: IJob.Routine
+        // - initially, not null.
+        // - cannot be set to null, throws.
+        // - cannot be set if job runs (by schedule)
+        // - cannot be set if job runs (by overridden due time)
+        // - cannot be set if job runs (by force)
+        // - when set, updated to new value, regardless of enabled or disabled
+        // - when set after run completed, afterwards runs with new routine.
+        // - after disposed, can be read.
+        // - after disposed, cannot be set, throws.
+
+        // todo: IJob.Parameter
+        // - initially, null
+        // - can be set to any value including null (if not running), be it enabled or disabled.
+        // - cannot be set if job runs (by schedule)
+        // - cannot be set if job runs (by overridden due time)
+        // - cannot be set if job runs (by force)
+        // - when set after run completed, afterwards runs with new parameter value.
+        // - after disposed, can be read.
+        // - after disposed, cannot be set, throws.
+
+        // todo: IJob.ProgressTracker
+        // - initially, null
+        // - can be set to any value including null (if not running), be it enabled or disabled.
+        // - cannot be set if job runs (by schedule)
+        // - cannot be set if job runs (by overridden due time)
+        // - cannot be set if job runs (by force)
+        // - when set after run completed, afterwards runs with new progress tracker.
+        // - after disposed, can be read.
+        // - after disposed, cannot be set, throws.
+
+        // todo: IJob.Output
+        // - initially, null
+        // - can be set to any value including null (if not running), be it enabled or disabled.
+        // - cannot be set if job runs (by schedule)
+        // - cannot be set if job runs (by overridden due time)
+        // - cannot be set if job runs (by force)
+        // - when set after run completed, afterwards runs with new output.
+        // - after disposed, can be read.
+        // - after disposed, cannot be set, throws.
+
+        // todo: IJob.GetInfo
+        // - IJob just created => returns predictable result
+        // - when arg is null, returns complete run log
+        // - when arg < 0, throws
+        // - when arg == 0, doesn't return log (empty)
+        // - when arg > log length, returns full log.
+        // - run several times (by force, schedule, overridden due time) and check the runs.
+        // - if routine runs for long, GetInfo shows correct due time during the routine run. after routine ends, due time is also valid. NB: Vice should log due time changes while job's long run.
+        // - after disposed, still can be called.
+
+        // todo: IJob.OverrideDueTime
+        // - when set to non-null value => reflected in get-info
+        // - when set to null => defaults to schedule, which reflects in get-info
+        // - if arg is < 'now' => throws, nothing happens to schedule
+        // - when set and that moment comes => starts and defaults to schedule, check get-info.
+        // - when set to non-null during run => set to next due time, but not current run.
+        // - when set to non-null during run and that run turned out too long => will not have effect at the very end. (+logs)
+        // - after disposed => cannot be set, but remains forever, even after its due time comes.
+        // - if IJob is disabled, won't run whichever values do you set.
+
     }
 }

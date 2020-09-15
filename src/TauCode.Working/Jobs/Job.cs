@@ -84,7 +84,7 @@ namespace TauCode.Working.Jobs
             //_employee.ForceStart();
         }
 
-        public void Cancel()
+        public bool Cancel()
         {
             throw new NotImplementedException();
         }
