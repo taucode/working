@@ -22,10 +22,6 @@ namespace TauCode.Working.Tests.Jobs
 
         #region IJob.Schedule
 
-        /// <summary>
-        /// Test script:
-        /// Create a job and check its schedule is 'Never'
-        /// </summary>
         [Test]
         public void GetSchedule_JustCreatedJob_ReturnsNeverSchedule()
         {
@@ -168,6 +164,16 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
             Assert.That(job.Schedule, Is.SameAs(newSchedule));
         }
+
+        //====================================================================================
+
+        // todo: IJob.Name
+        // - just after created, equals to that with which was created
+        // - if enabled, disabled, running, not running, disposed - still the same
+
+        // todo: IJob.IsEnabled
+        // - initially, false
+        // - todo0
 
         // todo: IJob.Schedule
         // - initially, equals to Never
