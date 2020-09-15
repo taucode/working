@@ -20,7 +20,7 @@ namespace TauCode.Working.Jobs.Omicron
         private readonly OmicronJob _job;
 
         private ISchedule _schedule;
-        private DateTimeOffset _effectiveDueTime;
+        private DateTimeOffset _scheduleDueTime;
         private DateTimeOffset? _overriddenDueTime;
 
         private JobDelegate _routine;
@@ -28,8 +28,12 @@ namespace TauCode.Working.Jobs.Omicron
         private IProgressTracker _progressTracker;
         private TextWriter _output;
 
-        private MultiTextWriterLab _currentRunTextWriter;
-        private JobRunInfoBuilder _currentJobRunInfoBuilder;
+        private MultiTextWriterLab _currentWriter;
+        private JobRunInfoBuilder _currentInfoBuilder;
+        private CancellationTokenSource _currentTokenSource;
+        private Task _currentTask;
+        private Task _currentEndTask;
+
         private readonly List<JobRunInfo> _runs;
         private int _runIndex;
 
@@ -45,13 +49,25 @@ namespace TauCode.Working.Jobs.Omicron
 
             _lock = new object();
 
-            this.UpdateEffectiveDueTime();
+            this.UpdateScheduleDueTime();
         }
 
-        private void UpdateEffectiveDueTime()
+        private void UpdateScheduleDueTime()
         {
             var now = TimeProvider.GetCurrent();
-            _effectiveDueTime = _overriddenDueTime ?? _schedule.GetDueTimeAfter(now);
+
+            lock (_lock)
+            {
+                _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
+            }
+        }
+
+        private DateTimeOffset GetEffectiveDueTime()
+        {
+            lock (_lock)
+            {
+                return _overriddenDueTime ?? _scheduleDueTime;
+            }
         }
 
         internal IJob GetJob() => _job;
@@ -75,7 +91,7 @@ namespace TauCode.Working.Jobs.Omicron
                     }
 
                     _schedule = value;
-                    this.UpdateEffectiveDueTime();
+                    this.UpdateScheduleDueTime();
                     _vice.OnScheduleChanged();
                 }
             }
@@ -181,86 +197,82 @@ namespace TauCode.Working.Jobs.Omicron
                 return null;
             }
 
+            return this.GetEffectiveDueTime();
+        }
+
+        private void EndJob(Task task) => this.Stop(false);
+        //{
+        //    lock (_lock)
+        //    {
+        //        this.FinalizeJobRun(task);
+        //        this.Stop(false);
+        //    }
+        //}
+
+        protected override void OnStopped()
+        {
             lock (_lock)
             {
-                return _effectiveDueTime;
+                if (_currentEndTask != null)
+                {
+                    //_currentEndTask.Wait(100); // todo const
+                    this.FinalizeJobRun();
+                }
             }
         }
 
-        private void EndJob(Task task)
+        private void FinalizeJobRun(/*Task task*/)
         {
-            throw new NotImplementedException();
-            //var now = TimeProvider.GetCurrent();
-            //_currentJobRunResultBuilder.EndTime = now;
+            var now = TimeProvider.GetCurrent();
 
-            //var stringWriter = (StringWriterWithEncoding)_currentRunTextWriter.InnerWriters[0];
-            //_currentJobRunResultBuilder.Output = stringWriter.ToString();
+            _currentInfoBuilder.EndTime = now;
+            var jobOutputWriter = (StringWriter)_currentWriter.InnerWriters[0];
 
-            //switch (task.Status)
-            //{
-            //    case TaskStatus.Faulted:
-            //        var ex = task.Exception.InnerException;
-            //        if (ex is JobFailedToStartException)
-            //        {
-            //            _currentJobRunResultBuilder.Status = JobRunStatus.FailedToStart;
-            //        }
-            //        else
-            //        {
-            //            _currentJobRunResultBuilder.Status = JobRunStatus.Failed;
-            //        }
+            switch (_currentTask.Status)
+            {
+                case TaskStatus.Faulted:
+                    var ex = _currentTask.Exception.InnerException;
+                    if (ex is JobFailedToStartException)
+                    {
+                        _currentInfoBuilder.Status = JobRunStatus.FailedToStart;
+                    }
+                    else
+                    {
+                        _currentInfoBuilder.Status = JobRunStatus.Failed;
+                    }
 
-            //        _currentJobRunResultBuilder.Exception = ex;
+                    _currentInfoBuilder.Exception = ex;
 
-            //        break;
+                    break;
 
-            //    case TaskStatus.RanToCompletion:
-            //        _currentJobRunResultBuilder.Status = JobRunStatus.Succeeded;
-            //        break;
+                case TaskStatus.RanToCompletion:
+                    _currentInfoBuilder.Status = JobRunStatus.Succeeded;
+                    break;
 
-            //    case TaskStatus.Canceled:
-            //        _currentJobRunResultBuilder.Status = JobRunStatus.Canceled;
-            //        break;
+                case TaskStatus.Canceled:
+                    _currentInfoBuilder.Status = JobRunStatus.Canceled;
+                    break;
 
-            //    default:
-            //        throw new ArgumentOutOfRangeException(); // todo.
-            //}
+                default:
+                    _currentInfoBuilder.Status = JobRunStatus.Unknown; // actually, very strange, but we cannot throw here.
+                    break;
+            }
 
-            //stringWriter.Dispose();
-            //_currentRunTextWriter.Dispose();
-            //_currentRunTextWriter = null;
+            var runInfo = _currentInfoBuilder.Build();
+            _runs.Add(runInfo);
 
-            //_currentRunCancellationTokenSource.Dispose();
-            //_currentRunCancellationTokenSource = null;
+            jobOutputWriter.Dispose();
 
-            //var jobRunResult = _currentJobRunResultBuilder.Build();
-            //_runs.Add(jobRunResult);
-            //_currentJobRunResultBuilder = null;
+            _currentWriter.Dispose();
+            _currentWriter = null;
 
-            //this.InvokeWithControlLock(() =>
-            //{
-            //    // may be in disposing process already.
-            //    if (this.State == WorkerState.Running)
-            //    {
-            //        this.Stop();
-            //    }
-            //});
+            _currentInfoBuilder = null;
 
-            ////// it might appear task was cancelled due to a dispose request.
-            ////var state = this.State;
-            ////if (state.IsIn(WorkerState.Dispo-sing, WorkerState.Disposed))
-            ////{
-            ////    return;
-            ////}
+            _currentTokenSource.Dispose();
+            _currentTokenSource = null;
 
-            ////// stop worker.
-            ////try
-            ////{
-            ////    this.Sto-p();
-            ////}
-            ////catch
-            ////{
-            ////    // todo: catch 'InvalidWorkerStateException', which will be thrown by WorkerBase.CheckState.
-            ////}
+            _currentTask = null;
+            _currentEndTask = null;
         }
 
         internal WakeUpResult WakeUp(CancellationToken token)
@@ -270,11 +282,14 @@ namespace TauCode.Working.Jobs.Omicron
                 try
                 {
                     this.Start();
-                    var task = this.InitJobRunContext(token);
+                    _currentTask = this.InitJobRunContext(token);
 
-                    task.ContinueWith(this.EndJob);
+                    _overriddenDueTime = null;
+                    this.UpdateScheduleDueTime();
 
-                    switch (_currentJobRunInfoBuilder.StartReason)
+                    _currentEndTask = _currentTask.ContinueWith(this.EndJob);
+
+                    switch (_currentInfoBuilder.StartReason)
                     {
                         case JobStartReason.ScheduleDueTime:
                             return WakeUpResult.StartedBySchedule;
@@ -350,9 +365,10 @@ namespace TauCode.Working.Jobs.Omicron
 
         private Task InitJobRunContext(CancellationToken token)
         {
+            var jobWriter = new StringWriterWithEncoding(Encoding.UTF8);
             var writers = new List<TextWriter>
             {
-                new StringWriterWithEncoding(Encoding.UTF8),
+                jobWriter,
             };
 
             if (_output != null)
@@ -362,14 +378,16 @@ namespace TauCode.Working.Jobs.Omicron
 
             var now = TimeProvider.GetCurrent();
 
-            _currentRunTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
-            _currentJobRunInfoBuilder = new JobRunInfoBuilder(
+            _currentWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
+            _currentTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+            _currentInfoBuilder = new JobRunInfoBuilder(
                 _runIndex,
                 _overriddenDueTime.HasValue ? JobStartReason.OverriddenDueTime : JobStartReason.ScheduleDueTime,
-                now)
-            {
-                Status = JobRunStatus.Running
-            };
+                this.GetEffectiveDueTime(),
+                _overriddenDueTime.HasValue,
+                now,
+                JobRunStatus.Running,
+                jobWriter);
 
             _runIndex++;
 
@@ -377,7 +395,7 @@ namespace TauCode.Working.Jobs.Omicron
 
             try
             {
-                task = _routine(_parameter, _progressTracker, _currentRunTextWriter, token);
+                task = _routine(_parameter, _progressTracker, _currentWriter, _currentTokenSource.Token);
             }
             catch (Exception ex)
             {
@@ -390,7 +408,17 @@ namespace TauCode.Working.Jobs.Omicron
 
         internal JobInfo GetInfo(int? maxRunCount)
         {
-            throw new NotImplementedException();
+            lock (_lock)
+            {
+                var currentRun = _currentInfoBuilder?.Build();
+
+                return new JobInfo(
+                    currentRun,
+                    this.GetEffectiveDueTime(),
+                    _overriddenDueTime.HasValue,
+                    _runs.Count,
+                    _runs);
+            }
         }
     }
 

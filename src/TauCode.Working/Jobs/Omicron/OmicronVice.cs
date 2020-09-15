@@ -57,10 +57,6 @@ namespace TauCode.Working.Jobs.Omicron
 
             var vacationTimeout = earliest - now;
             return Task.FromResult(vacationTimeout);
-
-            //_vacationtimeout = datetimeextensionslab.min(_vacationtimeout, verylongvacation);
-
-            //return task.fromresult(workfinishreason.workisdone);
         }
 
         internal IJob CreateJob(string jobName)
@@ -105,5 +101,19 @@ namespace TauCode.Working.Jobs.Omicron
         }
 
         internal void OnScheduleChanged() => this.WorkArrived();
+
+        protected override void OnDisposed()
+        {
+            IList<OmicronEmployee> list;
+            lock (_lock)
+            {
+                list = _employees.Values.ToList();
+            }
+
+            foreach (var employee in list)
+            {
+                employee.Dispose();
+            }
+        }
     }
 }

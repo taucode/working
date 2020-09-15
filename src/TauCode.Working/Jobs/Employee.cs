@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
@@ -77,8 +76,8 @@ namespace TauCode.Working.Jobs
             var now = TimeProvider.GetCurrent();
             _currentJobRunResultBuilder.EndTime = now;
 
-            var stringWriter = (StringWriterWithEncoding)_currentRunTextWriter.InnerWriters[0];
-            _currentJobRunResultBuilder.Output = stringWriter.ToString();
+            //var stringWriter = (StringWriterWithEncoding)_currentRunTextWriter.InnerWriters[0];
+            //_currentJobRunResultBuilder.Output = stringWriter.ToString();
 
             switch (task.Status)
             {
@@ -109,7 +108,9 @@ namespace TauCode.Working.Jobs
                     throw new ArgumentOutOfRangeException(); // todo.
             }
 
-            stringWriter.Dispose();
+            _currentJobRunResultBuilder.OutputWriter.Dispose();
+
+            //stringWriter.Dispose();
             _currentRunTextWriter.Dispose();
             _currentRunTextWriter = null;
 

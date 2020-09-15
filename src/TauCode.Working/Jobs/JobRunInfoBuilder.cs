@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace TauCode.Working.Jobs
 {
@@ -7,40 +8,44 @@ namespace TauCode.Working.Jobs
         internal JobRunInfoBuilder(
             int runIndex,
             JobStartReason startReason,
-            //DueTimeInfo dueTimeInfo,
-            DateTimeOffset startTime)
+            DateTimeOffset dueTime,
+            bool dueTimeWasOverridden,
+            DateTimeOffset startTime,
+            JobRunStatus status,
+            StringWriter outputWriter)
         {
             this.RunIndex = runIndex;
             this.StartReason = startReason;
-            //this.DueTimeInfo = dueTimeInfo;
+            this.DueTime = dueTime;
+            this.DueTimeWasOverridden = dueTimeWasOverridden;
             this.StartTime = startTime;
+            this.Status = status;
+            this.OutputWriter = outputWriter;
         }
 
 
         internal int RunIndex { get; }
         internal JobStartReason StartReason { get; }
-        //internal DueTimeInfo DueTimeInfo { get; }
+        internal DateTimeOffset DueTime { get; }
+        internal bool DueTimeWasOverridden { get; }
         internal DateTimeOffset StartTime { get; }
         internal DateTimeOffset? EndTime { get; set; }
-        internal JobRunStatus? Status { get; set; }
+        internal JobRunStatus Status { get; set; }
+        internal StringWriter OutputWriter { get; }
         internal Exception Exception { get; set; }
-        internal string Output { get; set; }
 
         internal JobRunInfo Build()
         {
-            throw new NotImplementedException();
-
-            //var jobRunResult = new JobRunInfo(
-            //    this.RunIndex,
-            //    this.StartReason,
-            //    this.DueTimeInfo,
-            //    this.StartTime,
-            //    this.EndTime,
-            //    this.Status ?? throw new NotImplementedException(),
-            //    this.Output,
-            //    this.Exception);
-
-            //return jobRunResult;
+            return new JobRunInfo(
+                this.RunIndex,
+                this.StartReason,
+                this.DueTime,
+                this.DueTimeWasOverridden,
+                this.StartTime,
+                this.EndTime,
+                this.Status,
+                this.OutputWriter.ToString(),
+                this.Exception);
         }
     }
 }

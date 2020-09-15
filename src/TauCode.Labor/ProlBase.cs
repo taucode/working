@@ -61,6 +61,42 @@ namespace TauCode.Labor
 
         #region Protected
 
+        protected void Start(bool throwOnDisposedOrWrongState)
+        {
+            lock (_lock)
+            {
+                if (this.GetIsDisposed())
+                {
+                    if (throwOnDisposedOrWrongState)
+                    {
+                        throw new ObjectDisposedException(this.Name);
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+
+                if (this.GetState() != ProlState.Stopped)
+                {
+                    if (throwOnDisposedOrWrongState)
+                    {
+                        throw new InappropriateProlStateException();
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+
+                this.SetState(ProlState.Starting);
+                this.OnStarting();
+
+                this.SetState(ProlState.Running);
+                this.OnStarted();
+            }
+        }
+
         protected virtual void OnStarting()
         {
             // idle
@@ -69,6 +105,42 @@ namespace TauCode.Labor
         protected virtual void OnStarted()
         {
             // idle
+        }
+
+        protected void Stop(bool throwOnDisposedOrWrongState)
+        {
+            lock (_lock)
+            {
+                if (this.GetIsDisposed())
+                {
+                    if (throwOnDisposedOrWrongState)
+                    {
+                        throw new ObjectDisposedException(this.Name);
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+
+                if (this.GetState() != ProlState.Running)
+                {
+                    if (throwOnDisposedOrWrongState)
+                    {
+                        throw new InappropriateProlStateException();
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+
+                this.SetState(ProlState.Stopping);
+                this.OnStopping();
+
+                this.SetState(ProlState.Stopped);
+                this.OnStopped();
+            }
         }
 
         protected virtual void OnStopping()
@@ -80,8 +152,11 @@ namespace TauCode.Labor
         {
             // idle
         }
-
-        // todo: OnDisposed()/OnDisposing()
+        
+        protected virtual void OnDisposed()
+        {
+            // idle
+        }
 
         #endregion
 
@@ -107,49 +182,9 @@ namespace TauCode.Labor
 
         public ProlState State => this.GetState();
 
-        public void Start()
-        {
-            lock (_lock)
-            {
-                if (this.GetIsDisposed())
-                {
-                    throw new ObjectDisposedException(this.Name);
-                }
+        public void Start() => this.Start(true);
 
-                if (this.GetState() != ProlState.Stopped)
-                {
-                    throw new InappropriateProlStateException();
-                }
-
-                this.SetState(ProlState.Starting);
-                this.OnStarting();
-
-                this.SetState(ProlState.Running);
-                this.OnStarted();
-            }
-        }
-
-        public void Stop()
-        {
-            lock (_lock)
-            {
-                if (this.GetIsDisposed())
-                {
-                    throw new NotImplementedException(); // cannot stop
-                }
-
-                if (this.GetState() != ProlState.Running)
-                {
-                    throw new InappropriateProlStateException(); // todo
-                }
-
-                this.SetState(ProlState.Stopping);
-                this.OnStopping();
-
-                this.SetState(ProlState.Stopped);
-                this.OnStopped();
-            }
-        }
+        public void Stop() => this.Stop(true);
 
         public bool IsDisposed => this.GetIsDisposed();
 
@@ -166,14 +201,11 @@ namespace TauCode.Labor
                     return; // won't dispose twice
                 }
 
-                var state = this.GetState();
-
-                if (state == ProlState.Running)
-                {
-                    this.Stop();
-                }
+                this.Stop(false);
 
                 this.SetIsDisposed(true);
+
+                this.OnDisposed();
             }
         }
 

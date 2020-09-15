@@ -61,5 +61,7 @@ namespace TauCode.Working.Jobs.Omicron
         {
             throw new NotImplementedException();
         }
+
+        public bool IsDisposed => _employee.IsDisposed;
     }
 }

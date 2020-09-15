@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -559,12 +560,15 @@ namespace TauCode.Working.Tests.Jobs
             jobManager.Dispose();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(jobManager.IsDisposed, Is.True);
 
-            //foreach (var job in new IJob[] {job1, job2})
-            //{
-            //    //Assert.That(ex.Message, Is.EqualTo("Job not found: 'non-existing'."));
-            //}
+            foreach (var job in new[] { job1, job2 })
+            {
+                Assert.That(job.IsDisposed, Is.True);
+                var info = job.GetInfo(null);
+                var run = info.Runs.Single();
+                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Canceled));
+            }
         }
 
         #endregion

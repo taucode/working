@@ -79,6 +79,8 @@ namespace TauCode.Working.Jobs
             //_employee.ForceStart();
         }
 
+        public bool IsDisposed => throw new NotImplementedException();
+
         #endregion
 
         #region IDisposable Members (explicit)

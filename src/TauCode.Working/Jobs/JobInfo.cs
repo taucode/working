@@ -7,9 +7,9 @@ namespace TauCode.Working.Jobs
     public readonly struct JobInfo
     {
         internal JobInfo(
-            //string name,
             JobRunInfo? currentRun,
-            //DueTimeInfo nextDueTimeInfo,
+            DateTimeOffset nextDueTime,
+            bool nextDueTimeIsOverridden,
             int runCount,
             IEnumerable<JobRunInfo> runs)
         {
@@ -18,16 +18,16 @@ namespace TauCode.Working.Jobs
                 throw new ArgumentNullException(nameof(runs));
             }
 
-            //this.Name = name;
             this.CurrentRun = currentRun;
-            //this.NextDueTimeInfo = nextDueTimeInfo;
+            this.NextDueTime = nextDueTime;
+            this.NextDueTimeIsOverridden = nextDueTimeIsOverridden;
             this.RunCount = runCount;
             this.Runs = runs.ToList();
         }
 
-        //public string Name { get; }
         public JobRunInfo? CurrentRun { get; }
-        //public DueTimeInfo NextDueTimeInfo { get; }
+        public DateTimeOffset NextDueTime { get; }
+        public bool NextDueTimeIsOverridden { get; }
         public int RunCount { get; }
         public IReadOnlyList<JobRunInfo> Runs { get; }
     }

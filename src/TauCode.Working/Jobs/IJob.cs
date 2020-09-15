@@ -17,5 +17,6 @@ namespace TauCode.Working.Jobs
         void ForceStart();
 
         // todo: void Cancel();
+        bool IsDisposed { get; }
     }
 }

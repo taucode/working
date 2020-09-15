@@ -5,9 +5,10 @@ namespace TauCode.Working.Jobs
     public readonly struct JobRunInfo
     {
         public JobRunInfo(
-            int index,
+            int runIndex,
             JobStartReason startReason,
-            //DueTimeInfo dueTimeInfo,
+            DateTimeOffset dueTime,
+            bool dueTimeWasOverridden,
             DateTimeOffset startTime,
             DateTimeOffset? endTime,
             JobRunStatus status,
@@ -17,9 +18,10 @@ namespace TauCode.Working.Jobs
             // todo checks: positive etc
             // todo date is valid
 
-            this.Index = index;
+            this.RunIndex = runIndex;
             this.StartReason = startReason;
-            //this.DueTimeInfo = dueTimeInfo;
+            this.DueTime = dueTime;
+            this.DueTimeWasOverridden = dueTimeWasOverridden;
             this.StartTime = startTime;
             this.EndTime = endTime;
             this.Status = status;
@@ -27,9 +29,10 @@ namespace TauCode.Working.Jobs
             this.Exception = exception;
         }
 
-        public int Index { get; }
+        public int RunIndex { get; }
         public JobStartReason StartReason { get; }
-        //public DueTimeInfo DueTimeInfo { get; }
+        public DateTimeOffset DueTime { get; }
+        public bool DueTimeWasOverridden { get; }
         public DateTimeOffset StartTime { get; }
         public DateTimeOffset? EndTime { get; }
         public JobRunStatus Status { get; }
