@@ -222,13 +222,6 @@ namespace TauCode.Working.Jobs.Omicron
         }
 
         private void EndJob(Task task) => this.Stop(false);
-        //{
-        //    lock (_lock)
-        //    {
-        //        this.FinalizeJobRun(task);
-        //        this.Stop(false);
-        //    }
-        //}
 
         protected override void OnStopped()
         {
@@ -236,13 +229,12 @@ namespace TauCode.Working.Jobs.Omicron
             {
                 if (_currentEndTask != null)
                 {
-                    //_currentEndTask.Wait(100); // todo const
                     this.FinalizeJobRun();
                 }
             }
         }
 
-        private void FinalizeJobRun(/*Task task*/)
+        private void FinalizeJobRun()
         {
             var now = TimeProvider.GetCurrent();
 
@@ -303,7 +295,7 @@ namespace TauCode.Working.Jobs.Omicron
                 try
                 {
                     this.Start();
-                    _currentTask = this.InitJobRunContext(token);
+                    _currentTask = this.InitJobRunContext(true, token);
 
                     _overriddenDueTime = null;
                     this.UpdateScheduleDueTime();
@@ -384,7 +376,7 @@ namespace TauCode.Working.Jobs.Omicron
             //}
         }
 
-        private Task InitJobRunContext(CancellationToken token)
+        private Task InitJobRunContext(bool byDueTime, CancellationToken? token)
         {
             var jobWriter = new StringWriterWithEncoding(Encoding.UTF8);
             var writers = new List<TextWriter>
@@ -400,10 +392,32 @@ namespace TauCode.Working.Jobs.Omicron
             var now = TimeProvider.GetCurrent();
 
             _currentWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
-            _currentTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+
+            if (token.HasValue)
+            {
+                _currentTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token.Value);
+            }
+            else
+            {
+                _currentTokenSource = new CancellationTokenSource();
+            }
+
+            JobStartReason reason;
+
+            if (byDueTime)
+            {
+                reason = _overriddenDueTime.HasValue
+                    ? JobStartReason.OverriddenDueTime
+                    : JobStartReason.ScheduleDueTime;
+            }
+            else
+            {
+                reason = JobStartReason.Force2;
+            }
+
             _currentInfoBuilder = new JobRunInfoBuilder(
                 _runIndex,
-                _overriddenDueTime.HasValue ? JobStartReason.OverriddenDueTime : JobStartReason.ScheduleDueTime,
+                reason,
                 this.GetEffectiveDueTime(),
                 _overriddenDueTime.HasValue,
                 now,
@@ -446,7 +460,31 @@ namespace TauCode.Working.Jobs.Omicron
 
         internal bool Cancel()
         {
-            throw new NotImplementedException();
+            lock (_lock)
+            {
+                if (this.State == ProlState.Stopped)
+                {
+                    return false;
+                }
+
+                this.Stop();
+                return true;
+            }
+        }
+
+        internal void ForceStart()
+        {
+            lock (_lock)
+            {
+
+                this.Start();
+                _currentTask = this.InitJobRunContext(false, null);
+
+                _overriddenDueTime = null;
+                this.UpdateScheduleDueTime();
+
+                _currentEndTask = _currentTask.ContinueWith(this.EndJob);
+            }
         }
     }
 

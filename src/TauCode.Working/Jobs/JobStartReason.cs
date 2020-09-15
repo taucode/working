@@ -4,6 +4,6 @@
     {
         ScheduleDueTime = 1,
         OverriddenDueTime = 2,
-        Force2 = 3,
+        Force2 = 3, // todo: rename
     }
 }

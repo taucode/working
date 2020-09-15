@@ -13,10 +13,7 @@ namespace TauCode.Working.Jobs.Omicron
             _employee = employee;
         }
 
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
+        public void Dispose() => _employee.Dispose();
 
         public string Name => _employee.Name;
 
@@ -63,10 +60,7 @@ namespace TauCode.Working.Jobs.Omicron
             throw new NotImplementedException();
         }
 
-        public void ForceStart()
-        {
-            throw new NotImplementedException();
-        }
+        public void ForceStart() => _employee.ForceStart();
 
         public bool Cancel() => _employee.Cancel();
 

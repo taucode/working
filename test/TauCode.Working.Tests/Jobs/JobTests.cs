@@ -20,6 +20,107 @@ namespace TauCode.Working.Tests.Jobs
             TimeProvider.Reset();
         }
 
+        #region IJob.Name
+
+        [Test]
+        public void Name_JustCreatedJob_ReturnsValidName()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            var name = job.Name;
+
+            // Assert
+            Assert.That(name, Is.EqualTo("my-job"));
+        }
+
+        [Test]
+        public void Name_JobIsEnabled_ReturnsValidName()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            // Act
+            var name = job.Name;
+
+            // Assert
+            Assert.That(name, Is.EqualTo("my-job"));
+        }
+
+        [Test]
+        public void Name_JobIsDisabled_ReturnsValidName()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            // Act
+            var name1 = job.Name;
+
+            job.IsEnabled = false;
+
+            var name2 = job.Name;
+
+            // Assert
+            Assert.That(name1, Is.EqualTo("my-job"));
+            Assert.That(name2, Is.EqualTo("my-job"));
+        }
+
+        [Test]
+        public void Name_JobIsRunningOrStopped_ReturnsValidName()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await Task.Delay(5000, token);
+            };
+
+            job.ForceStart();
+
+            // Act
+            var nameWhenRunning = job.Name;
+            job.Cancel();
+            var nameAfterStopped = job.Name;
+
+            // Assert
+            Assert.That(nameWhenRunning, Is.EqualTo("my-job"));
+            Assert.That(nameAfterStopped, Is.EqualTo("my-job"));
+        }
+
+        [Test]
+        public void Name_JobIsDisposed_ReturnsValidName()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+            job.Dispose();
+
+            // Act
+            var name = job.Name;
+
+            // Assert
+            Assert.That(name, Is.EqualTo("my-job"));
+        }
+
+        #endregion
+
         #region IJob.Schedule
 
         [Test]
@@ -166,10 +267,6 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         //====================================================================================
-
-        // todo: IJob.Name
-        // - just after created, equals to that with which was created
-        // - if enabled, disabled, running, not running, disposed - still the same
 
         // todo: IJob.IsEnabled
         // - initially, false
