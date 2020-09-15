@@ -26,7 +26,7 @@ namespace TauCode.Working.Tests.Jobs
         public void GetSchedule_JustCreatedJob_ReturnsNeverSchedule()
         {
             // Arrange
-            IJobManager jobManager = TestHelper.CreateJobManager();
+            using IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
             var job = jobManager.Create("my-job");
 
@@ -49,7 +49,7 @@ namespace TauCode.Working.Tests.Jobs
         public void GetInfo_NoArguments_ReturnsJobInfo()
         {
             // Arrange
-            IJobManager jobManager = TestHelper.CreateJobManager();
+            using IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
             var name = "job1";
             var job = jobManager.Create(name);
@@ -72,7 +72,7 @@ namespace TauCode.Working.Tests.Jobs
         public void ManualChangeDueTime_NotNull_DueTimeIsChanged()
         {
             // Arrange
-            IJobManager jobManager = TestHelper.CreateJobManager();
+            using IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
             var job = jobManager.Create("job1");
 
@@ -98,7 +98,7 @@ namespace TauCode.Working.Tests.Jobs
             var now = "2020-09-11Z".ToUtcDayOffset();
             TimeProvider.Override(now);
 
-            IJobManager jobManager = TestHelper.CreateJobManager();
+            using IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
             var job = jobManager.Create("job1");
 
