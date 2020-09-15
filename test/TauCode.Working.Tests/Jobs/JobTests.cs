@@ -253,7 +253,26 @@ namespace TauCode.Working.Tests.Jobs
         // - when set to non-null during run => set to next due time, but not current run.
         // - when set to non-null during run and that run turned out too long => will not have effect at the very end. (+logs)
         // - after disposed => cannot be set, but remains forever, even after its due time comes.
-        // - if IJob is disabled, won't run whichever values do you set.
+        // - if IJob is disabled, won't run whichever  values do you set.
+
+        // todo: IJob.ForceStart
+        // - happy path, get-info
+        // - already running, throws
+        // - long run, due time evolution + logs
+        // - disposed, throws.
+
+        // todo: IJob.Cancel
+        // - was running => cancelled, returns true + logs
+        // - was stopped => returns false
+        // - disposed => throws
+
+        // todo: IJob.IsDisposed
+        // - obvious
+
+        // todo: IJob.Dispose
+        // - dispose not running IJob, checks
+        // - dispose running IJob, checks
+        // - dispose disposed, no problem.
 
     }
 }

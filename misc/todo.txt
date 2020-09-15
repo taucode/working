@@ -28,3 +28,8 @@ x   1. Rename 'Lab' demo project to 'Playground'.
 ==========
     1. Graceful 'Dispose': Dispose must not throw. E.g. using(myDisposable){} etc. https://stackoverflow.com/questions/1030455/how-to-handle-exception-thrown-from-dispose
     
+2020-09-15
+==========
+    1. UT workers (porls) themselves, DoWork throwing error, etc.
+    2. Worker logging.
+    
