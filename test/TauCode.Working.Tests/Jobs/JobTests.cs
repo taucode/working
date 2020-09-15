@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
+using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs;
 using TauCode.Working.Schedules;
 
 namespace TauCode.Working.Tests.Jobs
 {
-    // todo: dispose resources in all ut-s
     [TestFixture]
     public class JobTests
     {
@@ -121,6 +121,108 @@ namespace TauCode.Working.Tests.Jobs
 
         #endregion
 
+        #region IJob.IsEnabled
+
+        [Test]
+        public void IsEnabled_JustCreatedJob_ReturnsFalse()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            var isEnabled = job.IsEnabled;
+
+            // Assert
+            Assert.That(isEnabled, Is.False);
+        }
+
+        [Test]
+        public void IsEnabled_ChangedToTrue_ReturnsTrue()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+            job.IsEnabled = true;
+
+            // Act
+            var isEnabled = job.IsEnabled;
+
+            // Assert
+            Assert.That(isEnabled, Is.True);
+        }
+
+        [Test]
+        public void IsEnabled_ChangedToTrueThenToFalse_ReturnsFalse()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+            job.IsEnabled = true;
+            job.IsEnabled = false;
+
+            // Act
+            var isEnabled = job.IsEnabled;
+
+            // Assert
+            Assert.That(isEnabled, Is.False);
+        }
+
+        [Test]
+        public void IsEnabled_WasTrueThenDisposed_ReturnsTrue()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+            job.IsEnabled = true;
+            job.Dispose();
+
+            // Act
+            var isEnabled = job.IsEnabled;
+
+            // Assert
+            Assert.That(isEnabled, Is.True);
+        }
+
+        [Test]
+        public void IsEnabled_WasFalseThenDisposed_ReturnsFalse()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+            job.Dispose();
+
+            // Act
+            var isEnabled = job.IsEnabled;
+
+            // Assert
+            Assert.That(isEnabled, Is.False);
+        }
+
+        [Test]
+        public void IsEnabled_IsDisposed_ThrowsJobObjectDisposedException()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+            job.Dispose();
+
+            // Act
+            var ex = Assert.Throws<JobObjectDisposedException>(() => job.IsEnabled = true);
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("'my-job' is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo("my-job"));
+        }
+
+        #endregion
+
         #region IJob.Schedule
 
         [Test]
@@ -142,7 +244,6 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         #endregion
-
 
         //====================================================================================
 
@@ -246,6 +347,7 @@ namespace TauCode.Working.Tests.Jobs
 
             var name = "job1";
             var job = jobManager.Create(name);
+            job.IsEnabled = true;
 
             var writer = new StringWriterWithEncoding(Encoding.UTF8);
             job.Output = writer;
@@ -268,12 +370,6 @@ namespace TauCode.Working.Tests.Jobs
 
         //====================================================================================
 
-        // todo: IJob.IsEnabled
-        // - initially, false
-        // - when changed to true, changes.
-        // - when changed to false, changes.
-        // - when disposed, still can be read.
-        // - when disposed, cannot be set - throws.
 
         // todo: IJob.Schedule
         // - initially, equals to Never

@@ -205,6 +205,12 @@ namespace TauCode.Working.Jobs.Omicron
             {
                 lock (_lock)
                 {
+                    // todo: universal method 'CheckIsDisposed'
+                    if (this.IsDisposed)
+                    {
+                        throw new JobObjectDisposedException(this.Name);
+                    }
+
                     _isEnabled = value;
                     _vice.OnScheduleChanged();
                 }
