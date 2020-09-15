@@ -6,6 +6,7 @@ using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Jobs;
+using TauCode.Working.Schedules;
 
 namespace TauCode.Working.Tests.Jobs
 {
@@ -26,7 +27,7 @@ namespace TauCode.Working.Tests.Jobs
         /// Create a job and check its schedule is 'Never'
         /// </summary>
         [Test]
-        public void Schedule_JustCreatedJob_ReturnsNeverSchedule()
+        public void GetSchedule_JustCreatedJob_ReturnsNeverSchedule()
         {
             // Arrange
             IJobManager jobManager = TestHelper.CreateJobManager();
@@ -140,9 +141,10 @@ namespace TauCode.Working.Tests.Jobs
         {
             // Arrange
             var now = "2020-09-11Z".ToUtcDayOffset().AddHours(3);
-            TimeProvider.Override(now);
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            TimeProvider.Override(timeMachine);
 
-            IJobManager jobManager = TestHelper.CreateJobManager();
+            using IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
 
             var name = "job1";
@@ -152,32 +154,26 @@ namespace TauCode.Working.Tests.Jobs
             job.Output = writer;
 
             // Act
-            throw new NotImplementedException();
-            //var newSchedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, now);
-            //job.UpdateSchedule(newSchedule);
-            //job.Routine = (parameter, tracker, output, token) =>
-            //{
-            //    output.Write("Hello!");
-            //    return Task.CompletedTask;
-            //};
+            var newSchedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now.AddSeconds(2));
+            job.Schedule = newSchedule;
+            job.Routine = (parameter, tracker, output, token) =>
+            {
+                output.Write("Hello!");
+                return Task.CompletedTask;
+            };
 
-            //var finished = now.AddMinutes(1).AddMilliseconds(1);
-            //await Task.Run(async () =>
-            //{
-            //    TimeProvider.Override(finished); // pretend due time come
-            //    jobManager.DebugPulseJobManager(); // this will break Vice's vacation
-            //    await Task.Delay(100); // should be enough for Routine to complete
-            //});
+            await Task.Delay(2500);
 
-            //// Assert
-            //Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
-            //Assert.That(job.Schedule, Is.SameAs(newSchedule));
+            // Assert
+            Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
+            Assert.That(job.Schedule, Is.SameAs(newSchedule));
         }
 
         // todo: IJob.Schedule
         // - initially, equals to Never
         // - after was set, changes to new
-        // - after was disposed, throws exception.
+        // - after 
+        // - after was disposed, equals to last.
 
         // todo: IJob.UpdateSchedule
         // - 1. just created, 2. called => changes, due time changes

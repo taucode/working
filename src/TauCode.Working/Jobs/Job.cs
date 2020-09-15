@@ -25,6 +25,11 @@ namespace TauCode.Working.Jobs
         #region IJob Members (explicit)
 
         string IJob.Name => _employee.Name;
+        public bool IsEnabled
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
 
         ISchedule IJob.Schedule
         {
@@ -77,6 +82,11 @@ namespace TauCode.Working.Jobs
         {
             throw new NotImplementedException();
             //_employee.ForceStart();
+        }
+
+        public void Cancel()
+        {
+            throw new NotImplementedException();
         }
 
         public bool IsDisposed => throw new NotImplementedException();

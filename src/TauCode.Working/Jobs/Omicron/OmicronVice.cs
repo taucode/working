@@ -31,6 +31,11 @@ namespace TauCode.Working.Jobs.Omicron
             {
                 foreach (var employee in _employees.Values)
                 {
+                    if (!employee.IsEnabled)
+                    {
+                        continue;
+                    }
+
                     var dueTime = employee.GetDueTimeForVice();
                     if (!dueTime.HasValue)
                     {

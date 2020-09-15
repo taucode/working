@@ -7,6 +7,7 @@ namespace TauCode.Working.Jobs
     public interface IJob : IDisposable
     {
         string Name { get; }
+        bool IsEnabled { get; set; }
         ISchedule Schedule { get; set; }
         JobDelegate Routine { get; set; }
         object Parameter { get; set; }
@@ -15,8 +16,7 @@ namespace TauCode.Working.Jobs
         JobInfo GetInfo(int? maxRunCount);
         void OverrideDueTime(DateTimeOffset? dueTime);
         void ForceStart();
-
-        // todo: void Cancel();
+        void Cancel();
         bool IsDisposed { get; }
     }
 }

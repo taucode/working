@@ -513,8 +513,12 @@ namespace TauCode.Working.Tests.Jobs
 
             IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
+
             var job1 = jobManager.Create("job1");
+            job1.IsEnabled = true;
+
             var job2 = jobManager.Create("job2");
+            job2.IsEnabled = true;
 
             job1.Output = new StringWriterWithEncoding(Encoding.UTF8);
             job2.Output = new StringWriterWithEncoding(Encoding.UTF8);

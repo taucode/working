@@ -20,6 +20,12 @@ namespace TauCode.Working.Jobs.Omicron
 
         public string Name => _employee.Name;
 
+        public bool IsEnabled
+        {
+            get => _employee.IsEnabled;
+            set => _employee.IsEnabled = value;
+        }
+
         public ISchedule Schedule
         {
             get => _employee.Schedule;
@@ -61,6 +67,8 @@ namespace TauCode.Working.Jobs.Omicron
         {
             throw new NotImplementedException();
         }
+
+        public void Cancel() => _employee.Cancel();
 
         public bool IsDisposed => _employee.IsDisposed;
     }

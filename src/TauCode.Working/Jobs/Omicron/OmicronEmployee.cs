@@ -19,6 +19,8 @@ namespace TauCode.Working.Jobs.Omicron
         private readonly OmicronVice _vice;
         private readonly OmicronJob _job;
 
+        private bool _isEnabled;
+
         private ISchedule _schedule;
         private DateTimeOffset _scheduleDueTime;
         private DateTimeOffset? _overriddenDueTime;
@@ -186,6 +188,25 @@ namespace TauCode.Working.Jobs.Omicron
                     }
 
                     _output = value;
+                }
+            }
+        }
+
+        internal bool IsEnabled
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _isEnabled;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _isEnabled = value;
+                    _vice.OnScheduleChanged();
                 }
             }
         }
@@ -419,6 +440,11 @@ namespace TauCode.Working.Jobs.Omicron
                     _runs.Count,
                     _runs);
             }
+        }
+
+        internal void Cancel()
+        {
+            throw new NotImplementedException();
         }
     }
 
