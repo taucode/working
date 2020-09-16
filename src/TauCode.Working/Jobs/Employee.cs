@@ -89,7 +89,7 @@ namespace TauCode.Working.Jobs
                     }
                     else
                     {
-                        _currentJobRunResultBuilder.Status = JobRunStatus.Failed;
+                        _currentJobRunResultBuilder.Status = JobRunStatus.Faulted;
                     }
 
                     _currentJobRunResultBuilder.Exception = ex;

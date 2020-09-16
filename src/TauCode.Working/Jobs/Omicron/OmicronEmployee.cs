@@ -16,17 +16,19 @@ namespace TauCode.Working.Jobs.Omicron
     {
         #region Nested
 
-        private class RunContext
+        private class RunContext : IDisposable
         {
             private readonly MultiTextWriterLab _multiTextWriter;
             private readonly StringWriterWithEncoding _systemWriter;
             private readonly Task _task;
-            private readonly Action<JobRunInfoBuilder> _callback;
+            private readonly Action<JobRunInfo> _callback;
 
             private readonly JobRunInfoBuilder _runInfoBuilder;
             private readonly CancellationTokenSource _tokenSource;
             //private Task _currentTask;
             //private Task _currentEndTask;
+
+            private Task _endTask;
 
             internal RunContext(
                 JobDelegate routine,
@@ -34,7 +36,12 @@ namespace TauCode.Working.Jobs.Omicron
                 IProgressTracker progressTracker,
                 TextWriter jobWriter,
                 CancellationToken? token,
-                Action<JobRunInfoBuilder> callback)
+                Action<JobRunInfo> callback,
+                int runIndex,
+                JobStartReason startReason,
+                DateTimeOffset dueTime,
+                bool dueTimeWasOverridden,
+                DateTimeOffset startTime)
             {
                 _systemWriter = new StringWriterWithEncoding(Encoding.UTF8);
                 var writers = new List<TextWriter>
@@ -61,19 +68,79 @@ namespace TauCode.Working.Jobs.Omicron
                 _task = routine(parameter, progressTracker, _multiTextWriter, _tokenSource.Token);
 
                 _callback = callback;
+
+                _runInfoBuilder = new JobRunInfoBuilder(
+                    runIndex,
+                    startReason,
+                    dueTime,
+                    dueTimeWasOverridden,
+                    startTime,
+                    JobRunStatus.Running,
+                    _systemWriter);
             }
 
             internal void Run()
             {
-                _task.ContinueWith(
+                _endTask = _task.ContinueWith(
                     this.EndTask,
-                    _tokenSource.Token,
-                    _tokenSource.Token);
+                    CancellationToken.None);
             }
 
-            private Task EndTask(Task task, object state)
+            private void EndTask(Task task)
             {
-                throw new NotImplementedException();
+                var now = TimeProvider.GetCurrent();
+
+                JobRunStatus status;
+
+                switch (task.Status)
+                {
+                    case TaskStatus.RanToCompletion:
+                        status = JobRunStatus.Succeeded;
+                        break;
+
+                    case TaskStatus.Canceled:
+                        status = JobRunStatus.Canceled;
+                        break;
+
+                    case TaskStatus.Faulted:
+                        status = JobRunStatus.Faulted;
+                        break;
+
+                    default:
+                        status = JobRunStatus.Unknown;
+                        break;
+                }
+
+                _runInfoBuilder.EndTime = now;
+                _runInfoBuilder.Status = status;
+
+                _callback(_runInfoBuilder.Build());
+            }
+
+            internal JobRunInfo GetJobRunInfo() => _runInfoBuilder.Build();
+
+            public void Dispose()
+            {
+                _systemWriter?.Dispose();
+                _task?.Dispose();
+                _tokenSource?.Dispose();
+            }
+
+            public void Wait()
+            {
+                try
+                {
+                    _endTask?.Wait();
+                }
+                catch
+                {
+                    // called in Dispose, should not throw.
+                }
+            }
+
+            public void Cancel()
+            {
+                _tokenSource.Cancel();
             }
         }
 
@@ -389,19 +456,17 @@ namespace TauCode.Working.Jobs.Omicron
 
         internal JobInfo GetInfo(int? maxRunCount)
         {
-            throw new NotImplementedException();
+            return this.GetWithDataLock(() =>
+            {
+                var currentRun = _runContext?.GetJobRunInfo();
 
-            //return this.GetWithDataLock(() =>
-            //{
-            //    var currentRun = _currentInfoBuilder?.Build();
-
-            //    return new JobInfo(
-            //        currentRun,
-            //        this.GetEffectiveDueTime(),
-            //        _overriddenDueTime.HasValue,
-            //        _runs.Count,
-            //        _runs);
-            //});
+                return new JobInfo(
+                    currentRun,
+                    _overriddenDueTime ?? _scheduleDueTime,
+                    _overriddenDueTime.HasValue,
+                    _runs.Count,
+                    _runs);
+            });
         }
 
         internal void OverrideDueTime(DateTimeOffset? dueTime)
@@ -559,13 +624,20 @@ namespace TauCode.Working.Jobs.Omicron
                     throw new NotImplementedException();
                 }
 
+                var now = TimeProvider.GetCurrent();
+
                 _runContext = new RunContext(
                     _routine,
                     _parameter,
                     _progressTracker,
                     _output,
                     token,
-                    this.CompletionCallback);
+                    this.CompletionCallback,
+                    _runIndex,
+                    startReason,
+                    _overriddenDueTime ?? _scheduleDueTime,
+                    _overriddenDueTime.HasValue,
+                    now);
 
                 _runContext.Run();
 
@@ -688,9 +760,15 @@ namespace TauCode.Working.Jobs.Omicron
             //}
         }
 
-        private void CompletionCallback(JobRunInfoBuilder jobRunInfoBuilder)
+        private void CompletionCallback(JobRunInfo jobRunInfo)
         {
-            throw new NotImplementedException();
+            lock (_marinaLock)
+            {
+                _runs.Add(jobRunInfo);
+
+                _runContext?.Dispose();
+                _runContext = null;
+            }
         }
 
         //private RunContext CreateRunContext(
@@ -782,6 +860,9 @@ namespace TauCode.Working.Jobs.Omicron
 
         public void Dispose()
         {
+            // todo: try/catch here?
+            RunContext runContext;
+
             lock (_marinaLock)
             {
                 if (_isDisposed)
@@ -789,12 +870,17 @@ namespace TauCode.Working.Jobs.Omicron
                     return; // won't dispose twice.
                 }
 
-                if (_runContext != null)
-                {
-                    throw new NotImplementedException();
-                }
-
                 _isDisposed = true;
+
+                runContext = _runContext;
+                _runContext = null;
+            }
+
+            if (runContext != null)
+            {
+                runContext.Cancel();
+                runContext.Wait();
+                runContext.Dispose();
             }
         }
     }
