@@ -3,6 +3,7 @@ using Serilog.Events;
 using System;
 using System.Text;
 
+// todo clean
 namespace TauCode.Working
 {
     public class ObjectLogger
@@ -26,19 +27,32 @@ namespace TauCode.Working
             methodName ??= "<unknown_method>";
             var sb = new StringBuilder();
             sb.Append(this.Host.GetType().Name);
-            sb.Append('(');
+
             if (this.HostName == null)
             {
-                sb.Append("<null>");
+                
             }
             else
             {
+                sb.Append('(');
+                //if (this.HostName == null)
+                //{
+                //    sb.Append("<null>");
+                //}
+                //else
+                //{
+                //    sb.Append('\'');
+                //    sb.Append(this.HostName);
+                //    sb.Append('\'');
+                //}
+
                 sb.Append('\'');
                 sb.Append(this.HostName);
                 sb.Append('\'');
+
+                sb.Append(')');
             }
 
-            sb.Append(')');
             sb.Append('.');
             sb.Append(methodName);
             sb.Append(' ');

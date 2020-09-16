@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -17,6 +18,12 @@ namespace TauCode.Labor.TestDemo.Lab
     {
         private static async Task Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .Filter.ByIncludingOnly(x => x.Properties.ContainsKey("taucode.working"))
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .CreateLogger();
+
             var cnt = 40;
             for (int i = 0; i < cnt; i++)
             {

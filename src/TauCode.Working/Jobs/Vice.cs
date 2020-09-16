@@ -14,14 +14,23 @@ namespace TauCode.Working.Jobs
         private readonly Dictionary<string, Employee> _employees;
         private readonly object _lock;
 
+        private readonly ObjectLogger _logger;
+
         internal Vice()
         {
             _employees = new Dictionary<string, Employee>();
             _lock = new object();
+
+            _logger = new ObjectLogger(this, null)
+            {
+                IsEnabled = true,
+            };
         }
 
         protected override Task<TimeSpan> DoWork(CancellationToken token)
         {
+            _logger.Debug("Entered method", nameof(DoWork));
+
             var now = TimeProvider.GetCurrent();
 
             var employeesToWakeUp = new List<Tuple<Employee, DueTimeInfoForVice>>();
@@ -75,9 +84,6 @@ namespace TauCode.Working.Jobs
                 }
 
                 var employee = new Employee(this, jobName);
-                //{
-                //    Name = jobName,
-                //};
 
                 _employees.Add(employee.Name, employee);
                 return employee.GetJob();
