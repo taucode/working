@@ -2,39 +2,39 @@
 using Serilog.Events;
 using System;
 using System.Text;
-using TauCode.Working.ZetaOld.Workers;
 
-namespace TauCode.Working.ZetaOld.Logging
+namespace TauCode.Working
 {
-    public class ZetaWorkerLogger
+    public class ObjectLogger
     {
         #region Constructor
 
-        public ZetaWorkerLogger(ZetaWorkerBase worker)
+        public ObjectLogger(object host, string hostName)
         {
-            this.Worker = worker ?? throw new ArgumentNullException(nameof(worker));
+            this.Host = host ?? throw new ArgumentNullException(nameof(host));
+            this.HostName = hostName;
         }
 
         #endregion
 
         #region Protected
 
-        protected virtual ILogger GetSerilogLogger() => Log.ForContext("taucode.working.zetaold", true);
+        protected virtual ILogger GetSerilogLogger() => Log.ForContext("taucode.working", true);
 
         protected virtual string GetCallSignature(string methodName)
         {
             methodName ??= "<unknown_method>";
             var sb = new StringBuilder();
-            sb.Append(this.Worker.GetType().Name);
+            sb.Append(this.Host.GetType().Name);
             sb.Append('(');
-            if (this.Worker.Name == null)
+            if (this.HostName == null)
             {
                 sb.Append("<null>");
             }
             else
             {
                 sb.Append('\'');
-                sb.Append(this.Worker.Name);
+                sb.Append(this.HostName);
                 sb.Append('\'');
             }
 
@@ -70,7 +70,9 @@ namespace TauCode.Working.ZetaOld.Logging
 
         #region Public
 
-        public ZetaWorkerBase Worker { get; }
+        public object Host { get; }
+
+        public string HostName { get; }
 
         public bool IsEnabled { get; set; }
 
