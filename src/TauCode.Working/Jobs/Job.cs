@@ -89,6 +89,16 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
+        public bool Wait(int millisecondsTimeout)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Wait(TimeSpan timeout)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool IsDisposed => throw new NotImplementedException();
 
         #endregion

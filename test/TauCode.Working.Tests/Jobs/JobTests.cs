@@ -10,6 +10,7 @@ using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs;
 using TauCode.Working.Schedules;
 
+// todo clean up
 namespace TauCode.Working.Tests.Jobs
 {
     [TestFixture]
@@ -407,7 +408,6 @@ namespace TauCode.Working.Tests.Jobs
 
             job.Routine = async (parameter, tracker, output, token) =>
             {
-                var p = 0;
                 await Task.Delay(1500, token); // 1.5 second to complete
             };
             ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);

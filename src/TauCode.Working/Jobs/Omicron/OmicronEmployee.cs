@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,24 +11,25 @@ using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 using TauCode.Working.Schedules;
 
+// todo clean up
 namespace TauCode.Working.Jobs.Omicron
 {
-    internal class OmicronEmployee : IDisposable //: ProlBase
+    internal class OmicronEmployee : IDisposable
     {
         #region Nested
 
+        #region RunContext
+
         private class RunContext : IDisposable
         {
-            private readonly MultiTextWriterLab _multiTextWriter;
             private readonly StringWriterWithEncoding _systemWriter;
-            private readonly Task _task;
-            private readonly Action<JobRunInfo> _callback;
+
+            private readonly JobRunInfoCollection _runs;
 
             private readonly JobRunInfoBuilder _runInfoBuilder;
             private readonly CancellationTokenSource _tokenSource;
-            //private Task _currentTask;
-            //private Task _currentEndTask;
 
+            private readonly Task _task;
             private Task _endTask;
 
             internal RunContext(
@@ -36,8 +38,7 @@ namespace TauCode.Working.Jobs.Omicron
                 IProgressTracker progressTracker,
                 TextWriter jobWriter,
                 CancellationToken? token,
-                Action<JobRunInfo> callback,
-                int runIndex,
+                JobRunInfoCollection runs,
                 JobStartReason startReason,
                 DateTimeOffset dueTime,
                 bool dueTimeWasOverridden,
@@ -54,7 +55,7 @@ namespace TauCode.Working.Jobs.Omicron
                     writers.Add(jobWriter);
                 }
 
-                _multiTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
+                var multiTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
 
                 if (token == null)
                 {
@@ -65,12 +66,12 @@ namespace TauCode.Working.Jobs.Omicron
                     _tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token.Value);
                 }
 
-                _task = routine(parameter, progressTracker, _multiTextWriter, _tokenSource.Token);
+                _task = routine(parameter, progressTracker, multiTextWriter, _tokenSource.Token);
 
-                _callback = callback;
+                _runs = runs;
 
                 _runInfoBuilder = new JobRunInfoBuilder(
-                    runIndex,
+                    _runs.Count,
                     startReason,
                     dueTime,
                     dueTimeWasOverridden,
@@ -114,7 +115,8 @@ namespace TauCode.Working.Jobs.Omicron
                 _runInfoBuilder.EndTime = now;
                 _runInfoBuilder.Status = status;
 
-                _callback(_runInfoBuilder.Build());
+                var jobRunInfo = _runInfoBuilder.Build();
+                _runs.Add(jobRunInfo);
             }
 
             internal JobRunInfo GetJobRunInfo() => _runInfoBuilder.Build();
@@ -122,27 +124,85 @@ namespace TauCode.Working.Jobs.Omicron
             public void Dispose()
             {
                 _systemWriter?.Dispose();
-                _task?.Dispose();
                 _tokenSource?.Dispose();
             }
 
-            public void Wait()
+            internal bool Wait(TimeSpan timeout)
             {
                 try
                 {
-                    _endTask?.Wait();
+                    return _endTask.Wait(timeout);
                 }
                 catch
                 {
                     // called in Dispose, should not throw.
+                    return false;
                 }
             }
 
-            public void Cancel()
+            internal bool Wait(int millisecondsTimeout)
+            {
+                try
+                {
+                    return _endTask.Wait(millisecondsTimeout);
+                }
+                catch
+                {
+                    // called in Dispose, should not throw.
+                    return false;
+                }
+            }
+
+            internal void Cancel()
             {
                 _tokenSource.Cancel();
             }
         }
+
+        #endregion
+
+        #region JobRunInfoCollection
+
+        private class JobRunInfoCollection
+        {
+            private readonly List<JobRunInfo> _list;
+            private readonly object _lock;
+
+            internal JobRunInfoCollection()
+            {
+                _list = new List<JobRunInfo>();
+                _lock = new object();
+            }
+
+            internal void Add(JobRunInfo jobRunInfo)
+            {
+                lock (_lock)
+                {
+                    _list.Add(jobRunInfo);
+                }
+            }
+
+            internal IReadOnlyList<JobRunInfo> ToList()
+            {
+                lock (_lock)
+                {
+                    return _list.ToList();
+                }
+            }
+
+            internal int Count
+            {
+                get
+                {
+                    lock (_lock)
+                    {
+                        return _list.Count;
+                    }
+                }
+            }
+        }
+
+        #endregion
 
         #endregion
 
@@ -162,20 +222,9 @@ namespace TauCode.Working.Jobs.Omicron
         private IProgressTracker _progressTracker;
         private TextWriter _output;
 
-
-        //private MultiTextWriterLab _currentWriter;
-        //private JobRunInfoBuilder _currentInfoBuilder;
-        //private CancellationTokenSource _currentTokenSource;
-        //private Task _currentTask;
-        //private Task _currentEndTask;
-
-        private readonly List<JobRunInfo> _runs;
-        private int _runIndex;
-
-        //private readonly object _dataLock;
+        private readonly JobRunInfoCollection _runs;
 
         private readonly object _marinaLock;
-        private readonly object _wakeUpLock;
         private RunContext _runContext;
         private bool _isDisposed;
 
@@ -191,15 +240,11 @@ namespace TauCode.Working.Jobs.Omicron
             _job = new OmicronJob(this);
             _schedule = NeverSchedule.Instance;
             _routine = JobExtensions.IdleJobRoutine;
-            _runs = new List<JobRunInfo>();
-
-            //_dataLock = new object();
+            _runs = new JobRunInfoCollection();
 
             _marinaLock = new object();
-            _wakeUpLock = new object();
 
-            // todo: update in GetInfo, also (?)
-            this.UpdateScheduleDueTime(); // updated in ctor
+            this.UpdateScheduleDueTime(); // updated in ctor (todo: check other places)
         }
 
         #endregion
@@ -231,7 +276,7 @@ namespace TauCode.Working.Jobs.Omicron
 
                 var isStopped = _runContext == null;
 
-                if (!isStopped /*this.State != ProlState.Stopped*/ && throwIfNotStopped)
+                if (!isStopped && throwIfNotStopped)
                 {
                     throw new NotImplementedException();
                 }
@@ -249,15 +294,6 @@ namespace TauCode.Working.Jobs.Omicron
                 }
             }
         }
-
-        //private DateTimeOffset GetEffectiveDueTime() =>
-        //    this.GetWithDataLock(() => _overriddenDueTime ?? _scheduleDueTime);
-        //{
-        //    lock (_dataLock)
-        //    {
-        //        return _overriddenDueTime ?? _scheduleDueTime;
-        //    }
-        //}
 
         private void UpdateScheduleDueTime()
         {
@@ -284,174 +320,67 @@ namespace TauCode.Working.Jobs.Omicron
         internal bool IsEnabled
         {
             get => this.GetWithDataLock(() => _isEnabled);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        return _isEnabled;
-            //    }
-            //}
             set => this.InvokeWithDataLock(
                 action: () => _isEnabled = value,
                 throwIfDisposed: true,
                 throwIfNotStopped: false,
                 updateScheduleDueTime: false,
                 pulseVice: true);
-
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        // todo: universal method 'CheckIsDisposed'
-            //        if (this.IsDisposed)
-            //        {
-            //            throw new JobObjectDisposedException(this.Name);
-            //        }
-
-            //        _isEnabled = value;
-            //        _vice.PulseWork();
-            //    }
-            //}
         }
 
         internal ISchedule Schedule
         {
             get => this.GetWithDataLock(() => _schedule);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        return _schedule;
-            //    }
-            //}
             set => this.InvokeWithDataLock(
                 action: () => _schedule = value,
                 throwIfDisposed: true,
                 throwIfNotStopped: false,
                 updateScheduleDueTime: true,
                 pulseVice: true);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        if (this.IsDisposed)
-            //        {
-            //            throw new NotImplementedException();
-            //        }
-
-            //        _schedule = value;
-            //        this.UpdateScheduleDueTime(); // updated in Schedule.set
-            //        _vice.PulseWork();
-            //    }
-            //}
         }
 
         internal JobDelegate Routine
         {
             get => this.GetWithDataLock(() => _routine);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        return _routine;
-            //    }
-            //}
             set => this.InvokeWithDataLock(
                 action: () => _routine = value,
                 throwIfDisposed: true,
                 throwIfNotStopped: true,
                 updateScheduleDueTime: false,
                 pulseVice: false);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        if (this.State == ProlState.Running)
-            //        {
-            //            throw new NotImplementedException();
-            //        }
-
-            //        _routine = value;
-            //    }
-            //}
         }
 
         internal object Parameter
         {
             get => this.GetWithDataLock(() => _parameter);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        return _parameter;
-            //    }
-            //}
             set => this.InvokeWithDataLock(
                 action: () => _parameter = value,
                 throwIfDisposed: true,
                 throwIfNotStopped: true,
                 updateScheduleDueTime: false,
                 pulseVice: false);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        if (this.State == ProlState.Running)
-            //        {
-            //            throw new NotImplementedException();
-            //        }
-
-            //        _parameter = value;
-            //    }
-            //}
         }
 
         internal IProgressTracker ProgressTracker
         {
             get => this.GetWithDataLock(() => _progressTracker);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        return _progressTracker;
-            //    }
-            //}
             set => this.InvokeWithDataLock(
                 action: () => _progressTracker = value,
                 throwIfDisposed: true,
                 throwIfNotStopped: true,
                 updateScheduleDueTime: false,
                 pulseVice: false);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        if (this.State == ProlState.Running)
-            //        {
-            //            throw new NotImplementedException();
-            //        }
-
-            //        _progressTracker = value;
-            //    }
-            //}
         }
 
         internal TextWriter Output
         {
             get => this.GetWithDataLock(() => _output);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        return _output;
-            //    }
-            //}
             set => this.InvokeWithDataLock(
                 action: () => _output = value,
                 throwIfDisposed: true,
                 throwIfNotStopped: true,
                 updateScheduleDueTime: false,
                 pulseVice: false);
-            //{
-            //    lock (_dataLock)
-            //    {
-            //        if (this.State == ProlState.Running)
-            //        {
-            //            throw new NotImplementedException();
-            //        }
-
-            //        _output = value;
-            //    }
-            //}
         }
 
         internal JobInfo GetInfo(int? maxRunCount)
@@ -465,7 +394,7 @@ namespace TauCode.Working.Jobs.Omicron
                     _overriddenDueTime ?? _scheduleDueTime,
                     _overriddenDueTime.HasValue,
                     _runs.Count,
-                    _runs);
+                    _runs.ToList());
             });
         }
 
@@ -476,43 +405,61 @@ namespace TauCode.Working.Jobs.Omicron
 
         internal void ForceStart()
         {
-            throw new NotImplementedException();
-            //lock (_dataLock)
-            //{
-
-            //    this.Start(); // todo baad!
-            //    _currentTask = this.InitJobRunContext(false, null);
-
-            //    _overriddenDueTime = null;
-            //    this.UpdateSch-eduleDueTime(); // updated in ForceStart
-
-            //    _currentEndTask = _currentTask.ContinueWith(this.EndJob);
-            //}
+            this.WakeUp(JobStartReason.Force2, null);
         }
 
         internal bool Cancel()
         {
+            lock (_marinaLock)
+            {
+                if (_runContext == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    _runContext.Cancel();
+                    return true;
+                }
+            }
+        }
+
+        internal bool Wait(int millisecondsTimeout)
+        {
+            if (this.IsDisposed)
+            {
+                throw new NotImplementedException(); // cannot wait on disposed obj.
+            }
+
+            RunContext runContext;
+            lock (_marinaLock)
+            {
+                runContext = _runContext;
+            }
+
+            var gotSignal = runContext?.Wait(millisecondsTimeout) ?? true;
+            return gotSignal;
+        }
+
+        internal bool Wait(TimeSpan timeout)
+        {
             throw new NotImplementedException();
+        }
 
-            //if (this.State != ProlState.Running)
-            //{
-            //    return false;
-            //}
-
-            //lock (_dataLock)
-            //{
-            //    if (this.State == ProlState.Stopped)
-            //    {
-            //        return false;
-            //    }
-
-            //    _currentTokenSource?.Cancel();
-            //    //this.Stop();
-            //    return true;
-            //}
+        internal bool IsDisposed
+        {
+            get
+            {
+                lock (_marinaLock)
+                {
+                    return _isDisposed;
+                }
+            }
         }
 
         #endregion
+
+        #region Interface for Vice
 
         internal DueTimeInfoForVice? GetDueTimeInfoForVice()
         {
@@ -531,89 +478,7 @@ namespace TauCode.Working.Jobs.Omicron
             }
         }
 
-        private void EndJob(Task task) // => this.Stop(false);
-        {
-            throw new NotImplementedException();
-        }
-
-        //protected override void OnStarting()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //protected override void OnStopped()
-        //{
-        //    throw new NotImplementedException();
-
-        //    //lock (_dataLock)
-        //    //{
-        //    //    if (_currentEndTask != null)
-        //    //    {
-        //    //        this.FinalizeJobRun();
-        //    //    }
-        //    //}
-        //}
-
-        private void FinalizeJobRun()
-        {
-            throw new NotImplementedException();
-
-            //var now = TimeProvider.GetCurrent();
-
-            //_currentInfoBuilder.EndTime = now;
-            //var jobOutputWriter = (StringWriter)_currentWriter.InnerWriters[0];
-
-            //switch (_currentTask.Status)
-            //{
-            //    case TaskStatus.Faulted:
-            //        var ex = _currentTask.Exception.InnerException;
-            //        if (ex is JobFailedToStartException)
-            //        {
-            //            _currentInfoBuilder.Status = JobRunStatus.FailedToStart;
-            //        }
-            //        else
-            //        {
-            //            _currentInfoBuilder.Status = JobRunStatus.Failed;
-            //        }
-
-            //        _currentInfoBuilder.Exception = ex;
-
-            //        break;
-
-            //    case TaskStatus.RanToCompletion:
-            //        _currentInfoBuilder.Status = JobRunStatus.Succeeded;
-            //        break;
-
-            //    case TaskStatus.Canceled:
-            //        _currentInfoBuilder.Status = JobRunStatus.Canceled;
-            //        break;
-
-            //    default:
-            //        _currentInfoBuilder.Status =
-            //            JobRunStatus.Unknown; // actually, very strange, but we cannot throw here.
-            //        break;
-            //}
-
-            //var runInfo = _currentInfoBuilder.Build();
-            //_runs.Add(runInfo);
-
-            //jobOutputWriter.Dispose();
-
-            //_currentWriter.Dispose();
-            //_currentWriter = null;
-
-            //_currentInfoBuilder = null;
-
-            //_currentTokenSource.Dispose();
-            //_currentTokenSource = null;
-
-            //_currentTask = null;
-            //_currentEndTask = null;
-
-            //this.UpdateScheduleDueTime(); // updated in FinalizeJobRun
-        }
-
-        internal bool WakeUp(JobStartReason startReason, CancellationToken token)
+        internal bool WakeUp(JobStartReason startReason, CancellationToken? token)
         {
             this.UpdateScheduleDueTime();
 
@@ -632,8 +497,7 @@ namespace TauCode.Working.Jobs.Omicron
                     _progressTracker,
                     _output,
                     token,
-                    this.CompletionCallback,
-                    _runIndex,
+                    _runs,
                     startReason,
                     _overriddenDueTime ?? _scheduleDueTime,
                     _overriddenDueTime.HasValue,
@@ -644,223 +508,15 @@ namespace TauCode.Working.Jobs.Omicron
                 return true;
             }
 
-            //throw new NotImplementedException();
 
-            //lock (_wakeUpLock)
-            //{
-            //    lock (_marinaLock)
-            //    {
-            //        if (_runContext == null)
-            //        {
-            //            _runContext = this.CreateRunContext(_output, token);
-            //        }
-            //        else
-            //        {
-            //            // todo: log
-            //            return false;
-            //        }
-            //    }
-
-            //    try
-            //    {
-            //        this.Start();
-            //        return true;
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        // todo: log ex in Employee's log.
-            //        return false;
-            //    }
-            //}
-
-
-
-
-            //lock (_wakeUpLock)
-            //{
-            //    try
-            //    {
-            //        if (this.IsEnabled)
-            //        {
-            //            // go on
-            //        }
-            //        else
-            //        {
-            //            throw new NotImplementedException();
-            //        }
-
-            //        this.Start();
-
-            //        switch (startReason)
-            //        {
-            //            case JobStartReason.ScheduleDueTime:
-            //                return WakeUpResult.StartedBySchedule;
-
-            //            case JobStartReason.OverriddenDueTime:
-            //                return WakeUpResult.StartedByOverriddenDueTime;
-
-            //            case JobStartReason.Force2:
-            //                return WakeUpResult.StartedByForce;
-
-            //            default:
-            //                return WakeUpResult.Unknown;
-            //        }
-
-            //        // started successfully
-
-
-            //        //lock (_marinaLock)
-            //        //{
-            //        //    _runContext = new RunContext(_output);
-            //        //}
-            //    }
-            //    catch (InappropriateProlStateException)
-            //    {
-            //        // already started.
-            //        throw new NotImplementedException();
-            //    }
-            //}
-
-            //throw new NotImplementedException();
-            //lock (_dataLock)
-            //{
-            //    try
-            //    {
-            //        this.Start(); // todo0000 BAAAD!!!
-            //        _currentTask = this.InitJobRunContext(true, token);
-
-            //        _overriddenDueTime = null;
-            //        this.UpdateScheduleDueTime(); // updated in WakeUp
-
-            //        _currentEndTask = _currentTask.ContinueWith(this.EndJob);
-
-            //        switch (_currentInfoBuilder.StartReason)
-            //        {
-            //            case JobStartReason.ScheduleDueTime:
-            //                return WakeUpResult.StartedBySchedule;
-
-            //            case JobStartReason.OverriddenDueTime:
-            //                return WakeUpResult.StartedByOverriddenDueTime;
-
-            //            case JobStartReason.Force2:
-            //                return WakeUpResult.UnexpectedlyStartedByForce;
-
-            //            default:
-            //                return WakeUpResult.Unknown;
-            //        }
-            //    }
-            //    catch (InappropriateProlStateException)
-            //    {
-            //        return WakeUpResult.AlreadyRunning;
-            //    }
-            //    catch (ObjectDisposedException)
-            //    {
-            //        return WakeUpResult.AlreadyDisposed;
-            //    }
-            //}
         }
 
-        private void CompletionCallback(JobRunInfo jobRunInfo)
-        {
-            lock (_marinaLock)
-            {
-                _runs.Add(jobRunInfo);
+        #endregion
 
-                _runContext?.Dispose();
-                _runContext = null;
-            }
-        }
-
-        //private RunContext CreateRunContext(
-        //    TextWriter output,
-        //    CancellationToken? token)
-        //{
-        //    return new RunContext(_routine, _parameter, _progressTracker, output, token);
-        //}
-
-        private Task InitJobRunContext(bool byDueTime, CancellationToken? token)
-        {
-            throw new NotImplementedException();
-
-            //var jobWriter = new StringWriterWithEncoding(Encoding.UTF8);
-            //var writers = new List<TextWriter>
-            //{
-            //    jobWriter,
-            //};
-
-            //if (_output != null)
-            //{
-            //    writers.Add(_output);
-            //}
-
-            //var now = TimeProvider.GetCurrent();
-
-            //_currentWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
-
-            //if (token.HasValue)
-            //{
-            //    _currentTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token.Value);
-            //}
-            //else
-            //{
-            //    _currentTokenSource = new CancellationTokenSource();
-            //}
-
-            //JobStartReason reason;
-
-            //if (byDueTime)
-            //{
-            //    reason = _overriddenDueTime.HasValue
-            //        ? JobStartReason.OverriddenDueTime
-            //        : JobStartReason.ScheduleDueTime;
-            //}
-            //else
-            //{
-            //    reason = JobStartReason.Force2;
-            //}
-
-            //_currentInfoBuilder = new JobRunInfoBuilder(
-            //    _runIndex,
-            //    reason,
-            //    this.GetEffectiveDueTime(),
-            //    _overriddenDueTime.HasValue,
-            //    now,
-            //    JobRunStatus.Unknown,
-            //    jobWriter);
-
-            //_runIndex++;
-
-            //Task task;
-
-            //try
-            //{
-            //    task = _routine(_parameter, _progressTracker, _currentWriter, _currentTokenSource.Token);
-            //}
-            //catch (Exception ex)
-            //{
-            //    // todo: wrong. _routine might throw exception intentionally.
-            //    // todo: deal with completed tasks?
-            //    var jobEx = new JobFailedToStartException(ex);
-            //    task = Task.FromException(jobEx);
-            //}
-
-            //return task;
-        }
-
-        internal bool IsDisposed
-        {
-            get
-            {
-                lock (_marinaLock)
-                {
-                    return _isDisposed;
-                }
-            }
-        }
+        #region IDisposable Members
 
         public void Dispose()
         {
-            // todo: try/catch here?
             RunContext runContext;
 
             lock (_marinaLock)
@@ -878,10 +534,18 @@ namespace TauCode.Working.Jobs.Omicron
 
             if (runContext != null)
             {
-                runContext.Cancel();
-                runContext.Wait();
-                runContext.Dispose();
+                try
+                {
+                    runContext.Cancel();
+                    runContext.Dispose();
+                }
+                catch
+                {
+                    // Dispose should not throw.
+                }
             }
         }
+
+        #endregion
     }
 }

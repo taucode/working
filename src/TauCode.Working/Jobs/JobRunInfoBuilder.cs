@@ -23,7 +23,6 @@ namespace TauCode.Working.Jobs
             this.OutputWriter = outputWriter;
         }
 
-
         internal int RunIndex { get; }
         internal JobStartReason StartReason { get; }
         internal DateTimeOffset DueTime { get; }

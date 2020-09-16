@@ -17,6 +17,8 @@ namespace TauCode.Working.Jobs
         void OverrideDueTime(DateTimeOffset? dueTime);
         void ForceStart();
         bool Cancel();
+        bool Wait(int millisecondsTimeout);
+        bool Wait(TimeSpan timeout);
         bool IsDisposed { get; }
     }
 }

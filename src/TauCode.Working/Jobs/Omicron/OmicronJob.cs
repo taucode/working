@@ -61,6 +61,10 @@ namespace TauCode.Working.Jobs.Omicron
 
         public bool Cancel() => _employee.Cancel();
 
+        public bool Wait(int millisecondsTimeout) => _employee.Wait(millisecondsTimeout);
+
+        public bool Wait(TimeSpan timeout) => _employee.Wait(timeout);
+
         public bool IsDisposed => _employee.IsDisposed;
     }
 }
