@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 using TauCode.Working.TestDemo.Cui.Common;
 using TauCode.Working.TestDemo.Cui.Common.WorkerInterfaces.Timeout;
 using TauCode.Working.TestDemo.Cui.EasyNetQ;
-using TauCode.Working.Workers;
+using TauCode.Working.ZetaOld.Workers;
 
 namespace TauCode.Working.TestDemo.Cui.Server.Workers
 {
-    public class SimpleTimeoutWorker : TimeoutWorkerBase, IRabbitWorker
+    public class SimpleTimeoutWorker : ZetaTimeoutWorkerBase, IRabbitWorker
     {
         public const string InitialTimeoutString = "00:00:05";
 

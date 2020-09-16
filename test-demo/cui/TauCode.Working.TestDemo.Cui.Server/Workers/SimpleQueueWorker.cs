@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 using TauCode.Working.TestDemo.Cui.Common;
 using TauCode.Working.TestDemo.Cui.Common.WorkerInterfaces.Queue;
 using TauCode.Working.TestDemo.Cui.EasyNetQ;
-using TauCode.Working.Workers;
+using TauCode.Working.ZetaOld.Workers;
 
 namespace TauCode.Working.TestDemo.Cui.Server.Workers
 {
-    public class SimpleQueueWorker : QueueWorkerBase<int>, IRabbitWorker
+    public class SimpleQueueWorker : ZetaQueueWorkerBase<int>, IRabbitWorker
     {
         private readonly IBus _bus;
 

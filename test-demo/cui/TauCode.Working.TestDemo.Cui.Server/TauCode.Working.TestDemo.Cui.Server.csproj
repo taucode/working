@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\src\TauCode.Working.ZetaOld\TauCode.Working.ZetaOld.csproj" />
     <ProjectReference Include="..\..\..\src\TauCode.Working\TauCode.Working.csproj" />
     <ProjectReference Include="..\TauCode.Working.TestDemo.Cui.Common\TauCode.Working.TestDemo.Cui.Common.csproj" />
     <ProjectReference Include="..\TauCode.Working.TestDemo.Cui.EasyNetQ\TauCode.Working.TestDemo.Cui.EasyNetQ.csproj" />

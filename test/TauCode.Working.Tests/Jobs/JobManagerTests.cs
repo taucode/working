@@ -32,7 +32,7 @@ namespace TauCode.Working.Tests.Jobs
         /// 
         /// ===========
         /// Act: 
-        /// 1. Instance of <see cref="JobManager"/> is created.
+        /// 1. Instance of <see cref="ZetaJobManager"/> is created.
         ///
         /// ===========
         /// Assert:

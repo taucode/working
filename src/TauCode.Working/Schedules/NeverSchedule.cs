@@ -3,11 +3,12 @@ using TauCode.Working.Jobs;
 
 namespace TauCode.Working.Schedules
 {
-    internal sealed class NeverSchedule : ISchedule
+    // todo: internal.
+    public sealed class NeverSchedule : ISchedule
     {
         private const string NeverDescription = "Technical schedule which due time never occurs";
 
-        internal static ISchedule Instance = new NeverSchedule();
+        public static ISchedule Instance = new NeverSchedule();
 
         private NeverSchedule()
         {   

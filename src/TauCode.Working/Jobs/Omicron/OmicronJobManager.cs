@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using TauCode.Labor;
-using TauCode.Labor.Exceptions;
 using TauCode.Working.Exceptions;
 
 namespace TauCode.Working.Jobs.Omicron

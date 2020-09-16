@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
-using TauCode.Labor;
 using TauCode.Working.Exceptions;
 
 namespace TauCode.Working.Jobs.Omicron

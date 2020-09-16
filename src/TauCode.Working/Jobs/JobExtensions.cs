@@ -19,7 +19,8 @@ namespace TauCode.Working.Jobs
 
         //public static bool IsNever(this DueTimeInfo dueTimeInfo) => dueTimeInfo.DueTime.Equals(Never);
 
-        internal static Task IdleJobRoutine(
+        // todo: internal
+        public static Task IdleJobRoutine(
             object parameter,
             IProgressTracker progressTracker,
             TextWriter output,

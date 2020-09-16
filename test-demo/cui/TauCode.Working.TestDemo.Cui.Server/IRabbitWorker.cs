@@ -1,9 +1,9 @@
 ﻿using System;
-using TauCode.Working.Workers;
+using TauCode.Working.ZetaOld.Workers;
 
 namespace TauCode.Working.TestDemo.Cui.Server
 {
-    public interface IRabbitWorker : IWorker
+    public interface IRabbitWorker : IZetaWorker
     {
         IDisposable[] RegisterHandlers();
     }

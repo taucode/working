@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TauCode.Working.TestDemo.Cui.Common;
 using TauCode.Working.TestDemo.Cui.EasyNetQ;
-using TauCode.Working.Workers;
+using TauCode.Working.ZetaOld.Workers;
 
 namespace TauCode.Working.TestDemo.Cui.Server
 {
@@ -29,7 +29,7 @@ namespace TauCode.Working.TestDemo.Cui.Server
 
             Console.WriteLine($"{_worker.GetType().FullName} '{_worker.Name}' is ready to work.");
 
-            _worker.WaitForStateChange(System.Threading.Timeout.Infinite, WorkerState.Disposed);
+            _worker.WaitForStateChange(System.Threading.Timeout.Infinite, ZetaWorkerState.Disposed);
 
             // wait a bit. let RabbitMQ send farewell response.
             Console.WriteLine("Worker disposed. Waiting 100 ms and exiting Run routine.");

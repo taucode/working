@@ -12,8 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\taucode\TauCode.Extensions.Lab\TauCode.Extensions.Lab.csproj" />
-    <ProjectReference Include="..\TauCode.Labor\TauCode.Labor.csproj" />
-    <ProjectReference Include="..\TauCode.Working.Exceptions\TauCode.Working.Exceptions.csproj" />
   </ItemGroup>
 
 </Project>
