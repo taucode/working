@@ -390,6 +390,59 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Succeeded));
         }
 
+        [Test]
+        public async Task Schedule_SetAndStartedAndCanceled_ReflectedInOldRuns()
+        {
+            // Arrange
+
+            var DEFECT = TimeSpan.FromMilliseconds(30);
+
+            var now = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                var p = 0;
+                await Task.Delay(1500, token); // 1.5 second to complete
+            };
+            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
+
+            job.IsEnabled = true;
+
+            // Act
+            job.Schedule = schedule; // will fire at 00:01
+
+
+            await Task.Delay(1400 + DEFECT.Milliseconds);
+            var canceled = job.Cancel(); // will be canceled almost right after start
+
+            Assert.That(canceled, Is.True);
+
+            // Assert
+            var info = job.GetInfo(null);
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(2)));
+
+            var pastRun = info.Runs.Single();
+
+            Assert.That(pastRun.RunIndex, Is.EqualTo(0));
+            Assert.That(pastRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
+            Assert.That(pastRun.DueTime, Is.EqualTo(now.AddSeconds(1)));
+            Assert.That(pastRun.DueTimeWasOverridden, Is.False);
+
+            //Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
+            //Assert.That(
+            //    pastRun.EndTime,
+            //    Is.EqualTo(pastRun.StartTime.AddSeconds(0)).Within(DEFECT * 2));
+
+            Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Canceled));
+        }
+
         #endregion
 
         //====================================================================================

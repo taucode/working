@@ -105,7 +105,7 @@ namespace TauCode.Working.Jobs.Omicron
             }
         }
 
-        internal void OnScheduleChanged() => this.WorkArrived();
+        internal void PulseWork() => this.WorkArrived();
 
         protected override void OnDisposed()
         {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
@@ -22,52 +23,44 @@ namespace TauCode.Labor.TestDemo.Lab
         private static async Task FailingTest()
         {
             // Arrange
+
             var DEFECT = TimeSpan.FromMilliseconds(30);
 
             var now = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
             TimeProvider.Override(timeMachine);
 
-            //using IJobManager jobManager = TestHelper.CreateJobManager();
             using IJobManager jobManager = OmicronJobManager.CreateJobManager();
             jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.Routine = async (parameter, tracker, output, token) =>
             {
-                await Task.Delay(1500, token); // 1.5 second to complete
+                for (int i = 0; i < 15; i++)
+                {
+                    Console.WriteLine($"Hello {i}!");
+                    await Task.Delay(100, token);
+                }
             };
             ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
-
-            await Task.Delay(100);
 
             job.IsEnabled = true;
 
             // Act
             job.Schedule = schedule; // will fire at 00:01
 
-            await Task.Delay(
-                1000 + // 0th due time
-                DEFECT.Milliseconds +
-                1500 +
-                DEFECT.Milliseconds); // let job start, finish, and wait more 20 ms.
+
+            await Task.Delay(1400 + DEFECT.Milliseconds);
+            var canceled = job.Cancel(); // will be canceled almost right after start
+
+            //Assert.That(canceled, Is.True);
 
             // Assert
             var info = job.GetInfo(null);
-
-            if (info.CurrentRun == null && info.NextDueTime == now.AddSeconds(1))
-            {
-                Console.WriteLine("*** BAD ***");
-            }
-            else
-            {
-                Console.WriteLine("Good :)");
-            }
-
             //Assert.That(info.CurrentRun, Is.Null);
             //Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(2)));
 
-            //var pastRun = info.Runs.Single();
+            var pastRun = info.Runs.Single();
 
             //Assert.That(pastRun.RunIndex, Is.EqualTo(0));
             //Assert.That(pastRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
@@ -77,12 +70,13 @@ namespace TauCode.Labor.TestDemo.Lab
             //Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
             //Assert.That(
             //    pastRun.EndTime,
-            //    Is.EqualTo(pastRun.StartTime.AddSeconds(1.5)).Within(DEFECT));
+            //    Is.EqualTo(pastRun.StartTime.AddSeconds(0)).Within(DEFECT * 2));
 
-            //Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Succeeded));
-
-            //Console.WriteLine("- About to dispose");
-            jobManager.Dispose();
+            //Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Canceled));
+            if (pastRun.Status != JobRunStatus.Canceled)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

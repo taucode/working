@@ -16,6 +16,8 @@ namespace TauCode.Working.Jobs.Omicron
 {
     internal class OmicronEmployee : ProlBase
     {
+        #region Fields
+
         private readonly OmicronVice _vice;
         private readonly OmicronJob _job;
 
@@ -39,7 +41,14 @@ namespace TauCode.Working.Jobs.Omicron
         private readonly List<JobRunInfo> _runs;
         private int _runIndex;
 
-        private readonly object _lock;
+        private readonly object _dataLock;
+
+        private readonly object _marinaLock;
+
+
+        #endregion
+
+        #region Constructor
 
         internal OmicronEmployee(OmicronVice vice)
         {
@@ -49,17 +58,245 @@ namespace TauCode.Working.Jobs.Omicron
             _routine = JobExtensions.IdleJobRoutine;
             _runs = new List<JobRunInfo>();
 
-            _lock = new object();
+            _dataLock = new object();
+
+            _marinaLock = new object();
 
             // todo: update in GetInfo, also (?)
             this.UpdateScheduleDueTime(); // updated in ctor
         }
 
+        #endregion
+
+        #region Private
+
+        private T GetWithDataLock<T>(Func<T> getter)
+        {
+            lock (_marinaLock)
+            {
+                var result = getter();
+                return result;
+            }
+        }
+
+        private void InvokeWithDataLock(
+            Action action,
+            bool throwIfDisposed,
+            bool throwIfNotStopped,
+            bool updateScheduleDueTime,
+            bool pulseVice)
+        {
+            lock (_marinaLock)
+            {
+                if (this.IsDisposed && throwIfDisposed)
+                {
+                    throw new JobObjectDisposedException(this.Name);
+                }
+
+                if (this.State != ProlState.Stopped && throwIfNotStopped)
+                {
+                    throw new NotImplementedException();
+                }
+
+                action();
+
+                if (updateScheduleDueTime)
+                {
+                    this.UpdateScheduleDueTime();
+                }
+
+                if (pulseVice)
+                {
+                    _vice.PulseWork();
+                }
+            }
+        }
+
+        #endregion
+
+        #region IJob Implementation
+
+        internal bool IsEnabled
+        {
+            get => this.GetWithDataLock(() => _isEnabled);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        return _isEnabled;
+            //    }
+            //}
+            set => this.InvokeWithDataLock(
+                action: () => _isEnabled = value,
+                throwIfDisposed: true,
+                throwIfNotStopped: false,
+                updateScheduleDueTime: false,
+                pulseVice: true);
+
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        // todo: universal method 'CheckIsDisposed'
+            //        if (this.IsDisposed)
+            //        {
+            //            throw new JobObjectDisposedException(this.Name);
+            //        }
+
+            //        _isEnabled = value;
+            //        _vice.PulseWork();
+            //    }
+            //}
+        }
+
+        internal ISchedule Schedule
+        {
+            get => this.GetWithDataLock(() => _schedule);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        return _schedule;
+            //    }
+            //}
+            set => this.InvokeWithDataLock(
+                action: () => _schedule = value,
+                throwIfDisposed: true,
+                throwIfNotStopped: false,
+                updateScheduleDueTime: true,
+                pulseVice: true);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        if (this.IsDisposed)
+            //        {
+            //            throw new NotImplementedException();
+            //        }
+
+            //        _schedule = value;
+            //        this.UpdateScheduleDueTime(); // updated in Schedule.set
+            //        _vice.PulseWork();
+            //    }
+            //}
+        }
+
+        internal JobDelegate Routine
+        {
+            get => this.GetWithDataLock(() => _routine);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        return _routine;
+            //    }
+            //}
+            set => this.InvokeWithDataLock(
+                action: () => _routine = value,
+                throwIfDisposed: true,
+                throwIfNotStopped: true,
+                updateScheduleDueTime: false,
+                pulseVice: false);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        if (this.State == ProlState.Running)
+            //        {
+            //            throw new NotImplementedException();
+            //        }
+
+            //        _routine = value;
+            //    }
+            //}
+        }
+
+        internal object Parameter
+        {
+            get => this.GetWithDataLock(() => _parameter);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        return _parameter;
+            //    }
+            //}
+            set => this.InvokeWithDataLock(
+                action: () => _parameter = value,
+                throwIfDisposed: true,
+                throwIfNotStopped: true,
+                updateScheduleDueTime: false,
+                pulseVice: false);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        if (this.State == ProlState.Running)
+            //        {
+            //            throw new NotImplementedException();
+            //        }
+
+            //        _parameter = value;
+            //    }
+            //}
+        }
+
+        internal IProgressTracker ProgressTracker
+        {
+            get => this.GetWithDataLock(() => _progressTracker);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        return _progressTracker;
+            //    }
+            //}
+            set => this.InvokeWithDataLock(
+                action: () => _progressTracker = value,
+                throwIfDisposed: true,
+                throwIfNotStopped: true,
+                updateScheduleDueTime: false,
+                pulseVice: false);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        if (this.State == ProlState.Running)
+            //        {
+            //            throw new NotImplementedException();
+            //        }
+
+            //        _progressTracker = value;
+            //    }
+            //}
+        }
+
+        internal TextWriter Output
+        {
+            get => this.GetWithDataLock(() => _output);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        return _output;
+            //    }
+            //}
+            set => this.InvokeWithDataLock(
+                action: () => _output  = value,
+                throwIfDisposed: true,
+                throwIfNotStopped: true,
+                updateScheduleDueTime: false,
+                pulseVice: false);
+            //{
+            //    lock (_dataLock)
+            //    {
+            //        if (this.State == ProlState.Running)
+            //        {
+            //            throw new NotImplementedException();
+            //        }
+
+            //        _output = value;
+            //    }
+            //}
+        }
+
+        #endregion
+
+
         private void UpdateScheduleDueTime()
         {
             var now = TimeProvider.GetCurrent();
 
-            lock (_lock)
+            lock (_dataLock)
             {
                 _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
             }
@@ -67,7 +304,7 @@ namespace TauCode.Working.Jobs.Omicron
 
         private DateTimeOffset GetEffectiveDueTime()
         {
-            lock (_lock)
+            lock (_dataLock)
             {
                 return _overriddenDueTime ?? _scheduleDueTime;
             }
@@ -75,148 +312,6 @@ namespace TauCode.Working.Jobs.Omicron
 
         internal IJob GetJob() => _job;
 
-        internal ISchedule Schedule
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _schedule;
-                }
-            }
-            set
-            {
-                lock (_lock)
-                {
-                    if (this.IsDisposed)
-                    {
-                        throw new NotImplementedException();
-                    }
-
-                    _schedule = value;
-                    this.UpdateScheduleDueTime(); // updated in Schedule.set
-                    _vice.OnScheduleChanged();
-                }
-            }
-        }
-
-        // todo: what about disposal, here & anywhere?
-        internal JobDelegate Routine
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _routine;
-                }
-            }
-            set
-            {
-                lock (_lock)
-                {
-                    if (this.State == ProlState.Running)
-                    {
-                        throw new NotImplementedException();
-                    }
-
-                    _routine = value;
-                }
-            }
-        }
-
-        internal object Parameter
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _parameter;
-                }
-            }
-            set
-            {
-                lock (_lock)
-                {
-                    if (this.State == ProlState.Running)
-                    {
-                        throw new NotImplementedException();
-                    }
-
-                    _parameter = value;
-                }
-            }
-        }
-
-        internal IProgressTracker ProgressTracker
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _progressTracker;
-                }
-            }
-            set
-            {
-                lock (_lock)
-                {
-                    if (this.State == ProlState.Running)
-                    {
-                        throw new NotImplementedException();
-                    }
-
-                    _progressTracker = value;
-                }
-            }
-        }
-
-        internal TextWriter Output
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _output;
-                }
-            }
-            set
-            {
-                lock (_lock)
-                {
-                    if (this.State == ProlState.Running)
-                    {
-                        throw new NotImplementedException();
-                    }
-
-                    _output = value;
-                }
-            }
-        }
-
-        internal bool IsEnabled
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    return _isEnabled;
-                }
-            }
-            set
-            {
-                lock (_lock)
-                {
-                    // todo: universal method 'CheckIsDisposed'
-                    if (this.IsDisposed)
-                    {
-                        throw new JobObjectDisposedException(this.Name);
-                    }
-
-                    _isEnabled = value;
-                    _vice.OnScheduleChanged();
-                }
-            }
-        }
 
         internal DateTimeOffset? GetDueTimeForVice()
         {
@@ -232,7 +327,7 @@ namespace TauCode.Working.Jobs.Omicron
 
         protected override void OnStopped()
         {
-            lock (_lock)
+            lock (_dataLock)
             {
                 if (_currentEndTask != null)
                 {
@@ -274,7 +369,8 @@ namespace TauCode.Working.Jobs.Omicron
                     break;
 
                 default:
-                    _currentInfoBuilder.Status = JobRunStatus.Unknown; // actually, very strange, but we cannot throw here.
+                    _currentInfoBuilder.Status =
+                        JobRunStatus.Unknown; // actually, very strange, but we cannot throw here.
                     break;
             }
 
@@ -299,11 +395,11 @@ namespace TauCode.Working.Jobs.Omicron
 
         internal WakeUpResult WakeUp(CancellationToken token)
         {
-            lock (_lock)
+            lock (_dataLock)
             {
                 try
                 {
-                    this.Start();
+                    this.Start(); // todo0000 BAAAD!!!
                     _currentTask = this.InitJobRunContext(true, token);
 
                     _overriddenDueTime = null;
@@ -335,8 +431,6 @@ namespace TauCode.Working.Jobs.Omicron
                     return WakeUpResult.AlreadyDisposed;
                 }
             }
-
-
         }
 
         private Task InitJobRunContext(bool byDueTime, CancellationToken? token)
@@ -384,7 +478,7 @@ namespace TauCode.Working.Jobs.Omicron
                 this.GetEffectiveDueTime(),
                 _overriddenDueTime.HasValue,
                 now,
-                JobRunStatus.Running,
+                JobRunStatus.Unknown,
                 jobWriter);
 
             _runIndex++;
@@ -408,7 +502,7 @@ namespace TauCode.Working.Jobs.Omicron
 
         internal JobInfo GetInfo(int? maxRunCount)
         {
-            lock (_lock)
+            lock (_dataLock)
             {
                 var currentRun = _currentInfoBuilder?.Build();
 
@@ -423,13 +517,14 @@ namespace TauCode.Working.Jobs.Omicron
 
         internal bool Cancel()
         {
-            lock (_lock)
+            lock (_dataLock)
             {
                 if (this.State == ProlState.Stopped)
                 {
                     return false;
                 }
 
+                _currentTokenSource?.Cancel();
                 this.Stop();
                 return true;
             }
@@ -437,10 +532,10 @@ namespace TauCode.Working.Jobs.Omicron
 
         internal void ForceStart()
         {
-            lock (_lock)
+            lock (_dataLock)
             {
 
-                this.Start();
+                this.Start(); // todo baad!
                 _currentTask = this.InitJobRunContext(false, null);
 
                 _overriddenDueTime = null;
