@@ -24,40 +24,53 @@ namespace TauCode.Working.Jobs.Omicron
         protected override Task<TimeSpan> DoWork(CancellationToken token)
         {
             var now = TimeProvider.GetCurrent();
-            var employeesToWakeUp = new List<OmicronEmployee>();
+            //var employeesToWakeUp = new List<OmicronEmployee>();
+
+            var employeesToWakeUp = new List<Tuple<OmicronEmployee, DueTimeInfoForVice>>();
+
             var earliest = JobExtensions.Never;
 
             lock (_lock)
             {
                 foreach (var employee in _employees.Values)
                 {
-                    if (!employee.IsEnabled)
+                    var info = employee.GetDueTimeInfoForVice();
+
+                    if (!info.HasValue)
                     {
                         continue;
                     }
 
-                    var dueTime = employee.GetDueTimeForVice();
-                    if (!dueTime.HasValue)
-                    {
-                        continue;
-                    }
 
-                    if (now >= dueTime.Value)
+
+                    //var dueTime = employee.GetDueTimeForVice();
+                    //if (!dueTime.HasValue)
+                    //{
+                    //    continue;
+                    //}
+
+                    if (now >= info.Value.DueTime)
                     {
                         // due time has come!
-                        employeesToWakeUp.Add(employee);
+                        employeesToWakeUp.Add(Tuple.Create(employee, info.Value));
                     }
                     else
                     {
-                        earliest = DateTimeExtensionsLab.Min(earliest, dueTime.Value);
+                        earliest = DateTimeExtensionsLab.Min(earliest, info.Value.DueTime);
                     }
                 }
             }
 
-            foreach (var employee in employeesToWakeUp)
+            foreach (var tuple in employeesToWakeUp)
             {
                 // todo: log on exception
-                employee.WakeUp(token); // todo: log if already was started etc
+                //employee.WakeUp(token); // todo: log if already was started etc
+
+                var employee = tuple.Item1;
+                var isOverridden = tuple.Item2.IsOverridden;
+                var reason = isOverridden ? JobStartReason.OverriddenDueTime : JobStartReason.ScheduleDueTime;
+
+                employee.WakeUp(reason, token);
             }
 
             var vacationTimeout = earliest - now;
@@ -73,10 +86,10 @@ namespace TauCode.Working.Jobs.Omicron
                     throw new InvalidJobOperationException($"Job '{jobName}' already exists.");
                 }
 
-                var employee = new OmicronEmployee(this)
-                {
-                    Name = jobName,
-                };
+                var employee = new OmicronEmployee(this, jobName);
+                //{
+                //    Name = jobName,
+                //};
 
                 _employees.Add(employee.Name, employee);
                 return employee.GetJob();

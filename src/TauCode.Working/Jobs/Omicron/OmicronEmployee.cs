@@ -7,15 +7,78 @@ using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
-using TauCode.Labor;
-using TauCode.Labor.Exceptions;
 using TauCode.Working.Exceptions;
 using TauCode.Working.Schedules;
 
 namespace TauCode.Working.Jobs.Omicron
 {
-    internal class OmicronEmployee : ProlBase
+    internal class OmicronEmployee : IDisposable //: ProlBase
     {
+        #region Nested
+
+        private class RunContext
+        {
+            private readonly MultiTextWriterLab _multiTextWriter;
+            private readonly StringWriterWithEncoding _systemWriter;
+            private readonly Task _task;
+            private readonly Action<JobRunInfoBuilder> _callback;
+
+            private readonly JobRunInfoBuilder _runInfoBuilder;
+            private readonly CancellationTokenSource _tokenSource;
+            //private Task _currentTask;
+            //private Task _currentEndTask;
+
+            internal RunContext(
+                JobDelegate routine,
+                object parameter,
+                IProgressTracker progressTracker,
+                TextWriter jobWriter,
+                CancellationToken? token,
+                Action<JobRunInfoBuilder> callback)
+            {
+                _systemWriter = new StringWriterWithEncoding(Encoding.UTF8);
+                var writers = new List<TextWriter>
+                {
+                    _systemWriter,
+                };
+
+                if (jobWriter != null)
+                {
+                    writers.Add(jobWriter);
+                }
+
+                _multiTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
+
+                if (token == null)
+                {
+                    _tokenSource = new CancellationTokenSource();
+                }
+                else
+                {
+                    _tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token.Value);
+                }
+
+                _task = routine(parameter, progressTracker, _multiTextWriter, _tokenSource.Token);
+
+                _callback = callback;
+            }
+
+            internal void Run()
+            {
+                _task.ContinueWith(
+                    this.EndTask,
+                    _tokenSource.Token,
+                    _tokenSource.Token);
+            }
+
+            private Task EndTask(Task task, object state)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        #endregion
+
         #region Fields
 
         private readonly OmicronVice _vice;
@@ -32,35 +95,41 @@ namespace TauCode.Working.Jobs.Omicron
         private IProgressTracker _progressTracker;
         private TextWriter _output;
 
-        private MultiTextWriterLab _currentWriter;
-        private JobRunInfoBuilder _currentInfoBuilder;
-        private CancellationTokenSource _currentTokenSource;
-        private Task _currentTask;
-        private Task _currentEndTask;
+
+        //private MultiTextWriterLab _currentWriter;
+        //private JobRunInfoBuilder _currentInfoBuilder;
+        //private CancellationTokenSource _currentTokenSource;
+        //private Task _currentTask;
+        //private Task _currentEndTask;
 
         private readonly List<JobRunInfo> _runs;
         private int _runIndex;
 
-        private readonly object _dataLock;
+        //private readonly object _dataLock;
 
         private readonly object _marinaLock;
-
+        private readonly object _wakeUpLock;
+        private RunContext _runContext;
+        private bool _isDisposed;
 
         #endregion
 
         #region Constructor
 
-        internal OmicronEmployee(OmicronVice vice)
+        internal OmicronEmployee(OmicronVice vice, string name)
         {
+            this.Name = name;
+
             _vice = vice;
             _job = new OmicronJob(this);
             _schedule = NeverSchedule.Instance;
             _routine = JobExtensions.IdleJobRoutine;
             _runs = new List<JobRunInfo>();
 
-            _dataLock = new object();
+            //_dataLock = new object();
 
             _marinaLock = new object();
+            _wakeUpLock = new object();
 
             // todo: update in GetInfo, also (?)
             this.UpdateScheduleDueTime(); // updated in ctor
@@ -93,7 +162,9 @@ namespace TauCode.Working.Jobs.Omicron
                     throw new JobObjectDisposedException(this.Name);
                 }
 
-                if (this.State != ProlState.Stopped && throwIfNotStopped)
+                var isStopped = _runContext == null;
+
+                if (!isStopped /*this.State != ProlState.Stopped*/ && throwIfNotStopped)
                 {
                     throw new NotImplementedException();
                 }
@@ -112,9 +183,36 @@ namespace TauCode.Working.Jobs.Omicron
             }
         }
 
+        //private DateTimeOffset GetEffectiveDueTime() =>
+        //    this.GetWithDataLock(() => _overriddenDueTime ?? _scheduleDueTime);
+        //{
+        //    lock (_dataLock)
+        //    {
+        //        return _overriddenDueTime ?? _scheduleDueTime;
+        //    }
+        //}
+
+        private void UpdateScheduleDueTime()
+        {
+            var now = TimeProvider.GetCurrent();
+
+            lock (_marinaLock)
+            {
+                _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
+            }
+        }
+
         #endregion
 
         #region IJob Implementation
+
+        /// <summary>
+        /// Returns <see cref="IJob"/> instance itself.
+        /// </summary>
+        /// <returns><see cref="IJob"/> instance itself</returns>
+        internal IJob GetJob() => _job;
+
+        internal string Name { get; }
 
         internal bool IsEnabled
         {
@@ -271,7 +369,7 @@ namespace TauCode.Working.Jobs.Omicron
             //    }
             //}
             set => this.InvokeWithDataLock(
-                action: () => _output  = value,
+                action: () => _output = value,
                 throwIfDisposed: true,
                 throwIfNotStopped: true,
                 updateScheduleDueTime: false,
@@ -289,273 +387,415 @@ namespace TauCode.Working.Jobs.Omicron
             //}
         }
 
+        internal JobInfo GetInfo(int? maxRunCount)
+        {
+            throw new NotImplementedException();
+
+            //return this.GetWithDataLock(() =>
+            //{
+            //    var currentRun = _currentInfoBuilder?.Build();
+
+            //    return new JobInfo(
+            //        currentRun,
+            //        this.GetEffectiveDueTime(),
+            //        _overriddenDueTime.HasValue,
+            //        _runs.Count,
+            //        _runs);
+            //});
+        }
+
+        internal void OverrideDueTime(DateTimeOffset? dueTime)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void ForceStart()
+        {
+            throw new NotImplementedException();
+            //lock (_dataLock)
+            //{
+
+            //    this.Start(); // todo baad!
+            //    _currentTask = this.InitJobRunContext(false, null);
+
+            //    _overriddenDueTime = null;
+            //    this.UpdateSch-eduleDueTime(); // updated in ForceStart
+
+            //    _currentEndTask = _currentTask.ContinueWith(this.EndJob);
+            //}
+        }
+
+        internal bool Cancel()
+        {
+            throw new NotImplementedException();
+
+            //if (this.State != ProlState.Running)
+            //{
+            //    return false;
+            //}
+
+            //lock (_dataLock)
+            //{
+            //    if (this.State == ProlState.Stopped)
+            //    {
+            //        return false;
+            //    }
+
+            //    _currentTokenSource?.Cancel();
+            //    //this.Stop();
+            //    return true;
+            //}
+        }
+
         #endregion
 
-
-        private void UpdateScheduleDueTime()
-        {
-            var now = TimeProvider.GetCurrent();
-
-            lock (_dataLock)
-            {
-                _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
-            }
-        }
-
-        private DateTimeOffset GetEffectiveDueTime()
-        {
-            lock (_dataLock)
-            {
-                return _overriddenDueTime ?? _scheduleDueTime;
-            }
-        }
-
-        internal IJob GetJob() => _job;
-
-
-        internal DateTimeOffset? GetDueTimeForVice()
+        internal DueTimeInfoForVice? GetDueTimeInfoForVice()
         {
             if (this.IsDisposed)
             {
                 return null;
             }
 
-            return this.GetEffectiveDueTime();
-        }
-
-        private void EndJob(Task task) => this.Stop(false);
-
-        protected override void OnStopped()
-        {
-            lock (_dataLock)
+            lock (_marinaLock)
             {
-                if (_currentEndTask != null)
-                {
-                    this.FinalizeJobRun();
-                }
+                var dueTime = _overriddenDueTime ?? _scheduleDueTime;
+                var isOverridden = _overriddenDueTime.HasValue;
+
+                var info = new DueTimeInfoForVice(dueTime, isOverridden);
+                return info;
             }
         }
+
+        private void EndJob(Task task) // => this.Stop(false);
+        {
+            throw new NotImplementedException();
+        }
+
+        //protected override void OnStarting()
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+        //protected override void OnStopped()
+        //{
+        //    throw new NotImplementedException();
+
+        //    //lock (_dataLock)
+        //    //{
+        //    //    if (_currentEndTask != null)
+        //    //    {
+        //    //        this.FinalizeJobRun();
+        //    //    }
+        //    //}
+        //}
 
         private void FinalizeJobRun()
         {
-            var now = TimeProvider.GetCurrent();
+            throw new NotImplementedException();
 
-            _currentInfoBuilder.EndTime = now;
-            var jobOutputWriter = (StringWriter)_currentWriter.InnerWriters[0];
+            //var now = TimeProvider.GetCurrent();
 
-            switch (_currentTask.Status)
-            {
-                case TaskStatus.Faulted:
-                    var ex = _currentTask.Exception.InnerException;
-                    if (ex is JobFailedToStartException)
-                    {
-                        _currentInfoBuilder.Status = JobRunStatus.FailedToStart;
-                    }
-                    else
-                    {
-                        _currentInfoBuilder.Status = JobRunStatus.Failed;
-                    }
+            //_currentInfoBuilder.EndTime = now;
+            //var jobOutputWriter = (StringWriter)_currentWriter.InnerWriters[0];
 
-                    _currentInfoBuilder.Exception = ex;
+            //switch (_currentTask.Status)
+            //{
+            //    case TaskStatus.Faulted:
+            //        var ex = _currentTask.Exception.InnerException;
+            //        if (ex is JobFailedToStartException)
+            //        {
+            //            _currentInfoBuilder.Status = JobRunStatus.FailedToStart;
+            //        }
+            //        else
+            //        {
+            //            _currentInfoBuilder.Status = JobRunStatus.Failed;
+            //        }
 
-                    break;
+            //        _currentInfoBuilder.Exception = ex;
 
-                case TaskStatus.RanToCompletion:
-                    _currentInfoBuilder.Status = JobRunStatus.Succeeded;
-                    break;
+            //        break;
 
-                case TaskStatus.Canceled:
-                    _currentInfoBuilder.Status = JobRunStatus.Canceled;
-                    break;
+            //    case TaskStatus.RanToCompletion:
+            //        _currentInfoBuilder.Status = JobRunStatus.Succeeded;
+            //        break;
 
-                default:
-                    _currentInfoBuilder.Status =
-                        JobRunStatus.Unknown; // actually, very strange, but we cannot throw here.
-                    break;
-            }
+            //    case TaskStatus.Canceled:
+            //        _currentInfoBuilder.Status = JobRunStatus.Canceled;
+            //        break;
 
-            var runInfo = _currentInfoBuilder.Build();
-            _runs.Add(runInfo);
+            //    default:
+            //        _currentInfoBuilder.Status =
+            //            JobRunStatus.Unknown; // actually, very strange, but we cannot throw here.
+            //        break;
+            //}
 
-            jobOutputWriter.Dispose();
+            //var runInfo = _currentInfoBuilder.Build();
+            //_runs.Add(runInfo);
 
-            _currentWriter.Dispose();
-            _currentWriter = null;
+            //jobOutputWriter.Dispose();
 
-            _currentInfoBuilder = null;
+            //_currentWriter.Dispose();
+            //_currentWriter = null;
 
-            _currentTokenSource.Dispose();
-            _currentTokenSource = null;
+            //_currentInfoBuilder = null;
 
-            _currentTask = null;
-            _currentEndTask = null;
+            //_currentTokenSource.Dispose();
+            //_currentTokenSource = null;
 
-            this.UpdateScheduleDueTime(); // updated in FinalizeJobRun
+            //_currentTask = null;
+            //_currentEndTask = null;
+
+            //this.UpdateScheduleDueTime(); // updated in FinalizeJobRun
         }
 
-        internal WakeUpResult WakeUp(CancellationToken token)
+        internal bool WakeUp(JobStartReason startReason, CancellationToken token)
         {
-            lock (_dataLock)
+            this.UpdateScheduleDueTime();
+
+            lock (_marinaLock)
             {
-                try
+                if (_runContext != null)
                 {
-                    this.Start(); // todo0000 BAAAD!!!
-                    _currentTask = this.InitJobRunContext(true, token);
-
-                    _overriddenDueTime = null;
-                    this.UpdateScheduleDueTime(); // updated in WakeUp
-
-                    _currentEndTask = _currentTask.ContinueWith(this.EndJob);
-
-                    switch (_currentInfoBuilder.StartReason)
-                    {
-                        case JobStartReason.ScheduleDueTime:
-                            return WakeUpResult.StartedBySchedule;
-
-                        case JobStartReason.OverriddenDueTime:
-                            return WakeUpResult.StartedByOverriddenDueTime;
-
-                        case JobStartReason.Force2:
-                            return WakeUpResult.UnexpectedlyStartedByForce;
-
-                        default:
-                            return WakeUpResult.Unknown;
-                    }
+                    throw new NotImplementedException();
                 }
-                catch (InappropriateProlStateException)
-                {
-                    return WakeUpResult.AlreadyRunning;
-                }
-                catch (ObjectDisposedException)
-                {
-                    return WakeUpResult.AlreadyDisposed;
-                }
+
+                _runContext = new RunContext(
+                    _routine,
+                    _parameter,
+                    _progressTracker,
+                    _output,
+                    token,
+                    this.CompletionCallback);
+
+                _runContext.Run();
+
+                return true;
             }
+
+            //throw new NotImplementedException();
+
+            //lock (_wakeUpLock)
+            //{
+            //    lock (_marinaLock)
+            //    {
+            //        if (_runContext == null)
+            //        {
+            //            _runContext = this.CreateRunContext(_output, token);
+            //        }
+            //        else
+            //        {
+            //            // todo: log
+            //            return false;
+            //        }
+            //    }
+
+            //    try
+            //    {
+            //        this.Start();
+            //        return true;
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        // todo: log ex in Employee's log.
+            //        return false;
+            //    }
+            //}
+
+
+
+
+            //lock (_wakeUpLock)
+            //{
+            //    try
+            //    {
+            //        if (this.IsEnabled)
+            //        {
+            //            // go on
+            //        }
+            //        else
+            //        {
+            //            throw new NotImplementedException();
+            //        }
+
+            //        this.Start();
+
+            //        switch (startReason)
+            //        {
+            //            case JobStartReason.ScheduleDueTime:
+            //                return WakeUpResult.StartedBySchedule;
+
+            //            case JobStartReason.OverriddenDueTime:
+            //                return WakeUpResult.StartedByOverriddenDueTime;
+
+            //            case JobStartReason.Force2:
+            //                return WakeUpResult.StartedByForce;
+
+            //            default:
+            //                return WakeUpResult.Unknown;
+            //        }
+
+            //        // started successfully
+
+
+            //        //lock (_marinaLock)
+            //        //{
+            //        //    _runContext = new RunContext(_output);
+            //        //}
+            //    }
+            //    catch (InappropriateProlStateException)
+            //    {
+            //        // already started.
+            //        throw new NotImplementedException();
+            //    }
+            //}
+
+            //throw new NotImplementedException();
+            //lock (_dataLock)
+            //{
+            //    try
+            //    {
+            //        this.Start(); // todo0000 BAAAD!!!
+            //        _currentTask = this.InitJobRunContext(true, token);
+
+            //        _overriddenDueTime = null;
+            //        this.UpdateScheduleDueTime(); // updated in WakeUp
+
+            //        _currentEndTask = _currentTask.ContinueWith(this.EndJob);
+
+            //        switch (_currentInfoBuilder.StartReason)
+            //        {
+            //            case JobStartReason.ScheduleDueTime:
+            //                return WakeUpResult.StartedBySchedule;
+
+            //            case JobStartReason.OverriddenDueTime:
+            //                return WakeUpResult.StartedByOverriddenDueTime;
+
+            //            case JobStartReason.Force2:
+            //                return WakeUpResult.UnexpectedlyStartedByForce;
+
+            //            default:
+            //                return WakeUpResult.Unknown;
+            //        }
+            //    }
+            //    catch (InappropriateProlStateException)
+            //    {
+            //        return WakeUpResult.AlreadyRunning;
+            //    }
+            //    catch (ObjectDisposedException)
+            //    {
+            //        return WakeUpResult.AlreadyDisposed;
+            //    }
+            //}
         }
+
+        private void CompletionCallback(JobRunInfoBuilder jobRunInfoBuilder)
+        {
+            throw new NotImplementedException();
+        }
+
+        //private RunContext CreateRunContext(
+        //    TextWriter output,
+        //    CancellationToken? token)
+        //{
+        //    return new RunContext(_routine, _parameter, _progressTracker, output, token);
+        //}
 
         private Task InitJobRunContext(bool byDueTime, CancellationToken? token)
         {
-            var jobWriter = new StringWriterWithEncoding(Encoding.UTF8);
-            var writers = new List<TextWriter>
-            {
-                jobWriter,
-            };
+            throw new NotImplementedException();
 
-            if (_output != null)
-            {
-                writers.Add(_output);
-            }
+            //var jobWriter = new StringWriterWithEncoding(Encoding.UTF8);
+            //var writers = new List<TextWriter>
+            //{
+            //    jobWriter,
+            //};
 
-            var now = TimeProvider.GetCurrent();
+            //if (_output != null)
+            //{
+            //    writers.Add(_output);
+            //}
 
-            _currentWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
+            //var now = TimeProvider.GetCurrent();
 
-            if (token.HasValue)
-            {
-                _currentTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token.Value);
-            }
-            else
-            {
-                _currentTokenSource = new CancellationTokenSource();
-            }
+            //_currentWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
 
-            JobStartReason reason;
+            //if (token.HasValue)
+            //{
+            //    _currentTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token.Value);
+            //}
+            //else
+            //{
+            //    _currentTokenSource = new CancellationTokenSource();
+            //}
 
-            if (byDueTime)
-            {
-                reason = _overriddenDueTime.HasValue
-                    ? JobStartReason.OverriddenDueTime
-                    : JobStartReason.ScheduleDueTime;
-            }
-            else
-            {
-                reason = JobStartReason.Force2;
-            }
+            //JobStartReason reason;
 
-            _currentInfoBuilder = new JobRunInfoBuilder(
-                _runIndex,
-                reason,
-                this.GetEffectiveDueTime(),
-                _overriddenDueTime.HasValue,
-                now,
-                JobRunStatus.Unknown,
-                jobWriter);
+            //if (byDueTime)
+            //{
+            //    reason = _overriddenDueTime.HasValue
+            //        ? JobStartReason.OverriddenDueTime
+            //        : JobStartReason.ScheduleDueTime;
+            //}
+            //else
+            //{
+            //    reason = JobStartReason.Force2;
+            //}
 
-            _runIndex++;
+            //_currentInfoBuilder = new JobRunInfoBuilder(
+            //    _runIndex,
+            //    reason,
+            //    this.GetEffectiveDueTime(),
+            //    _overriddenDueTime.HasValue,
+            //    now,
+            //    JobRunStatus.Unknown,
+            //    jobWriter);
 
-            Task task;
+            //_runIndex++;
 
-            try
-            {
-                task = _routine(_parameter, _progressTracker, _currentWriter, _currentTokenSource.Token);
-            }
-            catch (Exception ex)
-            {
-                // todo: wrong. _routine might throw exception intentionally.
-                // todo: deal with completed tasks?
-                var jobEx = new JobFailedToStartException(ex);
-                task = Task.FromException(jobEx);
-            }
+            //Task task;
 
-            return task;
+            //try
+            //{
+            //    task = _routine(_parameter, _progressTracker, _currentWriter, _currentTokenSource.Token);
+            //}
+            //catch (Exception ex)
+            //{
+            //    // todo: wrong. _routine might throw exception intentionally.
+            //    // todo: deal with completed tasks?
+            //    var jobEx = new JobFailedToStartException(ex);
+            //    task = Task.FromException(jobEx);
+            //}
+
+            //return task;
         }
 
-        internal JobInfo GetInfo(int? maxRunCount)
+        internal bool IsDisposed
         {
-            lock (_dataLock)
+            get
             {
-                var currentRun = _currentInfoBuilder?.Build();
-
-                return new JobInfo(
-                    currentRun,
-                    this.GetEffectiveDueTime(),
-                    _overriddenDueTime.HasValue,
-                    _runs.Count,
-                    _runs);
-            }
-        }
-
-        internal bool Cancel()
-        {
-            lock (_dataLock)
-            {
-                if (this.State == ProlState.Stopped)
+                lock (_marinaLock)
                 {
-                    return false;
+                    return _isDisposed;
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (_marinaLock)
+            {
+                if (_isDisposed)
+                {
+                    return; // won't dispose twice.
                 }
 
-                _currentTokenSource?.Cancel();
-                this.Stop();
-                return true;
+                if (_runContext != null)
+                {
+                    throw new NotImplementedException();
+                }
+
+                _isDisposed = true;
             }
         }
-
-        internal void ForceStart()
-        {
-            lock (_dataLock)
-            {
-
-                this.Start(); // todo baad!
-                _currentTask = this.InitJobRunContext(false, null);
-
-                _overriddenDueTime = null;
-                this.UpdateScheduleDueTime(); // updated in ForceStart
-
-                _currentEndTask = _currentTask.ContinueWith(this.EndJob);
-            }
-        }
-    }
-
-    // todo separate file
-    internal enum WakeUpResult
-    {
-        Unknown = 0,
-
-        AlreadyDisposed = 1,
-        AlreadyRunning = 2,
-
-        StartedBySchedule = 3,
-        StartedByOverriddenDueTime = 4,
-        UnexpectedlyStartedByForce = 5,
     }
 }

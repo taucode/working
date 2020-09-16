@@ -55,10 +55,7 @@ namespace TauCode.Working.Jobs.Omicron
 
         public JobInfo GetInfo(int? maxRunCount) => _employee.GetInfo(maxRunCount);
 
-        public void OverrideDueTime(DateTimeOffset? dueTime)
-        {
-            throw new NotImplementedException();
-        }
+        public void OverrideDueTime(DateTimeOffset? dueTime) => _employee.OverrideDueTime(dueTime);
 
         public void ForceStart() => _employee.ForceStart();
 
