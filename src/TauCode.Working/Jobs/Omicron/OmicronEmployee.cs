@@ -51,7 +51,8 @@ namespace TauCode.Working.Jobs.Omicron
 
             _lock = new object();
 
-            this.UpdateScheduleDueTime();
+            // todo: update in GetInfo, also (?)
+            this.UpdateScheduleDueTime(); // updated in ctor
         }
 
         private void UpdateScheduleDueTime()
@@ -93,7 +94,7 @@ namespace TauCode.Working.Jobs.Omicron
                     }
 
                     _schedule = value;
-                    this.UpdateScheduleDueTime();
+                    this.UpdateScheduleDueTime(); // updated in Schedule.set
                     _vice.OnScheduleChanged();
                 }
             }
@@ -292,6 +293,8 @@ namespace TauCode.Working.Jobs.Omicron
 
             _currentTask = null;
             _currentEndTask = null;
+
+            this.UpdateScheduleDueTime(); // updated in FinalizeJobRun
         }
 
         internal WakeUpResult WakeUp(CancellationToken token)
@@ -304,7 +307,7 @@ namespace TauCode.Working.Jobs.Omicron
                     _currentTask = this.InitJobRunContext(true, token);
 
                     _overriddenDueTime = null;
-                    this.UpdateScheduleDueTime();
+                    this.UpdateScheduleDueTime(); // updated in WakeUp
 
                     _currentEndTask = _currentTask.ContinueWith(this.EndJob);
 
@@ -333,53 +336,7 @@ namespace TauCode.Working.Jobs.Omicron
                 }
             }
 
-            //try
-            //{
-            //    lock (_lock)
-            //    {
-            //        this.Start();
 
-            //        var writers = new List<TextWriter>
-            //        {
-            //            new StringWriterWithEncoding(Encoding.UTF8),
-            //        };
-
-            //        if (_output != null)
-            //        {
-            //            writers.Add(_output);
-            //        }
-
-            //        var now = TimeProvider.GetCurrent();
-
-            //        _currentRunTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
-            //        _currentJobRunInfoBuilder = new JobRunInfoBuilder(
-            //            _runIndex,
-            //            _overriddenDueTime.HasValue? JobStartReason.OverriddenDueTime : JobStartReason.ScheduleDueTime,
-            //            now);
-
-            //        _runIndex++;
-
-            //        Task task;
-
-            //        try
-            //        {
-            //            task = _routine(_parameter, _progressTracker, _currentRunTextWriter, token);
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            task = Task.FromException(ex);
-            //        }
-            //    }
-            //}
-            //catch (InappropriateProlStateException)
-            //{
-            //    // todo: was started (check)
-
-            //}
-            //catch (ObjectDisposedException)
-            //{
-            //    return WakeUpResult.WasDisposed;
-            //}
         }
 
         private Task InitJobRunContext(bool byDueTime, CancellationToken? token)
@@ -487,7 +444,7 @@ namespace TauCode.Working.Jobs.Omicron
                 _currentTask = this.InitJobRunContext(false, null);
 
                 _overriddenDueTime = null;
-                this.UpdateScheduleDueTime();
+                this.UpdateScheduleDueTime(); // updated in ForceStart
 
                 _currentEndTask = _currentTask.ContinueWith(this.EndJob);
             }

@@ -16,10 +16,18 @@ namespace TauCode.Labor
 
         #region Fields
 
-        private Thread _thread;
+        private readonly object _runningLock;
+        private readonly object _startingLock;
         private readonly object _threadLock;
 
-        private long _workState; // increments each time new work arrived, or existing work is completed.
+        private Thread _thread;
+        
+
+        private long _workGeneration; // increments each time new work arrived, or existing work is completed.
+
+        private bool _debugIsInVacation; // todo
+        private TimeSpan? _debugVacationLength; // todo
+        private bool _debugThreadExited; // todo
 
         #endregion
 
@@ -27,6 +35,8 @@ namespace TauCode.Labor
 
         protected CycleProlBase()
         {
+            _runningLock = new object();
+            _startingLock = new object();
             _threadLock = new object();
         }
 
@@ -45,10 +55,18 @@ namespace TauCode.Labor
             // todo: check '_thread' is null
             _thread = new Thread(CycleRoutine);
 
-            lock (_threadLock)
+            lock (_startingLock)
             {
                 _thread.Start();
-                Monitor.Wait(_threadLock);
+                Monitor.Wait(_startingLock);
+            }
+        }
+
+        protected override void OnStarted()
+        {
+            lock (_runningLock)
+            {
+                Monitor.Pulse(_runningLock);
             }
         }
 
@@ -67,38 +85,42 @@ namespace TauCode.Labor
 
         #region Protected
 
-        protected void WorkArrived() => this.AdvanceWorkState();
+        protected void WorkArrived() => this.AdvanceWorkGeneration();
 
         #endregion
 
         #region Private
 
-        private void AdvanceWorkState()
+        private void AdvanceWorkGeneration()
         {
             lock (_threadLock)
             {
-                _workState++;
+                _workGeneration++;
                 Monitor.Pulse(_threadLock);
             }
         }
 
-        private long GetCurrentWorkState()
+        private long GetCurrentWorkGeneration()
         {
             lock (_threadLock)
             {
-                return _workState;
+                return _workGeneration;
             }
         }
 
         private void CycleRoutine()
         {
-            lock (_threadLock)
+            lock (_runningLock)
             {
-                Monitor.Pulse(_threadLock);
+                lock (_startingLock)
+                {
+                    Monitor.Pulse(_startingLock);
+                }
+
+                Monitor.Wait(_runningLock);
             }
 
             var source = new CancellationTokenSource();
-            //var taskEndedSignal = new ManualResetEventSlim(true);
             var endTask = Task.CompletedTask;
 
             while (true)
@@ -122,53 +144,38 @@ namespace TauCode.Labor
                     else
                     {
                         // task is not ended yet
-                        //taskEndedSignal.Reset();
-                        endTask = task.ContinueWith(this.EndWork, /*taskEndedSignal,*/ source.Token, source.Token);
+                        endTask = task.ContinueWith(this.EndWork, source.Token, source.Token);
                     }
                 }
 
-                //if (taskEndedSignal.IsSet)
-                //{
-                //    // can try do some work.
-                //    var task = this.DoWork(source.Token); // todo: try/catch, not null etc.
-
-                //    if (task.IsCompleted)
-                //    {
-                //        // todo: log warning if task status is not 'RanToCompletion'
-                //        var wantedVacation = task.Result;
-                //        vacation = DateTimeExtensionsLab.MinMax(
-                //            TimeQuantum,
-                //            VeryLongVacation,
-                //            wantedVacation);
-                //    }
-                //    else
-                //    {
-                //        // task is not ended yet
-                //        taskEndedSignal.Reset();
-                //        task.ContinueWith(this.EndWork, taskEndedSignal, source.Token);
-                //    }
-                //}
-
-                var workStateBeforeVacation = this.GetCurrentWorkState();
+                var workStateBeforeVacation = this.GetCurrentWorkGeneration();
 
                 lock (_threadLock)
                 {
-                    if (this.State != ProlState.Running)
+                    var state = this.State;
+                    if (state != ProlState.Running)
                     {
                         break;
                     }
 
-                    var workStateRightAfterVacationStarted = this.GetCurrentWorkState();
+                    var workStateRightAfterVacationStarted = this.GetCurrentWorkGeneration();
                     if (workStateBeforeVacation != workStateRightAfterVacationStarted)
                     {
                         // vacation is terminated, let's get back to work :(
                         continue;
                     }
 
+                    _debugIsInVacation = true;
+                    _debugVacationLength = vacation;
+
                     Monitor.Wait(_threadLock, vacation);
+
+                    _debugIsInVacation = false;
+                    _debugVacationLength = null;
                 }
 
-                if (this.State != ProlState.Running)
+                var state2 = this.State;
+                if (state2 != ProlState.Running)
                 {
                     break;
                 }
@@ -176,27 +183,14 @@ namespace TauCode.Labor
 
             source.Cancel();
             endTask.Wait();
-
-            //taskEndedSignal.Wait();
-
             source.Dispose();
-            //taskEndedSignal.Dispose();
+
+            _debugThreadExited = true;
         }
 
-        private void EndWork(Task initialTask/*, object taskEndedSignalObject*/, object state)
+        private void EndWork(Task initialTask, object state)
         {
-            var k = 3;
-
-            this.AdvanceWorkState();
-
-            //var taskEndedSignal = (ManualResetEventSlim)taskEndedSignalObject;
-
-            //lock (_threadLock)
-            //{
-            //    Monitor.Pulse(_threadLock);
-            //}
-
-            //taskEndedSignal.Set();
+            this.AdvanceWorkGeneration();
         }
 
         #endregion
