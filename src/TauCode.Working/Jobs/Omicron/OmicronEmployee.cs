@@ -206,6 +206,12 @@ namespace TauCode.Working.Jobs.Omicron
 
         #endregion
 
+        #region Constants
+
+        private const long MillisecondsToDispose = 25;
+
+        #endregion
+
         #region Fields
 
         private readonly OmicronVice _vice;
@@ -538,6 +544,24 @@ namespace TauCode.Working.Jobs.Omicron
                 {
                     runContext.Cancel();
                     runContext.Dispose();
+
+                    while (true)
+                    {
+                        var before = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                        var gotSignal = runContext.Wait(1);
+                        if (gotSignal)
+                        {
+                            break;
+                        }
+
+                        var after = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                        if (after - before > MillisecondsToDispose)
+                        {
+                            break;
+                        }
+                    }
                 }
                 catch
                 {

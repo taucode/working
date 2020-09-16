@@ -37,11 +37,11 @@ namespace TauCode.Labor.TestDemo.Lab
             var job1 = jobManager.Create("job1");
             job1.IsEnabled = true;
 
-            //var job2 = jobManager.Create("job2");
-            //job2.IsEnabled = true;
+            var job2 = jobManager.Create("job2");
+            job2.IsEnabled = true;
 
             job1.Output = new StringWriterWithEncoding(Encoding.UTF8);
-            //job2.Output = new StringWriterWithEncoding(Encoding.UTF8);
+            job2.Output = new StringWriterWithEncoding(Encoding.UTF8);
 
             async Task Routine(object parameter, IProgressTracker tracker, TextWriter output, CancellationToken token)
             {
@@ -68,12 +68,11 @@ namespace TauCode.Labor.TestDemo.Lab
                 1,
                 fakeNow.AddMilliseconds(400));
 
-
             job1.Schedule = schedule;
-            //job2.Schedule = schedule;
+            job2.Schedule = schedule;
 
             job1.Routine = Routine;
-            //job2.Routine = Routine;
+            job2.Routine = Routine;
 
             await Task.Delay(2500); // 3 iterations should be completed: ~400, ~1400, ~2400 todo: ut this
 
@@ -87,16 +86,37 @@ namespace TauCode.Labor.TestDemo.Lab
             Debug.Assert(jobManager.IsDisposed);
             //Assert.That(jobManager.IsDisposed, Is.True);
 
-            foreach (var job in new[] { job1, /*job2*/ })
+            foreach (var job in new[] { job1, job2 })
             {
                 Debug.Assert(job.IsDisposed);
 
-                await Task.Delay(250); // let task finish.
+                var before = Environment.TickCount;
+                var n = 0;
+
+                while (true)
+                {
+                    var info1 = job.GetInfo(null);
+                    if (info1.Runs.Count == 0)
+                    {
+                        await Task.Delay(1);
+                        n++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                var after = Environment.TickCount;
+                var ms = after - before;
+                Console.WriteLine($"Time to deliver run info: {ms} ({n} iterations)");
+
+
+                //await Task.Delay(250); // let task finish.
                 
                 //Assert.That(job.IsDisposed, Is.True);
                 
 
-                Console.WriteLine("~GetInfo");
                 var info = job.GetInfo(null);
                 var run = info.Runs.Single();
 
