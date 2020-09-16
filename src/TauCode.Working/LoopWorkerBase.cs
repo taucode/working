@@ -5,7 +5,7 @@ using TauCode.Extensions.Lab;
 
 namespace TauCode.Working
 {
-    public abstract class CycleProlBase : ProlBase
+    public abstract class LoopWorkerBase : WorkerBase
     {
         #region Constants
 
@@ -33,7 +33,7 @@ namespace TauCode.Working
 
         #region Constructor
 
-        protected CycleProlBase()
+        protected LoopWorkerBase()
         {
             _runningLock = new object();
             _startingLock = new object();
@@ -153,7 +153,7 @@ namespace TauCode.Working
                 lock (_threadLock)
                 {
                     var state = this.State;
-                    if (state != ProlState.Running)
+                    if (state != WorkerState.Running)
                     {
                         break;
                     }
@@ -175,7 +175,7 @@ namespace TauCode.Working
                 }
 
                 var state2 = this.State;
-                if (state2 != ProlState.Running)
+                if (state2 != WorkerState.Running)
                 {
                     break;
                 }

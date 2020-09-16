@@ -12,9 +12,9 @@ using TauCode.Working.Exceptions;
 using TauCode.Working.Schedules;
 
 // todo clean up
-namespace TauCode.Working.Jobs.Omicron
+namespace TauCode.Working.Jobs
 {
-    internal class OmicronEmployee : IDisposable
+    internal class Employee : IDisposable
     {
         #region Nested
 
@@ -214,8 +214,8 @@ namespace TauCode.Working.Jobs.Omicron
 
         #region Fields
 
-        private readonly OmicronVice _vice;
-        private readonly OmicronJob _job;
+        private readonly Vice _vice;
+        private readonly Job _job;
 
         private bool _isEnabled;
 
@@ -238,12 +238,12 @@ namespace TauCode.Working.Jobs.Omicron
 
         #region Constructor
 
-        internal OmicronEmployee(OmicronVice vice, string name)
+        internal Employee(Vice vice, string name)
         {
             this.Name = name;
 
             _vice = vice;
-            _job = new OmicronJob(this);
+            _job = new Job(this);
             _schedule = NeverSchedule.Instance;
             _routine = JobExtensions.IdleJobRoutine;
             _runs = new JobRunInfoCollection();

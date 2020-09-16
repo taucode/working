@@ -7,25 +7,24 @@ using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 
-namespace TauCode.Working.Jobs.Omicron
+namespace TauCode.Working.Jobs
 {
-    internal class OmicronVice : CycleProlBase
+    internal class Vice : LoopWorkerBase
     {
-        private readonly Dictionary<string, OmicronEmployee> _employees;
+        private readonly Dictionary<string, Employee> _employees;
         private readonly object _lock;
 
-        internal OmicronVice()
+        internal Vice()
         {
-            _employees = new Dictionary<string, OmicronEmployee>();
+            _employees = new Dictionary<string, Employee>();
             _lock = new object();
         }
 
         protected override Task<TimeSpan> DoWork(CancellationToken token)
         {
             var now = TimeProvider.GetCurrent();
-            //var employeesToWakeUp = new List<OmicronEmployee>();
 
-            var employeesToWakeUp = new List<Tuple<OmicronEmployee, DueTimeInfoForVice>>();
+            var employeesToWakeUp = new List<Tuple<Employee, DueTimeInfoForVice>>();
 
             var earliest = JobExtensions.Never;
 
@@ -39,14 +38,6 @@ namespace TauCode.Working.Jobs.Omicron
                     {
                         continue;
                     }
-
-
-
-                    //var dueTime = employee.GetDueTimeForVice();
-                    //if (!dueTime.HasValue)
-                    //{
-                    //    continue;
-                    //}
 
                     if (now >= info.Value.DueTime)
                     {
@@ -63,8 +54,6 @@ namespace TauCode.Working.Jobs.Omicron
             foreach (var tuple in employeesToWakeUp)
             {
                 // todo: log on exception
-                //employee.WakeUp(token); // todo: log if already was started etc
-
                 var employee = tuple.Item1;
                 var isOverridden = tuple.Item2.IsOverridden;
                 var reason = isOverridden ? JobStartReason.OverriddenDueTime : JobStartReason.ScheduleDueTime;
@@ -85,7 +74,7 @@ namespace TauCode.Working.Jobs.Omicron
                     throw new InvalidJobOperationException($"Job '{jobName}' already exists.");
                 }
 
-                var employee = new OmicronEmployee(this, jobName);
+                var employee = new Employee(this, jobName);
                 //{
                 //    Name = jobName,
                 //};
@@ -121,7 +110,7 @@ namespace TauCode.Working.Jobs.Omicron
 
         protected override void OnDisposed()
         {
-            IList<OmicronEmployee> list;
+            IList<Employee> list;
             lock (_lock)
             {
                 list = _employees.Values.ToList();

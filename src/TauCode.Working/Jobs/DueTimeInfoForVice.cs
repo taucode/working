@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TauCode.Working.Jobs.Omicron
+namespace TauCode.Working.Jobs
 {
     internal readonly struct DueTimeInfoForVice
     {

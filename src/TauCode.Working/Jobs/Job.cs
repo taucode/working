@@ -2,13 +2,13 @@
 using System.IO;
 using TauCode.Working.Schedules;
 
-namespace TauCode.Working.Jobs.Omicron
+namespace TauCode.Working.Jobs
 {
-    internal class OmicronJob : IJob
+    internal class Job : IJob
     {
-        private readonly OmicronEmployee _employee;
+        private readonly Employee _employee;
 
-        internal OmicronJob(OmicronEmployee employee)
+        internal Job(Employee employee)
         {
             _employee = employee;
         }

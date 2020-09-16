@@ -475,7 +475,6 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(jobManager.IsDisposed, Is.True);
         }
 
-        // todo0 deadlock on omicron
         [Test]
         public void Dispose_Started_Disposes()
         {

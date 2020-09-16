@@ -4,7 +4,7 @@ using TauCode.Working.Exceptions;
 
 namespace TauCode.Working
 {
-    public class ProlBase : IProl
+    public class WorkerBase : IWorker
     {
         #region Fields
 
@@ -20,12 +20,12 @@ namespace TauCode.Working
 
         #region Constructor
 
-        public ProlBase()
+        public WorkerBase()
         {
             _lock = new object();
             _nameLock = new object();
 
-            this.SetState(ProlState.Stopped);
+            this.SetState(WorkerState.Stopped);
             this.SetIsDisposed(false);
         }
 
@@ -33,13 +33,13 @@ namespace TauCode.Working
 
         #region Private
 
-        private ProlState GetState()
+        private WorkerState GetState()
         {
             var stateValue = Interlocked.Read(ref _stateValue);
-            return (ProlState)stateValue;
+            return (WorkerState)stateValue;
         }
 
-        private void SetState(ProlState state)
+        private void SetState(WorkerState state)
         {
             var stateValue = (long)state;
             Interlocked.Exchange(ref _stateValue, stateValue);
@@ -77,11 +77,11 @@ namespace TauCode.Working
                     }
                 }
 
-                if (this.GetState() != ProlState.Stopped)
+                if (this.GetState() != WorkerState.Stopped)
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw new InappropriateProlStateException();
+                        throw new InappropriateWorkerStateException();
                     }
                     else
                     {
@@ -89,10 +89,10 @@ namespace TauCode.Working
                     }
                 }
 
-                this.SetState(ProlState.Starting);
+                this.SetState(WorkerState.Starting);
                 this.OnStarting();
 
-                this.SetState(ProlState.Running);
+                this.SetState(WorkerState.Running);
                 this.OnStarted();
             }
         }
@@ -123,11 +123,11 @@ namespace TauCode.Working
                     }
                 }
 
-                if (this.GetState() != ProlState.Running)
+                if (this.GetState() != WorkerState.Running)
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw new InappropriateProlStateException();
+                        throw new InappropriateWorkerStateException();
                     }
                     else
                     {
@@ -135,10 +135,10 @@ namespace TauCode.Working
                     }
                 }
 
-                this.SetState(ProlState.Stopping);
+                this.SetState(WorkerState.Stopping);
                 this.OnStopping();
 
-                this.SetState(ProlState.Stopped);
+                this.SetState(WorkerState.Stopped);
                 this.OnStopped();
             }
         }
@@ -160,7 +160,7 @@ namespace TauCode.Working
 
         #endregion
 
-        #region IProl Members
+        #region IWorker Members
 
         public string Name
         {
@@ -180,7 +180,7 @@ namespace TauCode.Working
             }
         }
 
-        public ProlState State => this.GetState();
+        public WorkerState State => this.GetState();
 
         public void Start() => this.Start(true);
 

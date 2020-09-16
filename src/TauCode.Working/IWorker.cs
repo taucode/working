@@ -2,10 +2,10 @@
 
 namespace TauCode.Working
 {
-    public interface IProl : IDisposable
+    public interface IWorker : IDisposable
     {
         string Name { get; }
-        ProlState State { get; }
+        WorkerState State { get; }
         void Start();
         void Stop();
         bool IsDisposed { get; }

@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using TauCode.Working.Exceptions;
 
-namespace TauCode.Working.Jobs.Omicron
+namespace TauCode.Working.Jobs
 {
-    public class OmicronJobManager : IJobManager
+    public class JobManager : IJobManager
     {
-        private readonly OmicronVice _vice;
+        private readonly Vice _vice;
 
-        private OmicronJobManager()
+        private JobManager()
         {
-            _vice = new OmicronVice();
+            _vice = new Vice();
         }
 
         private void CheckJobName(string jobName, string jobNameParamName)
@@ -34,7 +34,7 @@ namespace TauCode.Working.Jobs.Omicron
             }
         }
 
-        public static IJobManager CreateJobManager() => new OmicronJobManager();
+        public static IJobManager CreateJobManager() => new JobManager();
 
         public void Dispose()
         {
@@ -51,7 +51,7 @@ namespace TauCode.Working.Jobs.Omicron
             {
                 throw new JobObjectDisposedException($"{typeof(IJobManager).FullName}");
             }
-            catch (InappropriateProlStateException)
+            catch (InappropriateWorkerStateException)
             {
                 throw new InvalidJobOperationException($"'{typeof(IJobManager).FullName}' is already running.");
             }
@@ -61,7 +61,7 @@ namespace TauCode.Working.Jobs.Omicron
         {
             get
             {
-                return _vice.State == ProlState.Running;
+                return _vice.State == WorkerState.Running;
             }
         }
 
