@@ -1,18 +1,16 @@
 ﻿using System;
-using TauCode.Infrastructure.Time;
-using TauCode.Working.Schedules;
+using System.IO;
 
-// todo clean
 namespace TauCode.Working.Jobs.Instruments
 {
-    internal class DueTimeHolder : IDisposable
+    internal class JobPropertiesHolder : IDisposable
     {
         #region Fields
 
-        private ISchedule _schedule;
-        private DateTimeOffset? _overriddenDueTime;
-
-        private DateTimeOffset _scheduleDueTime; // calculated
+        private JobDelegate _routine;
+        private object _parameter;
+        private IProgressTracker _progressTracker;
+        private TextWriter _output;
 
         private bool _isDisposed;
 
@@ -22,11 +20,10 @@ namespace TauCode.Working.Jobs.Instruments
 
         #region Constructor
 
-        internal DueTimeHolder()
+        internal JobPropertiesHolder()
         {
-            _schedule = NeverSchedule.Instance;
+            _routine = JobExtensions.IdleJobRoutine;
             _lock = new object();
-            this.UpdateScheduleDueTime();
         }
 
         #endregion
@@ -48,13 +45,13 @@ namespace TauCode.Working.Jobs.Instruments
 
         #region Internal
 
-        internal ISchedule Schedule
+        internal JobDelegate Routine
         {
             get
             {
                 lock (_lock)
                 {
-                    return _schedule;
+                    return _routine;
                 }
             }
             set
@@ -62,20 +59,18 @@ namespace TauCode.Working.Jobs.Instruments
                 lock (_lock)
                 {
                     this.CheckNotDisposed();
-                    _schedule = value ?? throw new ArgumentNullException(nameof(IJob.Schedule));
-                    _overriddenDueTime = null;
-                    this.UpdateScheduleDueTime();
+                    _routine = value ?? throw new ArgumentNullException(nameof(IJob.Routine));
                 }
             }
         }
 
-        internal DateTimeOffset? OverriddenDueTime
+        internal object Parameter
         {
             get
             {
                 lock (_lock)
                 {
-                    return _overriddenDueTime;
+                    return _parameter;
                 }
             }
             set
@@ -83,26 +78,46 @@ namespace TauCode.Working.Jobs.Instruments
                 lock (_lock)
                 {
                     this.CheckNotDisposed();
-                    _overriddenDueTime = value;
+                    _parameter = value;
                 }
             }
         }
 
-        internal void UpdateScheduleDueTime()
+        internal IProgressTracker ProgressTracker
         {
-            var now = TimeProvider.GetCurrent();
-            lock (_lock)
+            get
             {
-                // todo: check not disposed?
-                _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
+                lock (_lock)
+                {
+                    return _progressTracker;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    this.CheckNotDisposed();
+                    _progressTracker = value;
+                }
             }
         }
 
-        internal DueTimeInfo GetDueTimeInfo()
+        internal TextWriter Output
         {
-            lock (_lock)
+            get
             {
-                return new DueTimeInfo(_scheduleDueTime, _overriddenDueTime);
+                lock (_lock)
+                {
+                    return _output;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    this.CheckNotDisposed();
+                    _output = value;
+                }
             }
         }
 
