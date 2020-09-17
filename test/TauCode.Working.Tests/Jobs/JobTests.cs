@@ -339,6 +339,12 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(2)));
         }
 
+
+        // todo: caused failure once.
+        // do not remove this todo until bug is found and fixed.
+        // Expected: 2000-01-01 00:00:03+00:00
+        // But was:  2000-01-01 00:00:01+00:00 
+        // Looks like Vice never was started.
         [Test]
         public async Task Schedule_SetAndStartedAndCompleted_ReflectedInOldRuns()
         {

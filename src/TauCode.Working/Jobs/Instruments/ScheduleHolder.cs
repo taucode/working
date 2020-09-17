@@ -30,8 +30,6 @@ namespace TauCode.Working.Jobs.Instruments
                 _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
                 Console.WriteLine($">>> {_scheduleDueTime.Second:D2}:{_scheduleDueTime.Millisecond:D3}");
             }
-
-            _vice.PulseWork(); // todo: ?
         }
 
         internal ISchedule Schedule
@@ -54,15 +52,5 @@ namespace TauCode.Working.Jobs.Instruments
         }
 
         internal DueTimeInfo GetDueTimeInfo() => new DueTimeInfo(_scheduleDueTime, _overriddenDueTime);
-
-        //internal DateTimeOffset GetEffectiveDueTime()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //internal DueTimeInfoForVice? GetDueTimeInfoForVice()
-        //{
-        //    throw new NotImplementedException();
-        //}
     }
 }

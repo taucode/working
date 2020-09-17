@@ -160,7 +160,13 @@ namespace TauCode.Working.Jobs
         {
             get => _scheduleHolder.Schedule; //this.GetWithDataLock(() => _schedule);
             set => this.InvokeWithDataLock(
-                action: () => _scheduleHolder.Schedule = value//,
+                action: () =>
+                {
+                    _scheduleHolder.Schedule = value;
+                    _vice.PulseWork();
+                }
+
+                //,
                 //throwIfDisposed: true,
                 //throwIfNotStopped: false,
                 //updateScheduleDueTime: true,
@@ -302,25 +308,6 @@ namespace TauCode.Working.Jobs
 
         #region Interface for Vice
 
-        //internal DueTimeInfoForVice? GetDueTimeInfoForVice()
-        //{
-        //    if (this.IsDisposed)
-        //    {
-        //        return null;
-        //    }
-
-        //    return _scheduleHolder.GetDueTimeInfoForVice();
-
-        //    //lock (_marinaLock)
-        //    //{
-        //    //    var dueTime = _overriddenDueTime ?? _scheduleDueTime;
-        //    //    var isOverridden = _overriddenDueTime.HasValue;
-
-        //    //    var info = new DueTimeInfoForVice(dueTime, isOverridden);
-        //    //    return info;
-        //    //}
-        //}
-
         internal DueTimeInfo? GetDueTimeInfoForVice(bool future)
         {
             return this.GetWithDataLock(() =>
@@ -357,7 +344,7 @@ namespace TauCode.Working.Jobs
 
                 if (!this.IsEnabled)
                 {
-                    _scheduleHolder.UpdateScheduleDueTime(); // come visit me another time, Vice!
+                    _scheduleHolder.UpdateScheduleDueTime(); // I am having PTO right now, but you come visit me another time, Vice!
                     return false;
                 }
 
@@ -372,13 +359,7 @@ namespace TauCode.Working.Jobs
                     _runsHolder,
                     _scheduleHolder,
                     startReason,
-                    //_overriddenDueTime ?? _scheduleDueTime,
-                    //_overriddenDueTime.HasValue,
                     now);
-
-                _scheduleHolder.UpdateScheduleDueTime();
-
-                //this.UpdateScheduleDueTime();
 
                 _runContext.Run();
 
@@ -413,24 +394,6 @@ namespace TauCode.Working.Jobs
                 {
                     runContext.Cancel();
                     runContext.Dispose();
-
-                    //while (true)
-                    //{
-                    //    var before = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-                    //    var gotSignal = runContext.Wait(1);
-                    //    if (gotSignal)
-                    //    {
-                    //        break;
-                    //    }
-
-                    //    var after = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-                    //    if (after - before > MillisecondsToDispose)
-                    //    {
-                    //        break;
-                    //    }
-                    //}
                 }
                 catch
                 {

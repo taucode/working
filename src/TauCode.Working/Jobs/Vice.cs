@@ -71,7 +71,7 @@ namespace TauCode.Working.Jobs
 
                 var workStarted = employee.WakeUp(reason, token);
 
-                // when to visit you again, employee?
+                // when to visit you again, Employee?
                 var nextDueTimeInfo = employee.GetDueTimeInfoForVice(true);
                 
                 if (nextDueTimeInfo.HasValue) // actually, should have, he could not finish work and got disposed that fast, but who knows...
@@ -102,6 +102,8 @@ namespace TauCode.Working.Jobs
                 var employee = new Employee(this, jobName);
 
                 _employees.Add(employee.Name, employee);
+
+                this.WorkArrived();
                 return employee.GetJob();
             }
         }
