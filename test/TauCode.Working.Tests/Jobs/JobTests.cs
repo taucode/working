@@ -422,6 +422,7 @@ namespace TauCode.Working.Tests.Jobs
             var canceled = job.Cancel(); // will be canceled almost right after start
 
             Assert.That(canceled, Is.True);
+            await Task.Delay(DEFECT); // let context finalize
 
             // Assert
             var info = job.GetInfo(null);

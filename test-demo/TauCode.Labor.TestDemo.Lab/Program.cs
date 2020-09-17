@@ -1,12 +1,8 @@
 ﻿using Serilog;
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Jobs;
@@ -35,101 +31,70 @@ namespace TauCode.Labor.TestDemo.Lab
         private static async Task FailingTest()
         {
             // Arrange
-            var fakeNow = "2020-01-01Z".ToUtcDayOffset();
-            TimeProvider.Override(ShiftedTimeProvider.CreateTimeMachine(fakeNow));
+
+            var DEFECT = TimeSpan.FromMilliseconds(30);
+
+            var now = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            TimeProvider.Override(timeMachine);
 
             using IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
+            var job = jobManager.Create("my-job");
 
-            var job1 = jobManager.Create("job1");
-            job1.IsEnabled = true;
-
-            var job2 = jobManager.Create("job2");
-            job2.IsEnabled = true;
-
-            job1.Output = new StringWriterWithEncoding(Encoding.UTF8);
-            job2.Output = new StringWriterWithEncoding(Encoding.UTF8);
-
-            async Task Routine(object parameter, IProgressTracker tracker, TextWriter output, CancellationToken token)
+            job.Routine = async (parameter, tracker, output, token) =>
             {
-                for (var i = 0; i < 100; i++)
-                {
-                    var time = TimeProvider.GetCurrent();
-                    await output.WriteLineAsync($"Iteration {i}: {time.Second:D2}:{time.Millisecond:D3}");
+                await Task.Delay(1500, token); // 1.5 second to complete
+            };
+            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
 
-                    try
-                    {
-                        await Task.Delay(1000, token);
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        time = TimeProvider.GetCurrent();
-                        await output.WriteLineAsync($"Canceled! {time.Second:D2}:{time.Millisecond:D3}");
-                        throw;
-                    }
-                }
-            }
-
-            ISchedule schedule = new SimpleSchedule(
-                SimpleScheduleKind.Second,
-                1,
-                fakeNow.AddMilliseconds(400));
-
-            job1.Schedule = schedule;
-            job2.Schedule = schedule;
-
-            job1.Routine = Routine;
-            job2.Routine = Routine;
-
-            await Task.Delay(2500); // 3 iterations should be completed: ~400, ~1400, ~2400 todo: ut this
+            job.IsEnabled = true;
 
             // Act
-            //var jobInfoBeforeDispose1 = job1.GetInfo(null);
-            //var jobInfoBeforeDispose2 = job2.GetInfo(null);
+            job.Schedule = schedule; // will fire at 00:01
 
-            jobManager.Dispose();
+            await Task.Delay(
+                1000 + // 0th due time
+                DEFECT.Milliseconds +
+                1500 +
+                DEFECT.Milliseconds); // let job start, finish, and wait more 30 ms.
 
             // Assert
-            Debug.Assert(jobManager.IsDisposed);
-            //Assert.That(jobManager.IsDisposed, Is.True);
+            var info = job.GetInfo(null);
 
-            foreach (var job in new[] { job1, job2 })
-            {
-                Debug.Assert(job.IsDisposed);
+            //Assert.That(info.CurrentRun, Is.Null);
+            Debug.Assert(info.CurrentRun == null);
 
-                var before = Environment.TickCount;
-                var n = 0;
+            //Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(3)));
+            Debug.Assert(info.NextDueTime == now.AddSeconds(3));
 
-                while (true)
-                {
-                    var info1 = job.GetInfo(null);
-                    if (info1.Runs.Count == 0)
-                    {
-                        await Task.Delay(1);
-                        n++;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
+            var pastRun = info.Runs.Single();
 
-                var after = Environment.TickCount;
-                var ms = after - before;
-                Console.WriteLine($"Time to deliver run info: {ms} ({n} iterations)");
+            //Assert.That(pastRun.RunIndex, Is.EqualTo(0));
+            Debug.Assert(pastRun.RunIndex == 0);
 
 
-                //await Task.Delay(250); // let task finish.
-                
-                //Assert.That(job.IsDisposed, Is.True);
-                
+            //Assert.That(pastRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
+            Debug.Assert(pastRun.StartReason == JobStartReason.ScheduleDueTime);
 
-                var info = job.GetInfo(null);
-                var run = info.Runs.Single();
+            //Assert.That(pastRun.DueTime, Is.EqualTo(now.AddSeconds(1)));
+            Debug.Assert(pastRun.DueTime == (now.AddSeconds(1)));
 
-                //Assert.That(run.Status, Is.EqualTo(JobRunStatus.Canceled));
-                Debug.Assert(run.Status == JobRunStatus.Canceled);
-            }
+            //Assert.That(pastRun.DueTimeWasOverridden, Is.False);
+            Debug.Assert(pastRun.DueTimeWasOverridden == false);
+
+
+            //Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
+            // todo
+
+
+            //Assert.That(
+            //    pastRun.EndTime,
+            //    Is.EqualTo(pastRun.StartTime.AddSeconds(1.5)).Within(DEFECT));
+            // todo
+
+            //Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Succeeded));
+
         }
     }
 }

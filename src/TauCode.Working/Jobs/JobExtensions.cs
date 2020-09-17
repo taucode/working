@@ -29,5 +29,11 @@ namespace TauCode.Working.Jobs
             output?.WriteLine("Warning: usage of default idle routine.");
             return Task.CompletedTask;
         }
+
+        internal static DateTimeOffset GetEffectiveDueTime(this DueTimeInfo dueTimeInfo) =>
+            dueTimeInfo.OverriddenDueTime ?? dueTimeInfo.ScheduleDueTime;
+
+        internal static bool IsDueTimeOverridden(this DueTimeInfo dueTimeInfo) =>
+            dueTimeInfo.OverriddenDueTime.HasValue;
     }
 }

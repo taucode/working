@@ -33,7 +33,7 @@ namespace TauCode.Working.Jobs
 
             var now = TimeProvider.GetCurrent();
 
-            var employeesToWakeUp = new List<Tuple<Employee, DueTimeInfoForVice>>();
+            var employeesToWakeUp = new List<Tuple<Employee, DueTimeInfo>>();
 
             var earliest = JobExtensions.Never;
 
@@ -41,21 +41,23 @@ namespace TauCode.Working.Jobs
             {
                 foreach (var employee in _employees.Values)
                 {
-                    var info = employee.GetDueTimeInfoForVice();
+                    var info = employee.GetDueTimeInfoForVice(false);
 
                     if (!info.HasValue)
                     {
                         continue;
                     }
 
-                    if (now >= info.Value.DueTime)
+                    var dueTime = info.Value.GetEffectiveDueTime();
+
+                    if (now >= dueTime)
                     {
                         // due time has come!
                         employeesToWakeUp.Add(Tuple.Create(employee, info.Value));
                     }
                     else
                     {
-                        earliest = DateTimeExtensionsLab.Min(earliest, info.Value.DueTime);
+                        earliest = DateTimeExtensionsLab.Min(earliest, dueTime);
                     }
                 }
             }
@@ -64,10 +66,24 @@ namespace TauCode.Working.Jobs
             {
                 // todo: log on exception
                 var employee = tuple.Item1;
-                var isOverridden = tuple.Item2.IsOverridden;
+                var isOverridden = tuple.Item2.IsDueTimeOverridden();
                 var reason = isOverridden ? JobStartReason.OverriddenDueTime : JobStartReason.ScheduleDueTime;
 
-                employee.WakeUp(reason, token);
+                var workStarted = employee.WakeUp(reason, token);
+
+                // when to visit you again, employee?
+                var nextDueTimeInfo = employee.GetDueTimeInfoForVice(true);
+                
+                if (nextDueTimeInfo.HasValue) // actually, should have, he could not finish work and got disposed that fast, but who knows...
+                {
+                    var nextDueTime = nextDueTimeInfo.Value.GetEffectiveDueTime();
+                    if (nextDueTime > now)
+                    {
+                        Console.WriteLine($"*** I'll come and visit you at {nextDueTime.Second:D2}:{nextDueTime.Millisecond:D3}!");
+
+                        earliest = DateTimeExtensionsLab.Min(earliest, nextDueTime);
+                    }
+                }
             }
 
             var vacationTimeout = earliest - now;

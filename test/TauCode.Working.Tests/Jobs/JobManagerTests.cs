@@ -547,12 +547,14 @@ namespace TauCode.Working.Tests.Jobs
                 1,
                 fakeNow.AddMilliseconds(400));
 
-
             job1.Schedule = schedule;
             job2.Schedule = schedule;
 
             job1.Routine = Routine;
             job2.Routine = Routine;
+
+            job1.IsEnabled = true;
+            job2.IsEnabled = true;
 
             await Task.Delay(2500); // 3 iterations should be completed: ~400, ~1400, ~2400 todo: ut this
 
@@ -561,6 +563,7 @@ namespace TauCode.Working.Tests.Jobs
             var jobInfoBeforeDispose2 = job2.GetInfo(null);
 
             jobManager.Dispose();
+            await Task.Delay(50); // let background TPL work get done.
 
             // Assert
             Assert.That(jobManager.IsDisposed, Is.True);
