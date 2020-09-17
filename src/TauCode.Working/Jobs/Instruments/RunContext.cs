@@ -8,6 +8,7 @@ using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 
+// todo clean
 namespace TauCode.Working.Jobs.Instruments
 {
     internal class RunContext //: IDisposable
@@ -29,10 +30,8 @@ namespace TauCode.Working.Jobs.Instruments
             TextWriter jobWriter,
             CancellationToken? token,
             JobRunsHolder runsHolder,
-            ScheduleHolder scheduleHolder,
+            DueTimeHolder dueTimeHolder,
             JobStartReason startReason,
-            //DateTimeOffset dueTime,
-            //bool dueTimeWasOverridden,
             DateTimeOffset startTime)
         {
             _systemWriter = new StringWriterWithEncoding(Encoding.UTF8);
@@ -61,7 +60,7 @@ namespace TauCode.Working.Jobs.Instruments
 
             _runsHolder = runsHolder;
 
-            var dueTimeInfo = scheduleHolder.GetDueTimeInfo();
+            var dueTimeInfo = dueTimeHolder.GetDueTimeInfo();
             var dueTime = dueTimeInfo.GetEffectiveDueTime();
             var dueTimeWasOverridden = dueTimeInfo.IsDueTimeOverridden();
 
@@ -89,6 +88,7 @@ namespace TauCode.Working.Jobs.Instruments
             var now = TimeProvider.GetCurrent();
 
             JobRunStatus status;
+            Exception exception = null;
 
             switch (task.Status)
             {
@@ -102,6 +102,7 @@ namespace TauCode.Working.Jobs.Instruments
 
                 case TaskStatus.Faulted:
                     status = JobRunStatus.Faulted;
+                    exception = ExtractTaskException(task.Exception);
                     break;
 
                 default:
@@ -111,9 +112,15 @@ namespace TauCode.Working.Jobs.Instruments
 
             _runInfoBuilder.EndTime = now;
             _runInfoBuilder.Status = status;
+            _runInfoBuilder.Exception = exception;
 
             var jobRunInfo = _runInfoBuilder.Build();
             _runsHolder.Finish(jobRunInfo);
+        }
+
+        private static Exception ExtractTaskException(AggregateException taskException)
+        {
+            return taskException?.InnerException ?? taskException;
         }
 
         internal void Dispose()

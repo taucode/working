@@ -227,6 +227,12 @@ namespace TauCode.Working.Tests.Jobs
 
         #region IJob.Schedule
 
+        // todo: IJob.Schedule
+        // - if set during run, does not affect current run, but applies since was set.
+        // - after was disposed, equals to last.
+        // - after was disposed, cannot be set, throws.
+        // - if schedule produces strange results (throws, date before 'now', date after 'never') then sets due time to 'never'
+
         [Test]
         public void Schedule_JustCreatedJob_ReturnsNeverSchedule()
         {
@@ -397,6 +403,11 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Succeeded));
         }
 
+        /// <summary>
+        /// 0---------1---------2---------3---------
+        ///           |_____1.5s_____|               (was the plan)
+        /// ______1.4s____X_________________________ (cancel)
+        /// </summary>
         [Test]
         public async Task Schedule_SetAndStartedAndCanceled_ReflectedInOldRuns()
         {
@@ -423,7 +434,6 @@ namespace TauCode.Working.Tests.Jobs
             // Act
             job.Schedule = schedule; // will fire at 00:01
 
-
             await Task.Delay(1400 + DEFECT.Milliseconds);
             var canceled = job.Cancel(); // will be canceled almost right after start
 
@@ -434,6 +444,7 @@ namespace TauCode.Working.Tests.Jobs
             var info = job.GetInfo(null);
             Assert.That(info.CurrentRun, Is.Null);
             Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(2)));
+            Assert.That(info.NextDueTimeIsOverridden, Is.False);
 
             var pastRun = info.Runs.Single();
 
@@ -442,13 +453,99 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(pastRun.DueTime, Is.EqualTo(now.AddSeconds(1)));
             Assert.That(pastRun.DueTimeWasOverridden, Is.False);
 
-            //Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
-            //Assert.That(
-            //    pastRun.EndTime,
-            //    Is.EqualTo(pastRun.StartTime.AddSeconds(0)).Within(DEFECT * 2));
+            Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
+            Assert.That(
+                pastRun.EndTime,
+                Is.EqualTo(pastRun.StartTime.AddSeconds(0.4)).Within(DEFECT * 2));
 
             Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Canceled));
         }
+
+        /// <summary>
+        /// 0---------1---------2---------3---------
+        ///           |_____1.5s_____!              (exception)
+        /// </summary>
+        [Test]
+        public async Task Schedule_SetAndStartedAndFaulted_ReflectedInOldRuns()
+        {
+            // Arrange
+
+            var DEFECT = TimeSpan.FromMilliseconds(30);
+
+            var now = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await Task.Delay(1500, token); // 1.5 second runs with no problem...
+                throw new ApplicationException("BAD_NEWS"); // ...and then throws!
+            };
+            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
+
+            job.IsEnabled = true;
+
+            // Act
+            job.Schedule = schedule; // will fire at 00:01
+
+            await Task.Delay(2800); // by this time, job will end due to the exception "BAD_NEWS" and finalize.
+
+            // Assert
+            var info = job.GetInfo(null);
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(3)));
+            Assert.That(info.NextDueTimeIsOverridden, Is.False);
+
+            var pastRun = info.Runs.Single();
+
+            Assert.That(pastRun.RunIndex, Is.EqualTo(0));
+            Assert.That(pastRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
+            Assert.That(pastRun.DueTime, Is.EqualTo(now.AddSeconds(1)));
+            Assert.That(pastRun.DueTimeWasOverridden, Is.False);
+
+            Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
+            Assert.That(
+                pastRun.EndTime,
+                Is.EqualTo(pastRun.StartTime.AddSeconds(1.5)).Within(DEFECT * 2));
+
+            Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Faulted));
+            Assert.That(pastRun.Exception, Is.TypeOf<ApplicationException>());
+            Assert.That(pastRun.Exception, Has.Message.EqualTo("BAD_NEWS"));
+        }
+
+        [Test]
+        public async Task Schedule_DueTimeWasOverriddenThenScheduleIsSet_OverriddenDueTimeIsDiscardedAndScheduleIsSet()
+        {
+            // Arrange
+
+            var DEFECT = TimeSpan.FromMilliseconds(30);
+
+            var now = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            job.OverrideDueTime(now.AddSeconds(2.5));
+
+            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
+
+            // Act
+            await Task.Delay(1800);
+            job.Schedule = schedule;
+
+            // Assert
+            var info = job.GetInfo(null);
+            Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(2)));
+            Assert.That(info.NextDueTimeIsOverridden, Is.False);
+        }
+
 
         #endregion
 
@@ -582,14 +679,6 @@ namespace TauCode.Working.Tests.Jobs
         //====================================================================================
 
 
-        // todo: IJob.Schedule
-        // - after was set and IJob started and canceled => reflected in old runs.
-        // - after was set and IJob started and faulted => reflected in old runs.
-        // - after was set, discards overridden due time.
-        // - after was set, discards previous schedule's due time.
-        // - after was disposed, equals to last.
-        // - after was disposed, cannot be set, throws.
-        // - if schedule produces strange results (throws, date before 'now', date after 'never') then sets due time to 'never' and adds a virtual run entry describing the problem.
 
 
         // todo: IJob.Routine

@@ -2,21 +2,18 @@
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Schedules;
 
+// todo clean
 namespace TauCode.Working.Jobs.Instruments
 {
-    internal class ScheduleHolder
+    internal class DueTimeHolder
     {
-        private readonly Vice _vice;
         private readonly object _lock;
         private DateTimeOffset _scheduleDueTime;
         private DateTimeOffset? _overriddenDueTime;
         private ISchedule _schedule;
 
-        internal ScheduleHolder(
-            Vice vice,
-            ISchedule schedule)
+        internal DueTimeHolder(ISchedule schedule)
         {
-            _vice = vice;
             _schedule = schedule;
             _lock = new object();
             this.UpdateScheduleDueTime();
@@ -28,7 +25,6 @@ namespace TauCode.Working.Jobs.Instruments
             lock (_lock)
             {
                 _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
-                Console.WriteLine($">>> {_scheduleDueTime.Second:D2}:{_scheduleDueTime.Millisecond:D3}");
             }
         }
 
@@ -46,7 +42,26 @@ namespace TauCode.Working.Jobs.Instruments
                 lock (_lock)
                 {
                     _schedule = value;
+                    _overriddenDueTime = null;
                     this.UpdateScheduleDueTime();
+                }
+            }
+        }
+
+        internal DateTimeOffset? OverriddenDueTime
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _overriddenDueTime;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _overriddenDueTime = value;
                 }
             }
         }

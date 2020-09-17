@@ -11,18 +11,6 @@ namespace TauCode.Working.Jobs
 {
     internal class Employee : IDisposable
     {
-        #region Nested
-
-
-
-        #region ScheduleHolder
-
-        
-
-        #endregion
-
-        #endregion
-
         #region Constants
 
         private const long MillisecondsToDispose = 25;
@@ -36,11 +24,9 @@ namespace TauCode.Working.Jobs
 
         private bool _isEnabled;
 
-        //private ISchedule _schedule;
-        //private DateTimeOffset _scheduleDueTime;
-
         private readonly JobRunsHolder _runsHolder;
-        private readonly ScheduleHolder _scheduleHolder;
+        private readonly DueTimeHolder _dueTimeHolder;
+        private RunContext _runContext;
 
         private JobDelegate _routine;
         private object _parameter;
@@ -48,7 +34,6 @@ namespace TauCode.Working.Jobs
         private TextWriter _output;
 
         private readonly object _marinaLock;
-        private RunContext _runContext;
         private bool _isDisposed;
 
         #endregion
@@ -61,16 +46,12 @@ namespace TauCode.Working.Jobs
 
             _vice = vice;
             _job = new Job(this);
-
-            //_schedule = NeverSchedule.Instance;
             _routine = JobExtensions.IdleJobRoutine;
             _runsHolder = new JobRunsHolder();
 
             _marinaLock = new object();
 
-            _scheduleHolder = new ScheduleHolder(_vice, NeverSchedule.Instance);
-
-            //this.UpdateScheduleDueTime(); // updated in ctor (todo: check other places)
+            _dueTimeHolder = new DueTimeHolder(NeverSchedule.Instance);
         }
 
         #endregion
@@ -86,51 +67,18 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        private void InvokeWithDataLock(
-            Action action//,
-            //bool throwIfDisposed,
-            //bool throwIfNotStopped,
-            //bool updateScheduleDueTime,
-            //bool pulseVice
-            )
+        private void InvokeWithDataLock(Action action)
         {
             lock (_marinaLock)
             {
-                if (this.IsDisposed /*&& throwIfDisposed*/)
+                if (this.IsDisposed)
                 {
                     throw new JobObjectDisposedException(this.Name);
                 }
 
-                //var isStopped = _runContext == null;
-
-                //if (!isStopped && throwIfNotStopped)
-                //{
-                //    throw new NotImplementedException();
-                //}
-
                 action();
-
-                //if (updateScheduleDueTime)
-                //{
-                //    this.UpdateScheduleDueTime();
-                //}
-
-                //if (pulseVice)
-                //{
-                //    _vice.PulseWork();
-                //}
             }
         }
-
-        //private void UpdateScheduleDueTime()
-        //{
-        //    var now = TimeProvider.GetCurrent();
-
-        //    lock (_marinaLock)
-        //    {
-        //        _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
-        //    }
-        //}
 
         #endregion
 
@@ -147,79 +95,42 @@ namespace TauCode.Working.Jobs
         internal bool IsEnabled
         {
             get => this.GetWithDataLock(() => _isEnabled);
-            set => this.InvokeWithDataLock(
-                action: () => _isEnabled = value//,
-                //throwIfDisposed: true,
-                //throwIfNotStopped: false,
-                //updateScheduleDueTime: false,
-                //pulseVice: true
-                );
+            set => this.InvokeWithDataLock(action: () => _isEnabled = value);
         }
 
         internal ISchedule Schedule
         {
-            get => _scheduleHolder.Schedule; //this.GetWithDataLock(() => _schedule);
+            get => _dueTimeHolder.Schedule;
             set => this.InvokeWithDataLock(
                 action: () =>
                 {
-                    _scheduleHolder.Schedule = value;
+                    _dueTimeHolder.Schedule = value;
                     _vice.PulseWork();
-                }
-
-                //,
-                //throwIfDisposed: true,
-                //throwIfNotStopped: false,
-                //updateScheduleDueTime: true,
-                //pulseVice: true
-                );
+                });
         }
 
         internal JobDelegate Routine
         {
             get => this.GetWithDataLock(() => _routine);
-            set => this.InvokeWithDataLock(
-                action: () => _routine = value//,
-                //throwIfDisposed: true,
-                //throwIfNotStopped: true,
-                //updateScheduleDueTime: false,
-                //pulseVice: false
-                );
+            set => this.InvokeWithDataLock(action: () => _routine = value);
         }
 
         internal object Parameter
         {
             get => this.GetWithDataLock(() => _parameter);
-            set => this.InvokeWithDataLock(
-                action: () => _parameter = value//,
-                //throwIfDisposed: true,
-                //throwIfNotStopped: true,
-                //updateScheduleDueTime: false,
-                //pulseVice: false
-                );
+            set => this.InvokeWithDataLock(action: () => _parameter = value);
         }
 
         internal IProgressTracker ProgressTracker
         {
             get => this.GetWithDataLock(() => _progressTracker);
-            set => this.InvokeWithDataLock(
-                action: () => _progressTracker = value//,
-                //throwIfDisposed: true,
-                //throwIfNotStopped: true,
-                //updateScheduleDueTime: false,
-                //pulseVice: false
-                );
+            set => this.InvokeWithDataLock(action: () => _progressTracker = value);
         }
 
         internal TextWriter Output
         {
             get => this.GetWithDataLock(() => _output);
-            set => this.InvokeWithDataLock(
-                action: () => _output = value//,
-                //throwIfDisposed: true,
-                //throwIfNotStopped: true,
-                //updateScheduleDueTime: false,
-                //pulseVice: false
-                );
+            set => this.InvokeWithDataLock(action: () => _output = value);
         }
 
         internal JobInfo GetInfo(int? maxRunCount)
@@ -230,15 +141,12 @@ namespace TauCode.Working.Jobs
                 var currentRun = tuple.Item1;
                 var runs = tuple.Item2;
 
-                var dueTimeInfo = _scheduleHolder.GetDueTimeInfo();
+                var dueTimeInfo = _dueTimeHolder.GetDueTimeInfo();
 
                 return new JobInfo(
                     currentRun,
-                    //_scheduleHolder.GetEffectiveDueTime(),
                     dueTimeInfo.GetEffectiveDueTime(),
                     dueTimeInfo.IsDueTimeOverridden(),
-                    //_overriddenDueTime ?? _scheduleDueTime,
-                    //_overriddenDueTime.HasValue,
                     _runsHolder.Count,
                     runs);
             });
@@ -246,7 +154,8 @@ namespace TauCode.Working.Jobs
 
         internal void OverrideDueTime(DateTimeOffset? dueTime)
         {
-            throw new NotImplementedException();
+            _dueTimeHolder.OverriddenDueTime = dueTime;
+            _vice.PulseWork();
         }
 
         internal void ForceStart()
@@ -312,6 +221,7 @@ namespace TauCode.Working.Jobs
         {
             return this.GetWithDataLock(() =>
             {
+                // todo: ugly. reorganize.
                 DueTimeInfo? result = null;
 
                 if (this.IsDisposed)
@@ -322,10 +232,10 @@ namespace TauCode.Working.Jobs
                 {
                     if (future)
                     {
-                        _scheduleHolder.UpdateScheduleDueTime();
+                        _dueTimeHolder.UpdateScheduleDueTime();
                     }
 
-                    result = _scheduleHolder.GetDueTimeInfo();
+                    result = _dueTimeHolder.GetDueTimeInfo();
                 }
 
                 return result;
@@ -344,7 +254,7 @@ namespace TauCode.Working.Jobs
 
                 if (!this.IsEnabled)
                 {
-                    _scheduleHolder.UpdateScheduleDueTime(); // I am having PTO right now, but you come visit me another time, Vice!
+                    _dueTimeHolder.UpdateScheduleDueTime(); // I am having PTO right now, but you come visit me another time, Vice!
                     return false;
                 }
 
@@ -357,7 +267,7 @@ namespace TauCode.Working.Jobs
                     _output,
                     token,
                     _runsHolder,
-                    _scheduleHolder,
+                    _dueTimeHolder,
                     startReason,
                     now);
 
