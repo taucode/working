@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
@@ -31,70 +32,55 @@ namespace TauCode.Labor.TestDemo.Lab
         private static async Task FailingTest()
         {
             // Arrange
-
-            var DEFECT = TimeSpan.FromMilliseconds(30);
-
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
             using IJobManager jobManager = TestHelper.CreateJobManager();
             jobManager.Start();
             var job = jobManager.Create("my-job");
+            var schedule1 = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
+            job.Schedule = schedule1; // job will be started by due time of this schedule
+
+            DateTimeOffset dueTime1 = default;
+            DateTimeOffset dueTime2 = default;
+
+            //job.Output = new StringWriterWithEncoding(Encoding.UTF8);
+
+            job.Output = Console.Out;
+
+            var idx = 0;
 
             job.Routine = async (parameter, tracker, output, token) =>
             {
-                await Task.Delay(1500, token); // 1.5 second to complete
+                idx++;
+                await output.WriteLineAsync("Entered routinush.");
+
+                // start + 1.2s: due time is (start + 2s), set by schedule1
+                await timeMachine.WaitUntilSecondsElapse(start, 1.2, token);
+                dueTime1 = job.GetInfo(0).NextDueTime; // should be 2s
+
+                await timeMachine.WaitUntilSecondsElapse(start, 1.7, token);
+                dueTime2 = job.GetInfo(0).NextDueTime;
+
+                await Task.Delay(TimeSpan.FromHours(2), token);
             };
-            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
 
             job.IsEnabled = true;
 
             // Act
-            job.Schedule = schedule; // will fire at 00:01
+            var schedule2 = new SimpleSchedule(SimpleScheduleKind.Second, 1, start.AddSeconds(1.8));
+            await timeMachine.WaitUntilSecondsElapse(start, 1.4);
+            job.Schedule = schedule2;
 
-            await Task.Delay(
-                1000 + // 0th due time
-                DEFECT.Milliseconds +
-                1500 +
-                DEFECT.Milliseconds); // let job start, finish, and wait more 30 ms.
+            await timeMachine.WaitUntilSecondsElapse(start, 14);
 
-            // Assert
-            var info = job.GetInfo(null);
+            //Assert.Pass(job.Output.ToString());
+            //Assert.Pass($"idx: {idx}");
 
-            //Assert.That(info.CurrentRun, Is.Null);
-            Debug.Assert(info.CurrentRun == null);
-
-            //Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(3)));
-            Debug.Assert(info.NextDueTime == now.AddSeconds(3));
-
-            var pastRun = info.Runs.Single();
-
-            //Assert.That(pastRun.RunIndex, Is.EqualTo(0));
-            Debug.Assert(pastRun.RunIndex == 0);
-
-
-            //Assert.That(pastRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
-            Debug.Assert(pastRun.StartReason == JobStartReason.ScheduleDueTime);
-
-            //Assert.That(pastRun.DueTime, Is.EqualTo(now.AddSeconds(1)));
-            Debug.Assert(pastRun.DueTime == (now.AddSeconds(1)));
-
-            //Assert.That(pastRun.DueTimeWasOverridden, Is.False);
-            Debug.Assert(pastRun.DueTimeWasOverridden == false);
-
-
-            //Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
-            // todo
-
-
-            //Assert.That(
-            //    pastRun.EndTime,
-            //    Is.EqualTo(pastRun.StartTime.AddSeconds(1.5)).Within(DEFECT));
-            // todo
-
-            //Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Succeeded));
-
+            //// Assert
+            //Assert.That(dueTime1, Is.EqualTo(start.AddSeconds(2)));
+            //Assert.That(dueTime2, Is.EqualTo(start.AddSeconds(1.8)));
         }
     }
 }

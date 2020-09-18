@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using TauCode.Working.Exceptions;
 
-// todo clean
 namespace TauCode.Working.Jobs.Instruments
 {
     internal class Runner : IDisposable
@@ -13,15 +11,11 @@ namespace TauCode.Working.Jobs.Instruments
         private bool _isEnabled;
         private bool _isDisposed;
 
-        //private CancellationTokenSource _tokenSource;
-        //private StringWriterWithEncoding _systemWriter;
-
-        //private Task _task;
-        //private Task _endTask;
-
         private RunContext _runContext;
 
         private readonly object _lock;
+
+        private readonly ObjectLogger _logger;
 
         #endregion
 
@@ -36,6 +30,11 @@ namespace TauCode.Working.Jobs.Instruments
             this.JobRunsHolder = new JobRunsHolder();
 
             _lock = new object();
+
+            _logger = new ObjectLogger(this, name)
+            {
+                IsEnabled = true,
+            };
         }
 
         #endregion
@@ -55,14 +54,12 @@ namespace TauCode.Working.Jobs.Instruments
             }
         }
 
-        private Task CreateTask(CancellationToken? token)
+        private RunContext Run(JobStartReason startReason, CancellationToken? token)
         {
-            throw new NotImplementedException();
-        }
-
-        private void EndTask(Task task)
-        {
-            throw new NotImplementedException();
+            // always guarded by '_lock'
+            var runContext = new RunContext(this, startReason, token);
+            runContext.Start();
+            return runContext;
         }
 
         #endregion
@@ -99,23 +96,6 @@ namespace TauCode.Working.Jobs.Instruments
             }
         }
 
-        private RunContext Run(JobStartReason startReason, CancellationToken? token)
-        {
-            // always guarded by '_lock'
-            //var jobProperties = this.JobPropertiesHolder.ToJobProperties();
-            var runContext = new RunContext(this, startReason, token);
-            runContext.Start();
-            return runContext;
-
-
-
-            //_task = this.CreateTask(token);
-            //_endTask = _task.ContinueWith(
-            //    this.EndTask,
-            //    CancellationToken.None);
-        }
-
-
         internal JobPropertiesHolder JobPropertiesHolder { get; }
 
         internal DueTimeHolder DueTimeHolder { get; }
@@ -132,59 +112,6 @@ namespace TauCode.Working.Jobs.Instruments
                 }
             }
         }
-
-
-        #endregion
-
-        #region IDisposable
-
-        public void Dispose()
-        {
-            lock (_lock)
-            {
-                if (_isDisposed)
-                {
-                    return;
-                }
-
-                _isDisposed = true;
-
-                try
-                {
-                    _runContext?.Cancel();
-                    _runContext = null;
-                }
-                catch
-                {
-                    // dismiss; Dispose shouldn't throw
-                }
-
-                this.JobPropertiesHolder.Dispose();
-                this.DueTimeHolder.Dispose();
-
-                //try
-                //{
-                //    _tokenSource?.Dispose();
-                //}
-                //catch
-                //{
-                //    // dismiss; Dispose shouldn't throw
-                //}
-
-                //try
-                //{
-                //    _systemWriter?.Dispose();
-                //}
-                //catch
-                //{
-                //    // dismiss; Dispose shouldn't throw
-                //}
-
-                //_isDisposed = true;
-            }
-        }
-
-        #endregion
 
         internal DueTimeInfo? GetDueTimeInfoForVice(bool future)
         {
@@ -220,14 +147,31 @@ namespace TauCode.Working.Jobs.Instruments
 
         internal bool WakeUp(JobStartReason startReason, CancellationToken? token)
         {
-            if (startReason == JobStartReason.Force2)
+            if (startReason == JobStartReason.Force)
             {
-                throw new NotImplementedException();
+                lock (_lock)
+                {
+                    if (this.IsRunning)
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    if (!this.IsEnabled)
+                    {
+                        throw new NotImplementedException();
+                    }
+
+
+                    _runContext = this.Run(startReason, token);
+                    return true;
+                }
             }
             else
             {
                 lock (_lock)
                 {
+                    _logger.Debug($"IsRunning: {this.IsRunning}", nameof(WakeUp));
+
                     if (this.IsRunning)
                     {
                         return false;
@@ -238,6 +182,7 @@ namespace TauCode.Working.Jobs.Instruments
                         this.DueTimeHolder.UpdateScheduleDueTime();
                         return false;
                     }
+
 
                     _runContext = this.Run(startReason, token);
                     return true;
@@ -268,5 +213,37 @@ namespace TauCode.Working.Jobs.Instruments
                 _runContext = null;
             }
         }
+
+        #endregion
+
+        #region IDisposable
+
+        public void Dispose()
+        {
+            lock (_lock)
+            {
+                if (_isDisposed)
+                {
+                    return;
+                }
+
+                _isDisposed = true;
+
+                try
+                {
+                    _runContext?.Cancel();
+                    _runContext = null;
+                }
+                catch
+                {
+                    // dismiss; Dispose shouldn't throw
+                }
+
+                this.JobPropertiesHolder.Dispose();
+                this.DueTimeHolder.Dispose();
+            }
+        }
+
+        #endregion
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using TauCode.Infrastructure.Time;
 using TauCode.Working.Jobs;
 
 namespace TauCode.Working.Tests
@@ -32,5 +33,77 @@ namespace TauCode.Working.Tests
 
         //internal static IJobManager CreateJobManager() => JobManager.CreateJobManager();
         internal static IJobManager CreateJobManager() => JobManager.CreateJobManager();
+
+        internal static void WaitUntil(this ITimeProvider timeProvider, DateTimeOffset moment)
+        {
+            var now = timeProvider.GetCurrent();
+            if (now >= moment)
+            {
+                return;
+            }
+
+            while (true)
+            {
+                Thread.Sleep(1);
+
+                now = timeProvider.GetCurrent();
+                if (now >= moment)
+                {
+                    return;
+                }
+            }
+        }
+
+        internal static async Task WaitUntil(
+            this ITimeProvider timeProvider,
+            DateTimeOffset moment,
+            CancellationToken token)
+        {
+            var now = timeProvider.GetCurrent();
+            if (now >= moment)
+            {
+                return;
+            }
+
+            while (true)
+            {
+                await Task.Delay(1, token);
+
+                now = timeProvider.GetCurrent();
+                if (now >= moment)
+                {
+                    return;
+                }
+            }
+        }
+
+        internal static async Task WaitUntilSecondsElapse(
+            this ITimeProvider timeProvider,
+            DateTimeOffset start,
+            double seconds,
+            CancellationToken token = default)
+        {
+            var timeout = TimeSpan.FromSeconds(seconds);
+            var now = timeProvider.GetCurrent();
+
+            var elapsed = now - start;
+            if (elapsed >= timeout)
+            {
+                return;
+            }
+
+            while (true)
+            {
+                await Task.Delay(1, token);
+
+                now = timeProvider.GetCurrent();
+
+                elapsed = now - start;
+                if (elapsed >= timeout)
+                {
+                    return;
+                }
+            }
+        }
     }
 }

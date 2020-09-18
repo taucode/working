@@ -79,8 +79,6 @@ namespace TauCode.Working.Jobs
                     var nextDueTime = nextDueTimeInfo.Value.GetEffectiveDueTime();
                     if (nextDueTime > now)
                     {
-                        Console.WriteLine($"*** I'll come and visit you at {nextDueTime.Second:D2}:{nextDueTime.Millisecond:D3}!");
-
                         earliest = DateTimeExtensionsLab.Min(earliest, nextDueTime);
                     }
                 }

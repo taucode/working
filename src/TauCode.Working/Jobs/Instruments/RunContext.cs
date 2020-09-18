@@ -11,12 +11,9 @@ using TauCode.Infrastructure.Time;
 // todo clean
 namespace TauCode.Working.Jobs.Instruments
 {
-    internal class RunContext // : IDisposable
+    internal class RunContext
     {
         #region Fields
-
-        //private readonly JobProperties _jobProperties;
-        //private readonly JobRunsHolder _runsHolder;
 
         private readonly Runner _initiator;
 
@@ -25,7 +22,8 @@ namespace TauCode.Working.Jobs.Instruments
         private readonly StringWriterWithEncoding _systemWriter;
 
         private readonly Task _task;
-        //private Task _endTask;
+
+        private readonly ObjectLogger _logger;
 
         #endregion
 
@@ -39,14 +37,10 @@ namespace TauCode.Working.Jobs.Instruments
             _initiator = initiator;
             var jobProperties = _initiator.JobPropertiesHolder.ToJobProperties();
 
-            //_jobProperties = jobProperties;
-
             _tokenSource = token.HasValue ?
                 CancellationTokenSource.CreateLinkedTokenSource(token.Value)
                 :
                 new CancellationTokenSource();
-
-            //_runsHolder = runsHolder;
 
             _systemWriter = new StringWriterWithEncoding(Encoding.UTF8);
             var writers = new List<TextWriter>
@@ -83,33 +77,22 @@ namespace TauCode.Working.Jobs.Instruments
                 jobProperties.ProgressTracker,
                 multiTextWriter,
                 _tokenSource.Token);
+
+            _logger = new ObjectLogger(this, null)
+            {
+                IsEnabled = true,
+            };
         }
 
         #endregion
 
-        #region IDisposable Members
-
-        //public void Dispose()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-
-        #endregion
-
-        internal void Cancel()
-        {
-            _tokenSource.Cancel(); // todo: throws if disposed. take care of it and ut it.
-        }
-
-        internal void Start()
-        {
-            _initiator.JobRunsHolder.Start(_runInfoBuilder.Build());
-            _task.ContinueWith(this.EndTask);
-        }
+        #region Private
 
         private void EndTask(Task task)
         {
+            _logger.Debug($"Task ended. Status: {task.Status}", nameof(EndTask));
+            _logger.Debug($"Task ended. Status: {task.Status}", nameof(EndTask), task.Exception?.InnerException);
+
             JobRunStatus status;
             Exception exception = null;
 
@@ -152,5 +135,23 @@ namespace TauCode.Working.Jobs.Instruments
         {
             return taskException?.InnerException ?? taskException;
         }
+
+
+        #endregion
+
+        #region Internal
+
+        internal void Start()
+        {
+            _initiator.JobRunsHolder.Start(_runInfoBuilder.Build());
+            _task.ContinueWith(this.EndTask);
+        }
+
+        internal void Cancel()
+        {
+            _tokenSource.Cancel(); // todo: throws if disposed. take care of it and ut it.
+        }
+
+        #endregion
     }
 }

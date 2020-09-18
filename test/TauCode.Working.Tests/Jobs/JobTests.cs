@@ -26,7 +26,7 @@ namespace TauCode.Working.Tests.Jobs
 
             _logWriter = new StringWriterWithEncoding(Encoding.UTF8);
             Log.Logger = new LoggerConfiguration()
-                .Filter.ByIncludingOnly(x => x.Properties.ContainsKey("taucode.working"))
+                //.Filter.ByIncludingOnly(x => x.Properties.ContainsKey("taucode.working"))
                 .MinimumLevel.Debug()
                 .WriteTo.TextWriter(_logWriter)
                 .CreateLogger();
@@ -89,7 +89,7 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
-        [Ignore("todo")]
+        //[Ignore("todo")]
         public void Name_JobIsRunningOrStopped_ReturnsValidName()
         {
             // Arrange
@@ -239,7 +239,6 @@ namespace TauCode.Working.Tests.Jobs
         #region IJob.Schedule
 
         // todo: IJob.Schedule
-        // - if set during run, does not affect current run, but applies since was set.
         // - after was disposed, equals to last.
         // - after was disposed, cannot be set, throws.
         // - if schedule produces strange results (throws, date before 'now', date after 'never') then sets due time to 'never'
@@ -516,7 +515,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(info.CurrentRun, Is.Null);
 
 
-            
+
             Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(3)));
             // todo
             //Expected: 2000 - 01 - 01 00:00:03 + 00:00
@@ -573,6 +572,73 @@ namespace TauCode.Working.Tests.Jobs
         }
 
 
+        // - if set during run, does not affect current run, but applies since was set.
+
+        /// <summary>
+        /// 0---------1-*---*---2-*-------3-*-------4   * - routine checks due time
+        ///           |____________1.5s_____________|
+        /// ...............!..^.........^.........^..     ! - schedule2 is set; ^ - 'schedule2' due time
+        /// </summary>
+        [Test]
+        public async Task Schedule_SetDuringRun_DoesNotAffectRunButAppliesToDueTime()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+            var schedule1 = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
+            job.Schedule = schedule1; // job will be started by due time of this schedule
+
+            DateTimeOffset dueTime1 = default;
+            DateTimeOffset dueTime2 = default;
+            DateTimeOffset dueTime3 = default;
+            DateTimeOffset dueTime4 = default;
+
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                Log.Debug("Entered routine.");
+
+                // start + 1.2s: due time is (start + 2s), set by schedule1
+                await timeMachine.WaitUntilSecondsElapse(start, 1.2, token);
+                dueTime1 = job.GetInfo(0).NextDueTime; // should be 2s
+
+                await timeMachine.WaitUntilSecondsElapse(start, 1.7, token);
+                dueTime2 = job.GetInfo(0).NextDueTime;
+
+                await timeMachine.WaitUntilSecondsElapse(start, 2.2, token);
+                dueTime3 = job.GetInfo(0).NextDueTime;
+
+                await timeMachine.WaitUntilSecondsElapse(start, 3.2, token);
+                dueTime4 = job.GetInfo(0).NextDueTime;
+
+                await Task.Delay(TimeSpan.FromHours(2), token);
+
+                Log.Debug("Exited routine.");
+            };
+
+            job.IsEnabled = true;
+
+            // Act
+            var schedule2 = new SimpleSchedule(SimpleScheduleKind.Second, 1, start.AddSeconds(1.8));
+            await timeMachine.WaitUntilSecondsElapse(start, 1.4);
+            job.Schedule = schedule2;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 4);
+
+            // Assert
+            Assert.That(dueTime1, Is.EqualTo(start.AddSeconds(2)));
+            Assert.That(dueTime2, Is.EqualTo(start.AddSeconds(1.8)));
+            Assert.That(dueTime3, Is.EqualTo(start.AddSeconds(2.8)));
+            Assert.That(dueTime4, Is.EqualTo(start.AddSeconds(3.8)));
+
+            Assert.Pass(_logWriter.ToString());
+        }
+
         #endregion
 
         //====================================================================================
@@ -602,7 +668,6 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
-        [Ignore("todo")]
         public void ManualChangeDueTime_NotNull_DueTimeIsChanged()
         {
             // Arrange
@@ -620,9 +685,8 @@ namespace TauCode.Working.Tests.Jobs
 
             // Assert
             var info = job.GetInfo(null);
-            //Assert.That(info.NextDueTimeInfo.Type, Is.EqualTo(DueTimeType.Overridden));
-            //Assert.That(info.NextDueTimeInfo.DueTime, Is.EqualTo(manualDueTime));
-            throw new NotImplementedException();
+            Assert.That(info.NextDueTime, Is.EqualTo(manualDueTime));
+            Assert.That(info.NextDueTimeIsOverridden, Is.True);
         }
 
         [Test]
