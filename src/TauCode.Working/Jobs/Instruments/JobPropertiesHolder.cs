@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 
+
+// todo clean
 namespace TauCode.Working.Jobs.Instruments
 {
     internal class JobPropertiesHolder : IDisposable
@@ -139,5 +141,17 @@ namespace TauCode.Working.Jobs.Instruments
         }
 
         #endregion
+
+        internal JobProperties ToJobProperties()
+        {
+            lock (_lock)
+            {
+                return new JobProperties(
+                    _routine,
+                    _parameter,
+                    _progressTracker,
+                    _output);
+            }
+        }
     }
 }

@@ -33,8 +33,8 @@ namespace TauCode.Working.Jobs
 
         private readonly Runner _runner;
 
-        private readonly object _marinaLock;
-        private bool _isDisposed;
+        //private readonly object _marinaLock;
+        //private bool _isDisposed;
 
         #endregion
 
@@ -47,12 +47,12 @@ namespace TauCode.Working.Jobs
             _vice = vice;
             _job = new Job(this);
 
-            _runner = new Runner();
+            _runner = new Runner(this.Name);
 
             //_routine = JobExtensions.IdleJobRoutine;
             //_runsHolder = new JobRunsHolder();
 
-            _marinaLock = new object();
+            //_marinaLock = new object();
 
             //_dueTimeHolder = new DueTimeHolder(NeverSchedule.Instance);
         }
@@ -148,7 +148,9 @@ namespace TauCode.Working.Jobs
 
         internal JobInfo GetInfo(int? maxRunCount)
         {
-            throw new NotImplementedException();
+            return _runner.GetInfo(maxRunCount);
+
+
 
             //return this.GetWithDataLock(() =>
             //{
@@ -169,7 +171,7 @@ namespace TauCode.Working.Jobs
 
         internal void OverrideDueTime(DateTimeOffset? dueTime)
         {
-            throw new NotImplementedException();
+            this._runner.DueTimeHolder.OverriddenDueTime = dueTime;
 
             //_dueTimeHolder.OverriddenDueTime = dueTime;
             //_vice.PulseWork();
@@ -225,7 +227,7 @@ namespace TauCode.Working.Jobs
             throw new NotImplementedException();
         }
 
-        internal bool IsDisposed => throw new NotImplementedException();
+        internal bool IsDisposed => _runner.IsDisposed;
         //{
         //    get
         //    {

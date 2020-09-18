@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using Serilog;
 using System;
 using System.Linq;
 using System.Text;
@@ -16,10 +17,19 @@ namespace TauCode.Working.Tests.Jobs
     [TestFixture]
     public class JobTests
     {
+        private StringWriterWithEncoding _logWriter;
+
         [SetUp]
         public void SetUp()
         {
             TimeProvider.Reset();
+
+            _logWriter = new StringWriterWithEncoding(Encoding.UTF8);
+            Log.Logger = new LoggerConfiguration()
+                .Filter.ByIncludingOnly(x => x.Properties.ContainsKey("taucode.working"))
+                .MinimumLevel.Debug()
+                .WriteTo.TextWriter(_logWriter)
+                .CreateLogger();
         }
 
         #region IJob.Name
@@ -79,6 +89,7 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
+        [Ignore("todo")]
         public void Name_JobIsRunningOrStopped_ReturnsValidName()
         {
             // Arrange
@@ -328,13 +339,13 @@ namespace TauCode.Working.Tests.Jobs
             // Act
             job.Schedule = schedule; // will fire at 00:01
 
-            await Task.Delay(1010); // let job start
+            await Task.Delay(1030); // let job start
 
             // Assert
             var info = job.GetInfo(null);
             var currentRunNullable = info.CurrentRun;
 
-            Assert.That(currentRunNullable, Is.Not.Null);
+            Assert.That(currentRunNullable, Is.Not.Null);  // todo: was null once :(
             var currentRun = currentRunNullable.Value;
 
             Assert.That(currentRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
@@ -346,7 +357,7 @@ namespace TauCode.Working.Tests.Jobs
         }
 
 
-        // todo: caused failure once.
+        // todo: causes failures sometimes.
         // do not remove this todo until bug is found and fixed.
         // Expected: 2000-01-01 00:00:03+00:00
         // But was:  2000-01-01 00:00:01+00:00 
@@ -386,7 +397,11 @@ namespace TauCode.Working.Tests.Jobs
             // Assert
             var info = job.GetInfo(null);
             Assert.That(info.CurrentRun, Is.Null);
+
             Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(3)));
+            // todo
+            //Expected: 2000 - 01 - 01 00:00:03 + 00:00
+            //But was:  2000 - 01 - 01 00:00:01 + 00:00
 
             var pastRun = info.Runs.Single();
 
@@ -401,6 +416,8 @@ namespace TauCode.Working.Tests.Jobs
                 Is.EqualTo(pastRun.StartTime.AddSeconds(1.5)).Within(DEFECT));
 
             Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Succeeded));
+
+            Assert.Pass(_logWriter.ToString());
         }
 
         /// <summary>
@@ -497,7 +514,16 @@ namespace TauCode.Working.Tests.Jobs
             // Assert
             var info = job.GetInfo(null);
             Assert.That(info.CurrentRun, Is.Null);
+
+
+            
             Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(3)));
+            // todo
+            //Expected: 2000 - 01 - 01 00:00:03 + 00:00
+            //But was:  2000 - 01 - 01 00:00:01 + 00:00
+
+
+
             Assert.That(info.NextDueTimeIsOverridden, Is.False);
 
             var pastRun = info.Runs.Single();

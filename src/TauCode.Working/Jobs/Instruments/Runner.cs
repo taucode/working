@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using TauCode.Extensions;
+using TauCode.Working.Exceptions;
 
 // todo clean
 namespace TauCode.Working.Jobs.Instruments
@@ -13,11 +13,13 @@ namespace TauCode.Working.Jobs.Instruments
         private bool _isEnabled;
         private bool _isDisposed;
 
-        private CancellationTokenSource _tokenSource;
-        private StringWriterWithEncoding _systemWriter;
+        //private CancellationTokenSource _tokenSource;
+        //private StringWriterWithEncoding _systemWriter;
 
-        private Task _task;
-        private Task _endTask;
+        //private Task _task;
+        //private Task _endTask;
+
+        private RunContext _runContext;
 
         private readonly object _lock;
 
@@ -25,8 +27,10 @@ namespace TauCode.Working.Jobs.Instruments
 
         #region Constructor
 
-        internal Runner()
+        internal Runner(string name)
         {
+            this.Name = name;
+
             this.JobPropertiesHolder = new JobPropertiesHolder();
             this.DueTimeHolder = new DueTimeHolder();
             this.JobRunsHolder = new JobRunsHolder();
@@ -38,13 +42,15 @@ namespace TauCode.Working.Jobs.Instruments
 
         #region Private
 
+        private string Name { get; }
+
         private void CheckNotDisposed()
         {
             lock (_lock)
             {
                 if (_isDisposed)
                 {
-                    throw new NotImplementedException(); // todo
+                    throw new JobObjectDisposedException(this.Name);
                 }
             }
         }
@@ -88,19 +94,25 @@ namespace TauCode.Working.Jobs.Instruments
             {
                 lock (_lock)
                 {
-                    return _task != null;
+                    return _runContext != null;
                 }
             }
         }
 
-        internal void Run(CancellationToken? token)
+        private RunContext Run(JobStartReason startReason, CancellationToken? token)
         {
             // always guarded by '_lock'
+            //var jobProperties = this.JobPropertiesHolder.ToJobProperties();
+            var runContext = new RunContext(this, startReason, token);
+            runContext.Start();
+            return runContext;
 
-            _task = this.CreateTask(token);
-            _endTask = _task.ContinueWith(
-                this.EndTask,
-                CancellationToken.None);
+
+
+            //_task = this.CreateTask(token);
+            //_endTask = _task.ContinueWith(
+            //    this.EndTask,
+            //    CancellationToken.None);
         }
 
 
@@ -135,9 +147,12 @@ namespace TauCode.Working.Jobs.Instruments
                     return;
                 }
 
+                _isDisposed = true;
+
                 try
                 {
-                    _tokenSource?.Cancel();
+                    _runContext?.Cancel();
+                    _runContext = null;
                 }
                 catch
                 {
@@ -165,7 +180,7 @@ namespace TauCode.Working.Jobs.Instruments
                 //    // dismiss; Dispose shouldn't throw
                 //}
 
-                _isDisposed = true;
+                //_isDisposed = true;
             }
         }
 
@@ -193,13 +208,13 @@ namespace TauCode.Working.Jobs.Instruments
         {
             lock (_lock)
             {
-                if (this.IsRunning)
+                if (_runContext == null)
                 {
-                    _tokenSource.Cancel();
-                    return true;
+                    return false;
                 }
 
-                return false;
+                _runContext.Cancel();
+                return true;
             }
         }
 
@@ -224,9 +239,33 @@ namespace TauCode.Working.Jobs.Instruments
                         return false;
                     }
 
-                    this.Run(token);
+                    _runContext = this.Run(startReason, token);
                     return true;
                 }
+            }
+        }
+
+        internal JobInfo GetInfo(int? maxRunCount)
+        {
+            var tuple = this.JobRunsHolder.Get();
+            var currentRun = tuple.Item1;
+            var runs = tuple.Item2;
+
+            var dueTimeInfo = this.DueTimeHolder.GetDueTimeInfo();
+
+            return new JobInfo(
+                currentRun,
+                dueTimeInfo.GetEffectiveDueTime(),
+                dueTimeInfo.IsDueTimeOverridden(),
+                this.JobRunsHolder.Count,
+                runs);
+        }
+
+        internal void OnTaskEnded()
+        {
+            lock (_lock)
+            {
+                _runContext = null;
             }
         }
     }
