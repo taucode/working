@@ -21,27 +21,22 @@ namespace TauCode.Working.Jobs.Instruments
 
         #region Constructor
 
-        internal Runner(string name)
+        internal Runner(string jobName)
         {
-            this.Name = name;
+            this.JobName = jobName;
 
-            this.JobPropertiesHolder = new JobPropertiesHolder();
-            this.DueTimeHolder = new DueTimeHolder();
+            this.JobPropertiesHolder = new JobPropertiesHolder(this.JobName);
+            this.DueTimeHolder = new DueTimeHolder(this.JobName);
             this.JobRunsHolder = new JobRunsHolder();
 
             _lock = new object();
 
-            _logger = new ObjectLogger(this, name)
-            {
-                IsEnabled = true,
-            };
+            _logger = new ObjectLogger(this, jobName);
         }
 
         #endregion
 
         #region Private
-
-        private string Name { get; }
 
         private void CheckNotDisposed()
         {
@@ -49,7 +44,7 @@ namespace TauCode.Working.Jobs.Instruments
             {
                 if (_isDisposed)
                 {
-                    throw new JobObjectDisposedException(this.Name);
+                    throw new JobObjectDisposedException(this.JobName);
                 }
             }
         }
@@ -65,6 +60,8 @@ namespace TauCode.Working.Jobs.Instruments
         #endregion
 
         #region Internal
+
+        internal string JobName { get; }
 
         internal bool IsEnabled
         {
@@ -183,8 +180,8 @@ namespace TauCode.Working.Jobs.Instruments
                         return false;
                     }
 
-
                     _runContext = this.Run(startReason, token);
+
                     return true;
                 }
             }
@@ -212,6 +209,16 @@ namespace TauCode.Working.Jobs.Instruments
             {
                 _runContext = null;
             }
+        }
+
+        internal bool IsLoggingEnabled => _logger.IsEnabled;
+
+        internal void EnableLogging(bool enable)
+        {
+            _logger.IsEnabled = enable;
+
+            this.JobPropertiesHolder.EnableLogging(enable);
+            this.DueTimeHolder.EnableLogging(enable);
         }
 
         #endregion

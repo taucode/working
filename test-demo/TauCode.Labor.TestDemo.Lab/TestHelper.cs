@@ -19,7 +19,7 @@ namespace TauCode.Labor.TestDemo.Lab
         //    method.Invoke(jobManager, new object[] { });
         //}
 
-        // todo move to taucode.infra
+        // todo move to taucode.infra?
         internal static async Task WaitUntil(DateTimeOffset now, DateTimeOffset moment, CancellationToken cancellationToken = default)
         {
             var timeout = moment - now;
@@ -31,8 +31,13 @@ namespace TauCode.Labor.TestDemo.Lab
             await Task.Delay(timeout, cancellationToken);
         }
 
-        //internal static IJobManager CreateJobManager() => JobManager.CreateJobManager();
-        internal static IJobManager CreateJobManager() => JobManager.CreateJobManager();
+        internal static IJobManager CreateJobManager()
+        {
+            var jobManager = new JobManager();
+            JobLoggingHelper.EnableLogging(jobManager, true);
+            return jobManager;
+        }
+
 
         internal static async Task WaitUntilSecondsElapse(
             this ITimeProvider timeProvider,

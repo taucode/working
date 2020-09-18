@@ -32,7 +32,12 @@ namespace TauCode.Working.Tests
         }
 
         //internal static IJobManager CreateJobManager() => JobManager.CreateJobManager();
-        internal static IJobManager CreateJobManager() => JobManager.CreateJobManager();
+        internal static IJobManager CreateJobManager()
+        {
+            var jobManager = new JobManager();
+            JobLoggingHelper.EnableLogging(jobManager, true);
+            return jobManager;
+        }
 
         internal static void WaitUntil(this ITimeProvider timeProvider, DateTimeOffset moment)
         {

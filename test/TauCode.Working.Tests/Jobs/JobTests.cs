@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using Moq;
+using NUnit.Framework;
 using Serilog;
 using System;
 using System.Linq;
@@ -89,7 +90,6 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
-        //[Ignore("todo")]
         public void Name_JobIsRunningOrStopped_ReturnsValidName()
         {
             // Arrange
@@ -238,11 +238,6 @@ namespace TauCode.Working.Tests.Jobs
 
         #region IJob.Schedule
 
-        // todo: IJob.Schedule
-        // - after was disposed, equals to last.
-        // - after was disposed, cannot be set, throws.
-        // - if schedule produces strange results (throws, date before 'now', date after 'never') then sets due time to 'never'
-
         [Test]
         public void Schedule_JustCreatedJob_ReturnsNeverSchedule()
         {
@@ -279,6 +274,40 @@ namespace TauCode.Working.Tests.Jobs
 
             // Assert
             Assert.That(ex.ParamName, Is.EqualTo(nameof(IJob.Schedule)));
+        }
+
+        [Test]
+        public async Task Schedule_SetValidValue_SetsSchedule()
+        {
+            // Arrange
+            var now = "2020-09-11Z".ToUtcDayOffset().AddHours(3);
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+
+            var name = "job1";
+            var job = jobManager.Create(name);
+            job.IsEnabled = true;
+
+            var writer = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = writer;
+
+            // Act
+            var newSchedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now.AddSeconds(2));
+            job.Schedule = newSchedule;
+            job.Routine = (parameter, tracker, output, token) =>
+            {
+                output.Write("Hello!");
+                return Task.CompletedTask;
+            };
+
+            await Task.Delay(2500);
+
+            // Assert
+            Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
+            Assert.That(job.Schedule, Is.SameAs(newSchedule));
         }
 
         [Test]
@@ -354,7 +383,6 @@ namespace TauCode.Working.Tests.Jobs
             // due time is 00:02 after start
             Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(2)));
         }
-
 
         // todo: causes failures sometimes.
         // do not remove this todo until bug is found and fixed.
@@ -571,9 +599,6 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(info.NextDueTimeIsOverridden, Is.False);
         }
 
-
-        // - if set during run, does not affect current run, but applies since was set.
-
         /// <summary>
         /// 0---------1-*---*---2-*-------3-*-------4   * - routine checks due time
         ///           |____________1.5s_____________|
@@ -597,7 +622,6 @@ namespace TauCode.Working.Tests.Jobs
             DateTimeOffset dueTime2 = default;
             DateTimeOffset dueTime3 = default;
             DateTimeOffset dueTime4 = default;
-
 
             job.Routine = async (parameter, tracker, output, token) =>
             {
@@ -638,6 +662,106 @@ namespace TauCode.Working.Tests.Jobs
 
             Assert.Pass(_logWriter.ToString());
         }
+
+        [Test]
+        public void Schedule_SetThenDisposed_EqualsToLastOne()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var schedule1 = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
+            var schedule2 = new SimpleSchedule(SimpleScheduleKind.Minute, 1, start);
+            var schedule3 = new SimpleSchedule(SimpleScheduleKind.Hour, 1, start);
+            
+
+            job.Schedule = schedule1;
+            var readSchedule1 = job.Schedule;
+
+            job.Schedule = schedule2;
+            var readSchedule2 = job.Schedule;
+
+            // Act
+            job.Schedule = schedule3;
+            job.Dispose();
+            var readSchedule3 = job.Schedule;
+
+            // Assert
+            Assert.That(readSchedule1, Is.SameAs(schedule1));
+            Assert.That(readSchedule2, Is.SameAs(schedule2));
+            Assert.That(readSchedule3, Is.SameAs(schedule3));
+        }
+
+        [Test]
+        public void Schedule_DisposedThenSet_ThrowsJobObjectDisposedException()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            job.Dispose();
+            var ex = Assert.Throws<JobObjectDisposedException>(() =>
+                job.Schedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, start.AddHours(1)));
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("'my-job' is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo("my-job"));
+        }
+
+        // - if schedule produces strange results (throws, date before 'now', date after 'never') then sets due time to 'never'
+        [Test]
+        public async Task Schedule_ScheduleThrows_DueTimeSetToNever()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            // set some normal schedule first
+            job.Schedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, start);
+            var normalDueTime = job.GetInfo(null).NextDueTime;
+
+            var exception = new NotSupportedException("I do not support this!");
+
+            // Act
+            var scheduleMock = new Mock<ISchedule>();
+            scheduleMock
+                .Setup(x => x.GetDueTimeAfter(It.IsAny<DateTimeOffset>()))
+                .Throws(exception);
+
+            job.Schedule = scheduleMock.Object;
+
+            await Task.Delay(100);
+
+            var faultedDueTime = job.GetInfo(null).NextDueTime;
+
+            // Assert
+            Assert.That(normalDueTime, Is.EqualTo(start.AddMinutes(1)));
+            Assert.That(faultedDueTime.Year, Is.EqualTo(9000));
+
+            var log = _logWriter.ToString();
+            Assert.That(log, Does.Contain($"{exception.GetType().FullName}: {exception.Message}"));
+
+            Assert.Pass(_logWriter.ToString());
+        }
+
 
         #endregion
 
@@ -731,40 +855,6 @@ namespace TauCode.Working.Tests.Jobs
             //Assert.That(run.Exception, Is.Null);
         }
 
-        [Test]
-        [Ignore("todo")]
-        public async Task SetSchedule_ValidValue_SetsSchedule()
-        {
-            // Arrange
-            var now = "2020-09-11Z".ToUtcDayOffset().AddHours(3);
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
-            TimeProvider.Override(timeMachine);
-
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-
-            var name = "job1";
-            var job = jobManager.Create(name);
-            job.IsEnabled = true;
-
-            var writer = new StringWriterWithEncoding(Encoding.UTF8);
-            job.Output = writer;
-
-            // Act
-            var newSchedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now.AddSeconds(2));
-            job.Schedule = newSchedule;
-            job.Routine = (parameter, tracker, output, token) =>
-            {
-                output.Write("Hello!");
-                return Task.CompletedTask;
-            };
-
-            await Task.Delay(2500);
-
-            // Assert
-            Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
-            Assert.That(job.Schedule, Is.SameAs(newSchedule));
-        }
 
         //====================================================================================
 
@@ -774,20 +864,17 @@ namespace TauCode.Working.Tests.Jobs
         // todo: IJob.Routine
         // - initially, not null.
         // - cannot be set to null, throws.
-        // - cannot be set if job runs (by schedule)
-        // - cannot be set if job runs (by overridden due time)
-        // - cannot be set if job runs (by force)
+        // - if set while running, finishes job with current routine; next run is performed with new routine.
         // - when set, updated to new value, regardless of enabled or disabled
         // - when set after run completed, afterwards runs with new routine.
+        // - if returns strange value (like canceled, or completed), or throws, ==> todo.
         // - after disposed, can be read.
         // - after disposed, cannot be set, throws.
 
         // todo: IJob.Parameter
         // - initially, null
         // - can be set to any value including null (if not running), be it enabled or disabled.
-        // - cannot be set if job runs (by schedule)
-        // - cannot be set if job runs (by overridden due time)
-        // - cannot be set if job runs (by force)
+        // - if set while running, finishes job with current parameter; next run is performed with new parameter.
         // - when set after run completed, afterwards runs with new parameter value.
         // - after disposed, can be read.
         // - after disposed, cannot be set, throws.
@@ -795,9 +882,7 @@ namespace TauCode.Working.Tests.Jobs
         // todo: IJob.ProgressTracker
         // - initially, null
         // - can be set to any value including null (if not running), be it enabled or disabled.
-        // - cannot be set if job runs (by schedule)
-        // - cannot be set if job runs (by overridden due time)
-        // - cannot be set if job runs (by force)
+        // - if set while running, finishes job with current progress tracker; next run is performed with new progress tracker.
         // - when set after run completed, afterwards runs with new progress tracker.
         // - after disposed, can be read.
         // - after disposed, cannot be set, throws.
@@ -805,9 +890,7 @@ namespace TauCode.Working.Tests.Jobs
         // todo: IJob.Output
         // - initially, null
         // - can be set to any value including null (if not running), be it enabled or disabled.
-        // - cannot be set if job runs (by schedule)
-        // - cannot be set if job runs (by overridden due time)
-        // - cannot be set if job runs (by force)
+        // - if set while running, finishes job with current output; next run is performed with new output.
         // - when set after run completed, afterwards runs with new output.
         // - after disposed, can be read.
         // - after disposed, cannot be set, throws.

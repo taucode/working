@@ -1,8 +1,8 @@
 ﻿using System;
 using TauCode.Infrastructure.Time;
+using TauCode.Working.Exceptions;
 using TauCode.Working.Schedules;
 
-// todo clean
 namespace TauCode.Working.Jobs.Instruments
 {
     internal class DueTimeHolder : IDisposable
@@ -15,18 +15,24 @@ namespace TauCode.Working.Jobs.Instruments
         private DateTimeOffset _scheduleDueTime; // calculated
 
         private bool _isDisposed;
+        private readonly string _jobName;
 
         private readonly object _lock;
+
+        private readonly ObjectLogger _logger;
 
         #endregion
 
         #region Constructor
 
-        internal DueTimeHolder()
+        internal DueTimeHolder(string jobName)
         {
+            _jobName = jobName;
             _schedule = NeverSchedule.Instance;
             _lock = new object();
             this.UpdateScheduleDueTime();
+
+            _logger = new ObjectLogger(this, _jobName);
         }
 
         #endregion
@@ -39,7 +45,7 @@ namespace TauCode.Working.Jobs.Instruments
             {
                 if (_isDisposed)
                 {
-                    throw new NotImplementedException(); // todo
+                    throw new JobObjectDisposedException(_jobName);
                 }
             }
         }
@@ -93,8 +99,25 @@ namespace TauCode.Working.Jobs.Instruments
             var now = TimeProvider.GetCurrent();
             lock (_lock)
             {
-                // todo: check not disposed?
-                _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
+                if (_isDisposed)
+                {
+                    // todo: write to log about strange attempt.
+                    return;
+                }
+
+                try
+                {
+                    _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
+                }
+                catch (Exception ex)
+                {
+                    _scheduleDueTime = JobExtensions.Never;
+
+                    _logger.Warning(
+                        "An exception was thrown on attempt to calculate due time",
+                        nameof(UpdateScheduleDueTime),
+                        ex);
+                }
             }
         }
 
@@ -104,6 +127,11 @@ namespace TauCode.Working.Jobs.Instruments
             {
                 return new DueTimeInfo(_scheduleDueTime, _overriddenDueTime);
             }
+        }
+
+        internal void EnableLogging(bool enable)
+        {
+            _logger.IsEnabled = enable;
         }
 
         #endregion

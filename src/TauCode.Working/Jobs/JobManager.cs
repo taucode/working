@@ -6,12 +6,22 @@ namespace TauCode.Working.Jobs
 {
     public class JobManager : IJobManager
     {
+        #region Fields
+        
         private readonly Vice _vice;
 
-        private JobManager()
+        #endregion
+
+        #region Constructor
+
+        public JobManager()
         {
             _vice = new Vice();
         }
+
+        #endregion
+
+        #region Private
 
         private void CheckJobName(string jobName, string jobNameParamName)
         {
@@ -34,12 +44,10 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        public static IJobManager CreateJobManager() => new JobManager();
 
-        public void Dispose()
-        {
-            _vice.Dispose();
-        }
+        #endregion
+
+        #region IJobManager Members
 
         public void Start()
         {
@@ -57,21 +65,9 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        public bool IsRunning
-        {
-            get
-            {
-                return _vice.State == WorkerState.Running;
-            }
-        }
+        public bool IsRunning => _vice.State == WorkerState.Running;
 
-        public bool IsDisposed
-        {
-            get
-            {
-                return _vice.IsDisposed;
-            }
-        }
+        public bool IsDisposed => _vice.IsDisposed;
 
         public IJob Create(string jobName)
         {
@@ -94,5 +90,23 @@ namespace TauCode.Working.Jobs
 
             return _vice.GetJob(jobName);
         }
+
+        #endregion
+
+        #region IDisposable Members
+
+        public void Dispose() => _vice.Dispose();
+
+        #endregion
+
+        #region Internal
+
+        internal bool IsLoggingEnabled
+        {
+            get => _vice.IsLoggingEnabled;
+            set => _vice.EnableLogging(value);
+        }
+
+        #endregion
     }
 }

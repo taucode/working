@@ -8,7 +8,6 @@ using TauCode.Extensions;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 
-// todo clean
 namespace TauCode.Working.Jobs.Instruments
 {
     internal class RunContext
@@ -78,9 +77,9 @@ namespace TauCode.Working.Jobs.Instruments
                 multiTextWriter,
                 _tokenSource.Token);
 
-            _logger = new ObjectLogger(this, null)
+            _logger = new ObjectLogger(this, _initiator.JobName)
             {
-                IsEnabled = true,
+                IsEnabled = _initiator.IsLoggingEnabled,
             };
         }
 
@@ -90,7 +89,6 @@ namespace TauCode.Working.Jobs.Instruments
 
         private void EndTask(Task task)
         {
-            _logger.Debug($"Task ended. Status: {task.Status}", nameof(EndTask));
             _logger.Debug($"Task ended. Status: {task.Status}", nameof(EndTask), task.Exception?.InnerException);
 
             JobRunStatus status;
@@ -135,7 +133,6 @@ namespace TauCode.Working.Jobs.Instruments
         {
             return taskException?.InnerException ?? taskException;
         }
-
 
         #endregion
 

@@ -11,21 +11,28 @@ namespace TauCode.Working.Jobs
 {
     internal class Vice : LoopWorkerBase
     {
+        #region Fields
+
         private readonly Dictionary<string, Employee> _employees;
         private readonly object _lock;
 
         private readonly ObjectLogger _logger;
+
+        #endregion
+
+        #region Constructor
 
         internal Vice()
         {
             _employees = new Dictionary<string, Employee>();
             _lock = new object();
 
-            _logger = new ObjectLogger(this, null)
-            {
-                IsEnabled = true,
-            };
+            _logger = new ObjectLogger(this, null);
         }
+
+        #endregion
+
+        #region Overridden
 
         protected override Task<TimeSpan> DoWork(CancellationToken token)
         {
@@ -73,7 +80,7 @@ namespace TauCode.Working.Jobs
 
                 // when to visit you again, Employee?
                 var nextDueTimeInfo = employee.GetDueTimeInfoForVice(true);
-                
+
                 if (nextDueTimeInfo.HasValue) // actually, should have, he could not finish work and got disposed that fast, but who knows...
                 {
                     var nextDueTime = nextDueTimeInfo.Value.GetEffectiveDueTime();
@@ -88,6 +95,24 @@ namespace TauCode.Working.Jobs
             return Task.FromResult(vacationTimeout);
         }
 
+        protected override void OnDisposed()
+        {
+            IList<Employee> list;
+            lock (_lock)
+            {
+                list = _employees.Values.ToList();
+            }
+
+            foreach (var employee in list)
+            {
+                employee.Dispose();
+            }
+        }
+
+        #endregion
+
+        #region Internal
+
         internal IJob CreateJob(string jobName)
         {
             lock (_lock)
@@ -98,6 +123,10 @@ namespace TauCode.Working.Jobs
                 }
 
                 var employee = new Employee(this, jobName);
+                if (this.IsLoggingEnabled)
+                {
+                    employee.EnableLogging(true);
+                }
 
                 _employees.Add(employee.Name, employee);
 
@@ -130,18 +159,20 @@ namespace TauCode.Working.Jobs
 
         internal void PulseWork() => this.WorkArrived();
 
-        protected override void OnDisposed()
-        {
-            IList<Employee> list;
-            lock (_lock)
-            {
-                list = _employees.Values.ToList();
-            }
+        internal bool IsLoggingEnabled => _logger.IsEnabled;
 
-            foreach (var employee in list)
+        internal void EnableLogging(bool enable)
+        {
+            _logger.IsEnabled = enable;
+            lock (_logger)
             {
-                employee.Dispose();
+                foreach (var employee in _employees.Values)
+                {
+                    employee.EnableLogging(enable);
+                }
             }
         }
+
+        #endregion
     }
 }

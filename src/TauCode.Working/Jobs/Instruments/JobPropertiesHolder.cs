@@ -1,13 +1,15 @@
 ﻿using System;
 using System.IO;
+using TauCode.Working.Exceptions;
 
 
-// todo clean
 namespace TauCode.Working.Jobs.Instruments
 {
     internal class JobPropertiesHolder : IDisposable
     {
         #region Fields
+
+        private readonly string _jobName;
 
         private JobDelegate _routine;
         private object _parameter;
@@ -18,14 +20,19 @@ namespace TauCode.Working.Jobs.Instruments
 
         private readonly object _lock;
 
+        private readonly ObjectLogger _logger;
+
         #endregion
 
         #region Constructor
 
-        internal JobPropertiesHolder()
+        internal JobPropertiesHolder(string jobName)
         {
+            _jobName = jobName;
             _routine = JobExtensions.IdleJobRoutine;
             _lock = new object();
+
+            _logger = new ObjectLogger(this, jobName);
         }
 
         #endregion
@@ -38,7 +45,7 @@ namespace TauCode.Working.Jobs.Instruments
             {
                 if (_isDisposed)
                 {
-                    throw new NotImplementedException(); // todo
+                    throw new JobObjectDisposedException(_jobName);
                 }
             }
         }
@@ -123,6 +130,23 @@ namespace TauCode.Working.Jobs.Instruments
             }
         }
 
+        internal JobProperties ToJobProperties()
+        {
+            lock (_lock)
+            {
+                return new JobProperties(
+                    _routine,
+                    _parameter,
+                    _progressTracker,
+                    _output);
+            }
+        }
+
+        internal void EnableLogging(bool enable)
+        {
+            _logger.IsEnabled = enable;
+        }
+
         #endregion
 
         #region IDisposable
@@ -141,17 +165,5 @@ namespace TauCode.Working.Jobs.Instruments
         }
 
         #endregion
-
-        internal JobProperties ToJobProperties()
-        {
-            lock (_lock)
-            {
-                return new JobProperties(
-                    _routine,
-                    _parameter,
-                    _progressTracker,
-                    _output);
-            }
-        }
     }
 }

@@ -13,6 +13,7 @@ namespace TauCode.Working.Jobs
         private readonly Vice _vice;
         private readonly Job _job;
         private readonly Runner _runner;
+        private readonly ObjectLogger _logger;
 
         #endregion
 
@@ -25,11 +26,13 @@ namespace TauCode.Working.Jobs
             _vice = vice;
             _job = new Job(this);
             _runner = new Runner(this.Name);
+
+            _logger = new ObjectLogger(this, this.Name);
         }
 
         #endregion
 
-        #region IJob Implementation
+        #region Internal - IJob Implementation
 
         /// <summary>
         /// Returns <see cref="IJob"/> instance itself.
@@ -81,7 +84,7 @@ namespace TauCode.Working.Jobs
 
         internal JobInfo GetInfo(int? maxRunCount) => _runner.GetInfo(maxRunCount);
 
-        internal void OverrideDueTime(DateTimeOffset? dueTime) => this._runner.DueTimeHolder.OverriddenDueTime = dueTime;
+        internal void OverrideDueTime(DateTimeOffset? dueTime) => this._runner.DueTimeHolder.OverriddenDueTime = dueTime; // todo: _vice.PulseWork()? ut it!
 
         internal void ForceStart() => this.WakeUp(JobStartReason.Force, null);
 
@@ -95,11 +98,21 @@ namespace TauCode.Working.Jobs
 
         #endregion
 
-        #region Interface for Vice
+        #region Internal - Interface for Vice
 
         internal DueTimeInfo? GetDueTimeInfoForVice(bool future) => _runner.GetDueTimeInfoForVice(future);
 
         internal bool WakeUp(JobStartReason startReason, CancellationToken? token) => _runner.WakeUp(startReason, token);
+
+        #endregion
+
+        #region Internal - Logging
+
+        internal void EnableLogging(bool enable)
+        {
+            _logger.IsEnabled = enable;
+            _runner.EnableLogging(enable);
+        }
 
         #endregion
 
