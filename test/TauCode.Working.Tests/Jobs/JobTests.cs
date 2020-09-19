@@ -1650,7 +1650,7 @@ namespace TauCode.Working.Tests.Jobs
             job.Parameter = 17;
             job.Dispose();
             var ex = Assert.Throws<JobObjectDisposedException>(() => job.Parameter = 101);
-            
+
             // Assert
             Assert.That(job.Parameter, Is.EqualTo(17));
             Assert.That(ex.ObjectName, Is.EqualTo("my-job"));
@@ -1658,6 +1658,443 @@ namespace TauCode.Working.Tests.Jobs
 
         #endregion
 
+        #region IJob.ProgressTracker
+
+        [Test]
+        public void ProgressTracker_JustCreated_EqualsToNull()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            var progressTracker = job.ProgressTracker;
+
+            // Assert
+            Assert.That(progressTracker, Is.Null);
+        }
+
+        [Test]
+        public void ProgressTracker_ValueIsSet_EqualsToThatValue()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            IProgressTracker tracker1 = new MockProgressTracker();
+            job.ProgressTracker = tracker1;
+            var readTracker1 = job.ProgressTracker;
+
+            job.IsEnabled = true;
+            IProgressTracker tracker2 = new MockProgressTracker();
+            job.ProgressTracker = tracker2;
+            var readTracker2 = job.ProgressTracker;
+
+            job.IsEnabled = false;
+            IProgressTracker tracker3 = null;
+            job.ProgressTracker = tracker3;
+            var readTracker3 = job.ProgressTracker;
+
+            // Assert
+            Assert.That(tracker1, Is.EqualTo(readTracker1));
+            Assert.That(tracker2, Is.EqualTo(readTracker2));
+            Assert.That(tracker3, Is.EqualTo(readTracker3));
+        }
+
+        /// <summary>
+        /// 0---------1---------2---------3---------4---------5---------
+        ///           |___~1s____|        |___~1s____|               
+        /// _____!1______!2_____________________________________________ (!1 - tracker1, !2 - tracker2)
+        /// </summary>
+        [Test]
+        public async Task ProgressTracker_SetOnTheFly_RunsWithOldParameterAndNextTimeRunsWithNewProgressTracker()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            ISchedule schedule = new ConcreteSchedule(
+                start.AddSeconds(1),
+                start.AddSeconds(3));
+
+            job.Schedule = schedule;
+
+            var tracker1 = new MockProgressTracker();
+            var tracker2 = new MockProgressTracker();
+
+            job.Routine = async (parameter, tracker, writer, token) =>
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    tracker.UpdateProgress((decimal)i * 20, null);
+                }
+
+                await Task.Delay(200, token);
+            };
+
+            job.IsEnabled = true;
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, 0.8);
+            job.ProgressTracker = tracker1;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 1.3);
+            job.ProgressTracker = tracker2;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 4.8);
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.RunCount, Is.EqualTo(2));
+            Assert.That(info.Runs, Has.Count.EqualTo(2));
+
+            CollectionAssert.AreEquivalent(new decimal[] { 0m, 20m, 40m, 60m, 80m }, tracker1.GetList());
+            CollectionAssert.AreEquivalent(new decimal[] { 0m, 20m, 40m, 60m, 80m }, tracker2.GetList());
+        }
+
+        /// <summary>
+        /// 0---------1---------2---------3---------4---------5---------
+        ///           |___~1s____|        |___~1s____|               
+        /// _____!1___________________!2________________________________ (!1 - tracker1, !2 - tracker2)
+        /// </summary>
+        [Test]
+        public async Task ProgressTracker_SetAfterFirstRun_NextTimeRunsWithNewProgressTracker()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            ISchedule schedule = new ConcreteSchedule(
+                start.AddSeconds(1),
+                start.AddSeconds(3));
+
+            job.Schedule = schedule;
+
+            var tracker1 = new MockProgressTracker();
+            var tracker2 = new MockProgressTracker();
+
+            job.Routine = async (parameter, tracker, writer, token) =>
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    tracker.UpdateProgress((decimal)i * 20, null);
+                }
+
+                await Task.Delay(200, token);
+            };
+
+            job.IsEnabled = true;
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, 0.8);
+            job.ProgressTracker = tracker1;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 2.7);
+            job.ProgressTracker = tracker2;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 4.8);
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.RunCount, Is.EqualTo(2));
+            Assert.That(info.Runs, Has.Count.EqualTo(2));
+
+            CollectionAssert.AreEquivalent(new decimal[] { 0m, 20m, 40m, 60m, 80m }, tracker1.GetList());
+            CollectionAssert.AreEquivalent(new decimal[] { 0m, 20m, 40m, 60m, 80m }, tracker2.GetList());
+        }
+
+        [Test]
+        public void ProgressTracker_JobIsDisposed_CanBeRead()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            var progressTracker = new MockProgressTracker();
+            job.ProgressTracker = progressTracker;
+            job.Dispose();
+
+            // Assert
+            Assert.That(job.ProgressTracker, Is.EqualTo(progressTracker));
+        }
+
+        [Test]
+        public void ProgressTracker_JobIsDisposedThenValueIsSet_ThrowsJobObjectDisposedException()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var tracker1 = new MockProgressTracker();
+            var tracker2 = new MockProgressTracker();
+
+            // Act
+            job.ProgressTracker = tracker1;
+            job.Dispose();
+            var ex = Assert.Throws<JobObjectDisposedException>(() => job.ProgressTracker = tracker2);
+
+            // Assert
+            Assert.That(job.ProgressTracker, Is.EqualTo(tracker1));
+            Assert.That(ex.ObjectName, Is.EqualTo("my-job"));
+        }
+
+        #endregion
+
+        #region IJob.Output
+
+        [Test]
+        public void Output_JustCreated_EqualsToNull()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            var output = job.Output;
+
+            // Assert
+            Assert.That(output, Is.Null);
+        }
+
+        [Test]
+        public void Output_ValueIsSet_EqualsToThatValue()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            TextWriter writer1 = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = writer1;
+            var readOutput1 = job.Output;
+
+            job.IsEnabled = true;
+            TextWriter writer2 = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = writer2;
+            var readOutput2 = job.Output;
+
+            job.IsEnabled = false;
+            TextWriter writer3 = null;
+            job.Output = writer3;
+            var readOutput3 = job.Output;
+
+            // Assert
+            Assert.That(writer1, Is.EqualTo(readOutput1));
+            Assert.That(writer2, Is.EqualTo(readOutput2));
+            Assert.That(writer3, Is.EqualTo(readOutput3));
+        }
+
+        /// <summary>
+        /// 0---------1---------2---------3---------4---------5---------
+        ///           |___~1s____|        |___~1s____|               
+        /// _____!1______!2_____________________________________________ (!1 - writer1, !2 - writer2)
+        /// </summary>
+        [Test]
+        public async Task Output_SetOnTheFly_RunsWithOldParameterAndNextTimeRunsWithNewOutput()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            ISchedule schedule = new ConcreteSchedule(
+                start.AddSeconds(1),
+                start.AddSeconds(3));
+
+            job.Schedule = schedule;
+
+            var writer1 = new StringWriterWithEncoding(Encoding.UTF8);
+            var writer2 = new StringWriterWithEncoding(Encoding.UTF8);
+
+            job.Routine = async (parameter, tracker, writer, token) =>
+            {
+                for (var i = 0; i < 5; i++)
+                {
+                    await writer.WriteAsync(i.ToString());
+                }
+
+                await Task.Delay(200, token);
+            };
+
+            job.IsEnabled = true;
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, 0.8);
+            job.Output = writer1;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 1.3);
+            job.Output = writer2;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 4.8);
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(info.CurrentRun, Is.Null);
+
+            Assert.That(info.RunCount, Is.EqualTo(2));
+            Assert.That(info.Runs, Has.Count.EqualTo(2));
+
+            Assert.That(writer1.ToString(), Is.EqualTo("01234"));
+            Assert.That(writer2.ToString(), Is.EqualTo("01234"));
+        }
+
+        /// <summary>
+        /// 0---------1---------2---------3---------4---------5---------
+        ///           |___~1s____|        |___~1s____|               
+        /// _____!1___________________!2________________________________ (!1 - writer1, !2 - writer2)
+        /// </summary>
+        [Test]
+        public async Task Output_SetAfterFirstRun_NextTimeRunsWithNewOutput()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            ISchedule schedule = new ConcreteSchedule(
+                start.AddSeconds(1),
+                start.AddSeconds(3));
+
+            job.Schedule = schedule;
+
+            var writer1 = new StringWriterWithEncoding(Encoding.UTF8);
+            var writer2 = new StringWriterWithEncoding(Encoding.UTF8);
+
+            job.Routine = async (parameter, tracker, writer, token) =>
+            {
+                for (var i = 0; i < 5; i++)
+                {
+                    await writer.WriteAsync(i.ToString());
+                }
+
+                await Task.Delay(200, token);
+            };
+
+            job.IsEnabled = true;
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, 0.8);
+            job.Output = writer1;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 2.7);
+            job.Output = writer2;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 4.8);
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(info.CurrentRun, Is.Null);
+
+            Assert.That(info.RunCount, Is.EqualTo(2));
+            Assert.That(info.Runs, Has.Count.EqualTo(2));
+
+            Assert.That(writer1.ToString(), Is.EqualTo("01234"));
+            Assert.That(writer2.ToString(), Is.EqualTo("01234"));
+        }
+
+        [Test]
+        public void Output_JobIsDisposed_CanBeRead()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            var writer = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = writer;
+            job.Dispose();
+
+            // Assert
+            Assert.That(job.Output, Is.EqualTo(writer));
+        }
+
+        [Test]
+        public void Output_JobIsDisposedThenValueIsSet_ThrowsJobObjectDisposedException()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var writer1 = new StringWriterWithEncoding(Encoding.UTF8);
+            var writer2 = new StringWriterWithEncoding(Encoding.UTF8);
+
+            // Act
+            job.Output = writer1;
+            job.Dispose();
+            var ex = Assert.Throws<JobObjectDisposedException>(() => job.Output = writer2);
+
+            // Assert
+            Assert.That(job.Output, Is.EqualTo(writer1));
+            Assert.That(ex.ObjectName, Is.EqualTo("my-job"));
+        }
+
+        #endregion
 
         //====================================================================================
 
@@ -1753,21 +2190,7 @@ namespace TauCode.Working.Tests.Jobs
 
 
 
-        // todo: IJob.ProgressTracker
-        // - initially, null
-        // - can be set to any value including null, be it enabled or disabled.
-        // - if set while running, finishes job with current progress tracker; next run is performed with new progress tracker.
-        // - when set after run completed, afterwards runs with new progress tracker.
-        // - after disposed, can be read.
-        // - after disposed, cannot be set, throws.
 
-        // todo: IJob.Output
-        // - initially, null
-        // - can be set to any value including null, be it enabled or disabled.
-        // - if set while running, finishes job with current output; next run is performed with new output.
-        // - when set after run completed, afterwards runs with new output.
-        // - after disposed, can be read.
-        // - after disposed, cannot be set, throws.
 
         // todo: IJob.GetInfo
         // - IJob just created => returns predictable result
