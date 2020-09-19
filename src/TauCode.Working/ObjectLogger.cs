@@ -26,25 +26,17 @@ namespace TauCode.Working
         {
             methodName ??= "<unknown_method>";
             var sb = new StringBuilder();
+            sb.Append('[');
+
             sb.Append(this.Host.GetType().Name);
 
             if (this.HostName == null)
             {
-                
+                // do nothing.
             }
             else
             {
                 sb.Append('(');
-                //if (this.HostName == null)
-                //{
-                //    sb.Append("<null>");
-                //}
-                //else
-                //{
-                //    sb.Append('\'');
-                //    sb.Append(this.HostName);
-                //    sb.Append('\'');
-                //}
 
                 sb.Append('\'');
                 sb.Append(this.HostName);
@@ -55,7 +47,7 @@ namespace TauCode.Working
 
             sb.Append('.');
             sb.Append(methodName);
-            sb.Append(' ');
+            sb.Append("] ");
 
             return sb.ToString();
         }

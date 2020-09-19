@@ -71,17 +71,44 @@ namespace TauCode.Working.Jobs
 
             foreach (var tuple in employeesToWakeUp)
             {
-                // todo: log on exception
                 var employee = tuple.Item1;
                 var isOverridden = tuple.Item2.IsDueTimeOverridden();
                 var reason = isOverridden ? JobStartReason.OverriddenDueTime : JobStartReason.ScheduleDueTime;
 
-                var workStarted = employee.WakeUp(reason, token);
+                var startResult = employee.Start(reason, token);
+
+                switch (startResult)
+                {
+                    case JobStartResult.Started:
+                        _logger.Information(
+                            $"Job '{employee.Name}' was started. Reason: '{reason}'.",
+                            nameof(DoWork));
+                        break;
+
+                    case JobStartResult.CompletedSynchronously:
+                        _logger.Information(
+                            $"Job '{employee.Name}' completed synchronously. Reason of start was '{reason}'.",
+                            nameof(DoWork));
+                        break;
+
+                    case JobStartResult.AlreadyRunning:
+                        _logger.Information(
+                            $"Job '{employee.Name}' already running. Attempted to start due to reason '{reason}'.",
+                            nameof(DoWork));
+                        break;
+
+                    case JobStartResult.Disabled:
+                        _logger.Information(
+                            $"Job '{employee.Name}' is disabled. Attempted to start due to reason '{reason}'.",
+                            nameof(DoWork));
+                        break;
+                }
 
                 // when to visit you again, Employee?
                 var nextDueTimeInfo = employee.GetDueTimeInfoForVice(true);
 
-                if (nextDueTimeInfo.HasValue) // actually, should have, he could not finish work and got disposed that fast, but who knows...
+                if (nextDueTimeInfo.HasValue
+                ) // actually, should have, he could not finish work and got disposed that fast, but who knows...
                 {
                     var nextDueTime = nextDueTimeInfo.Value.GetEffectiveDueTime();
                     if (nextDueTime > now)

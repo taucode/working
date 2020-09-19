@@ -84,9 +84,10 @@ namespace TauCode.Working.Jobs
 
         internal JobInfo GetInfo(int? maxRunCount) => _runner.GetInfo(maxRunCount);
 
-        internal void OverrideDueTime(DateTimeOffset? dueTime) => this._runner.DueTimeHolder.OverriddenDueTime = dueTime; // todo: _vice.PulseWork()? ut it!
+        internal void OverrideDueTime(DateTimeOffset? dueTime) =>
+            this._runner.DueTimeHolder.OverriddenDueTime = dueTime; // todo: _vice.PulseWork()? ut it!
 
-        internal void ForceStart() => this.WakeUp(JobStartReason.Force, null);
+        internal void ForceStart() => this.Start(JobStartReason.Force, null);
 
         internal bool Cancel() => _runner.Cancel();
 
@@ -102,7 +103,8 @@ namespace TauCode.Working.Jobs
 
         internal DueTimeInfo? GetDueTimeInfoForVice(bool future) => _runner.GetDueTimeInfoForVice(future);
 
-        internal bool WakeUp(JobStartReason startReason, CancellationToken? token) => _runner.WakeUp(startReason, token);
+        internal JobStartResult Start(JobStartReason startReason, CancellationToken? token) =>
+            _runner.Start(startReason, token);
 
         #endregion
 

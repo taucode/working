@@ -890,9 +890,6 @@ namespace TauCode.Working.Tests.Jobs
         #region IJob.Routine
 
         // todo: IJob.Routine
-        // - when set, updated to new value, regardless of enabled or disabled
-        // - when set after run completed, afterwards runs with new routine.
-        // - if returns strange value (like canceled, or completed), or throws, ==> todo.
         // - after disposed, can be read.
         // - after disposed, cannot be set, throws.
 
@@ -951,6 +948,8 @@ namespace TauCode.Working.Tests.Jobs
         [Test]
         public async Task Routine_SetOnTheFly_CompletesWithOldRoutineAndThenStartsWithNewRoutine()
         {
+            Task task = default;
+
             // Arrange
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
@@ -1011,8 +1010,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(run1.Output, Is.EqualTo("Second Routine!"));
             Assert.That(output2, Is.EqualTo("First Routine!Second Routine!"));
         }
-
-
+        
         [Test]
         public void Routine_SetValidValueForEnabledOrDisabledJob_SetsValue()
         {
@@ -1052,6 +1050,188 @@ namespace TauCode.Working.Tests.Jobs
 
             Assert.That(updatedRoutine2, Is.SameAs(routine2));
         }
+
+        /// <summary>
+        /// 0---------1---------2---------3---------4---------5---------6
+        ///           |_R1:_1.5s_____|              |_R2:_1.5s_____|      (R1 - routine1, R2 - routine2)
+        /// ______________________________!______________________________ (! - set routine2)
+        /// </summary>
+        [Test]
+        public async Task Routine_SetAfterPreviousRunCompleted_SetsValueAndRunsWithIt()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var output = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = output;
+
+            JobDelegate routine1 = async (parameter, tracker, writer, token) =>
+            {
+                await writer.WriteAsync("First Routine!");
+                await Task.Delay(1500, token);
+            };
+
+            JobDelegate routine2 = async (parameter, tracker, writer, token) =>
+            {
+                await writer.WriteAsync("Second Routine!");
+                await Task.Delay(1500, token);
+            };
+
+            job.Schedule = new ConcreteSchedule(
+                start.AddSeconds(1),
+                start.AddSeconds(4));
+
+            job.IsEnabled = true;
+
+            // Act
+            job.Routine = routine1;
+            var updatedRoutine1 = job.Routine;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 2.9); // job with routine1 will complete
+            var output1 = output.ToString();
+
+            await timeMachine.WaitUntilSecondsElapse(start, 3.0);
+            job.Routine = routine2;
+            var updatedRoutine2 = job.Routine;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 6.0);
+            var output2 = output.ToString();
+
+            // Assert
+            Assert.That(updatedRoutine1, Is.SameAs(routine1));
+            Assert.That(output1, Is.EqualTo("First Routine!"));
+
+            Assert.That(updatedRoutine2, Is.SameAs(routine2));
+            Assert.That(output2, Is.EqualTo("First Routine!Second Routine!"));
+        }
+
+        [Test]
+        public async Task Routine_Throws_LogsFaultedTask()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var output = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = output;
+
+            var exception = new NotSupportedException("Bye baby!");
+
+            JobDelegate routine = (parameter, tracker, writer, token) =>
+            {
+                writer.WriteLine("Hi there!");
+                throw exception;
+            };
+
+            job.Schedule = new ConcreteSchedule(
+                start.AddSeconds(1));
+
+            job.IsEnabled = true;
+
+            // Act
+            job.Routine = routine;
+            var updatedRoutine = job.Routine;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 1.5); // will fail by this time
+            var outputResult = output.ToString();
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(updatedRoutine, Is.SameAs(routine));
+            Assert.That(outputResult, Does.Contain("Hi there!"));
+            Assert.That(outputResult, Does.Contain(exception.ToString()));
+
+            Assert.That(info.CurrentRun, Is.Null);
+
+            Assert.That(info.RunCount, Is.EqualTo(1));
+            var run = info.Runs.Single();
+
+            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Faulted));
+            Assert.That(run.Exception, Is.SameAs(exception));
+            Assert.That(run.Output, Does.Contain(exception.ToString()));
+            
+            var log = _logWriter.ToString();
+
+            Assert.That(log, Does.Contain("Routine has thrown an exception."));
+
+            Assert.Pass(log);
+        }
+
+        [Test]
+        public async Task Routine_ReturnsCanceledTask_LogsCanceledTask()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            using var source = new CancellationTokenSource();
+            source.Cancel();
+
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var output = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = output;
+
+            JobDelegate routine = (parameter, tracker, writer, token) =>
+            {
+                writer.WriteLine("Hi there!");
+                return Task.FromCanceled(source.Token);
+            };
+
+            job.Schedule = new ConcreteSchedule(
+                start.AddSeconds(1));
+
+            job.IsEnabled = true;
+
+            // Act
+            job.Routine = routine;
+            var updatedRoutine = job.Routine;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 1.5); // will be canceled by this time
+            var outputResult = output.ToString();
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(updatedRoutine, Is.SameAs(routine));
+            Assert.That(outputResult, Does.Contain("Hi there!"));
+
+            Assert.That(info.CurrentRun, Is.Null);
+
+            Assert.That(info.RunCount, Is.EqualTo(1));
+            var run = info.Runs.Single();
+
+            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Canceled));
+            Assert.That(run.Exception, Is.Null);
+
+            var log = _logWriter.ToString();
+
+            Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+
+            Assert.Pass(log);
+        }
+
+
+        // todo: if faulted => ...
+
+        // todo: if ranToCompletion => ...
+
+
 
         #endregion
 

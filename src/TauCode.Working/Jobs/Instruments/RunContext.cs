@@ -69,18 +69,27 @@ namespace TauCode.Working.Jobs.Instruments
                 JobRunStatus.Running,
                 _systemWriter);
 
-
-            // todo: try/catch
-            _task = jobProperties.Routine(
-                jobProperties.Parameter,
-                jobProperties.ProgressTracker,
-                multiTextWriter,
-                _tokenSource.Token);
-
             _logger = new ObjectLogger(this, _initiator.JobName)
             {
                 IsEnabled = _initiator.IsLoggingEnabled,
             };
+
+            try
+            {
+                _task = jobProperties.Routine(
+                    jobProperties.Parameter,
+                    jobProperties.ProgressTracker,
+                    multiTextWriter,
+                    _tokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                // it is not an error if Routine throws, but let's log it as a warning.
+                multiTextWriter.WriteLine(ex);
+
+                _logger.Warning("Routine has thrown an exception.", "ctor", ex);
+                _task = Task.FromException(ex);
+            }
         }
 
         #endregion
@@ -138,10 +147,20 @@ namespace TauCode.Working.Jobs.Instruments
 
         #region Internal
 
-        internal void Start()
+        internal RunContext Start()
         {
             _initiator.JobRunsHolder.Start(_runInfoBuilder.Build());
-            _task.ContinueWith(this.EndTask);
+
+            if (_task.IsCompleted)
+            {
+                this.EndTask(_task);
+                return null;
+            }
+            else
+            {
+                _task.ContinueWith(this.EndTask);
+                return this;
+            }
         }
 
         internal void Cancel()

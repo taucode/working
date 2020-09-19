@@ -53,8 +53,8 @@ namespace TauCode.Working.Jobs.Instruments
         {
             // always guarded by '_lock'
             var runContext = new RunContext(this, startReason, token);
-            runContext.Start();
-            return runContext;
+            var startedRunContext = runContext.Start();
+            return startedRunContext;
         }
 
         #endregion
@@ -142,7 +142,7 @@ namespace TauCode.Working.Jobs.Instruments
             }
         }
 
-        internal bool WakeUp(JobStartReason startReason, CancellationToken? token)
+        internal JobStartResult Start(JobStartReason startReason, CancellationToken? token)
         {
             if (startReason == JobStartReason.Force)
             {
@@ -158,31 +158,39 @@ namespace TauCode.Working.Jobs.Instruments
                         throw new NotImplementedException();
                     }
 
-
                     _runContext = this.Run(startReason, token);
-                    return true;
+
+                    if (_runContext == null)
+                    {
+                        return JobStartResult.CompletedSynchronously;
+                    }
+
+                    return JobStartResult.Started;
                 }
             }
             else
             {
                 lock (_lock)
                 {
-                    _logger.Debug($"IsRunning: {this.IsRunning}", nameof(WakeUp));
-
                     if (this.IsRunning)
                     {
-                        return false;
+                        return JobStartResult.AlreadyRunning;
                     }
 
                     if (!this.IsEnabled)
                     {
                         this.DueTimeHolder.UpdateScheduleDueTime();
-                        return false;
+                        return JobStartResult.Disabled;
                     }
 
                     _runContext = this.Run(startReason, token);
 
-                    return true;
+                    if (_runContext == null)
+                    {
+                        return JobStartResult.CompletedSynchronously;
+                    }
+
+                    return JobStartResult.Started;
                 }
             }
         }
