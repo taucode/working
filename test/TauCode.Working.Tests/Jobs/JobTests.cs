@@ -2,8 +2,10 @@
 using NUnit.Framework;
 using Serilog;
 using System;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Extensions.Lab;
@@ -888,8 +890,6 @@ namespace TauCode.Working.Tests.Jobs
         #region IJob.Routine
 
         // todo: IJob.Routine
-        // - cannot be set to null, throws.
-        // - if set while running, finishes job with current routine; next run is performed with new routine.
         // - when set, updated to new value, regardless of enabled or disabled
         // - when set after run completed, afterwards runs with new routine.
         // - if returns strange value (like canceled, or completed), or throws, ==> todo.
@@ -922,6 +922,135 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(routine, Is.Not.Null);
             var run = info.Runs.First();
             Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+        }
+
+        [Test]
+        public void Routine_SetNull_ThrowsArgumentNullException()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            // Act
+            var ex = Assert.Throws<ArgumentNullException>(() => job.Routine = null);
+
+            // Assert
+            Assert.That(ex.ParamName, Is.EqualTo("Routine"));
+        }
+
+        /// <summary>
+        /// 0---------1---------2---------3---------4---------5---------
+        ///           |_R1:_1.5s_____|    |_R2:_1.5s_____|               (R1 - routine1, R2 - routine2)
+        /// ______1.4s____!1_______________________________!2___________ (!1 - set routine2, !2 - dispose)
+        /// </summary>
+        [Test]
+        public async Task Routine_SetOnTheFly_CompletesWithOldRoutineAndThenStartsWithNewRoutine()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var output = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = output;
+
+            job.Schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
+
+            async Task Routine1(object parameter, IProgressTracker tracker, TextWriter writer, CancellationToken token)
+            {
+                await writer.WriteAsync("First Routine!");
+                await Task.Delay(1500, token);
+            }
+
+            async Task Routine2(object parameter, IProgressTracker tracker, TextWriter writer, CancellationToken token)
+            {
+                await writer.WriteAsync("Second Routine!");
+                await Task.Delay(1500, token);
+            }
+
+            job.IsEnabled = true;
+            job.Routine = Routine1;
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, 1.4);
+            job.Routine = Routine2;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 2.8);
+            var output1 = output.ToString();
+
+            await timeMachine.WaitUntilSecondsElapse(start, 4.8);
+            var output2 = output.ToString();
+
+            jobManager.Dispose();
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(5)));
+
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.RunCount, Is.EqualTo(2));
+            Assert.That(info.Runs, Has.Count.EqualTo(2));
+
+            var run0 = info.Runs[0];
+            Assert.That(run0.DueTime, Is.EqualTo(start.AddSeconds(1)));
+            Assert.That(run0.Output, Is.EqualTo("First Routine!"));
+            Assert.That(output1, Is.EqualTo("First Routine!"));
+
+            var run1 = info.Runs[1];
+            Assert.That(run1.DueTime, Is.EqualTo(start.AddSeconds(3)));
+            Assert.That(run1.Output, Is.EqualTo("Second Routine!"));
+            Assert.That(output2, Is.EqualTo("First Routine!Second Routine!"));
+        }
+
+
+        [Test]
+        public void Routine_SetValidValueForEnabledOrDisabledJob_SetsValue()
+        {
+            // Arrange
+            var now = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            JobDelegate routine1 = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("First Routine!");
+                await Task.Delay(1500, token);
+            };
+
+            JobDelegate routine2 = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Second Routine!");
+                await Task.Delay(1500, token);
+            };
+
+
+            // Act
+            job.Routine = routine1;
+            var updatedRoutine1 = job.Routine;
+
+            job.IsEnabled = true;
+
+            job.Routine = routine2;
+            var updatedRoutine2 = job.Routine;
+
+            // Assert
+            Assert.That(updatedRoutine1, Is.SameAs(routine1));
+
+            Assert.That(updatedRoutine2, Is.SameAs(routine2));
         }
 
         #endregion
@@ -1015,7 +1144,6 @@ namespace TauCode.Working.Tests.Jobs
             //Assert.That(run.Output, Does.StartWith("Warning: usage of default idle routine."));
             //Assert.That(run.Exception, Is.Null);
         }
-
 
         //====================================================================================
 
