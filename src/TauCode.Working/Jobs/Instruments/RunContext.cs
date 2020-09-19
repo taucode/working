@@ -81,6 +81,15 @@ namespace TauCode.Working.Jobs.Instruments
                     jobProperties.ProgressTracker,
                     multiTextWriter,
                     _tokenSource.Token);
+
+                if (_task.IsFaulted && _task.Exception != null)
+                {
+                    var ex = ExtractTaskException(_task.Exception);
+                    multiTextWriter.WriteLine(ex);
+
+                    _logger.Warning("Routine has thrown an exception.", "ctor", ex);
+                    _task = Task.FromException(ex);
+                }
             }
             catch (Exception ex)
             {

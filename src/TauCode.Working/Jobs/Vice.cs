@@ -16,7 +16,7 @@ namespace TauCode.Working.Jobs
         private readonly Dictionary<string, Employee> _employees;
         private readonly object _lock;
 
-        private readonly ObjectLogger _logger;
+        private readonly ObjectLogger _logger; // todo: WorkerBase will have its own ObjectLogger.
 
         #endregion
 

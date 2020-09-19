@@ -889,10 +889,6 @@ namespace TauCode.Working.Tests.Jobs
 
         #region IJob.Routine
 
-        // todo: IJob.Routine
-        // - after disposed, can be read.
-        // - after disposed, cannot be set, throws.
-
         [Test]
         public async Task Routine_JustCreatedJob_NotNullAndRunsSuccessfully()
         {
@@ -1163,8 +1159,9 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(run.Output, Does.Contain(exception.ToString()));
             
             var log = _logWriter.ToString();
-
+            
             Assert.That(log, Does.Contain("Routine has thrown an exception."));
+            Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
 
             Assert.Pass(log);
         }
@@ -1222,16 +1219,214 @@ namespace TauCode.Working.Tests.Jobs
             var log = _logWriter.ToString();
 
             Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+            Assert.Pass(log);
+        }
+
+        [Test]
+        public async Task Routine_ReturnsFaultedTask_LogsFaultedTask()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var output = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = output;
+
+            var exception = new NotSupportedException("Bye baby!");
+
+            JobDelegate routine = (parameter, tracker, writer, token) =>
+            {
+                writer.WriteLine("Hi there!");
+                return Task.FromException(exception);
+            };
+
+            job.Schedule = new ConcreteSchedule(
+                start.AddSeconds(1));
+
+            job.IsEnabled = true;
+
+            // Act
+            job.Routine = routine;
+            var updatedRoutine = job.Routine;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 1.5); // will fail by this time
+            var outputResult = output.ToString();
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(updatedRoutine, Is.SameAs(routine));
+            Assert.That(outputResult, Does.Contain("Hi there!"));
+            Assert.That(outputResult, Does.Contain(exception.ToString()));
+
+            Assert.That(info.CurrentRun, Is.Null);
+
+            Assert.That(info.RunCount, Is.EqualTo(1));
+            var run = info.Runs.Single();
+
+            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Faulted));
+            Assert.That(run.Exception, Is.SameAs(exception));
+            Assert.That(run.Output, Does.Contain(exception.ToString()));
+
+            var log = _logWriter.ToString();
+
+            Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
 
             Assert.Pass(log);
         }
 
+        [Test]
+        public async Task Routine_ReturnsCompletedTask_LogsCompletedTask()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
 
-        // todo: if faulted => ...
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
 
-        // todo: if ranToCompletion => ...
+            var output = new StringWriterWithEncoding(Encoding.UTF8);
+            job.Output = output;
 
 
+            JobDelegate routine = (parameter, tracker, writer, token) =>
+            {
+                writer.WriteLine("Hi there!");
+                return Task.CompletedTask;
+            };
+
+            job.Schedule = new ConcreteSchedule(
+                start.AddSeconds(1));
+
+            job.IsEnabled = true;
+
+            // Act
+            job.Routine = routine;
+            var updatedRoutine = job.Routine;
+
+            await timeMachine.WaitUntilSecondsElapse(start, 1.5); // will fail by this time
+            var outputResult = output.ToString();
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(updatedRoutine, Is.SameAs(routine));
+            Assert.That(outputResult, Does.Contain("Hi there!"));
+
+            Assert.That(info.CurrentRun, Is.Null);
+
+            Assert.That(info.RunCount, Is.EqualTo(1));
+            var run = info.Runs.Single();
+
+            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+
+            var log = _logWriter.ToString();
+
+            Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+
+            Assert.Pass(log);
+        }
+
+        [Test]
+        public void Routine_Disposed_CanBeRead()
+        {
+            // Arrange
+            var now = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            JobDelegate routine1 = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("First Routine!");
+                await Task.Delay(1500, token);
+            };
+
+            JobDelegate routine2 = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Second Routine!");
+                await Task.Delay(1500, token);
+            };
+
+
+            // Act
+            job.Routine = routine1;
+            var updatedRoutine1 = job.Routine;
+
+            job.IsEnabled = true;
+
+            job.Routine = routine2;
+            var updatedRoutine2 = job.Routine;
+
+            jobManager.Dispose();
+
+            var updatedRoutineAfterDisposal = job.Routine;
+
+            // Assert
+            Assert.That(updatedRoutine1, Is.SameAs(routine1));
+            Assert.That(updatedRoutine2, Is.SameAs(routine2));
+
+            Assert.That(updatedRoutineAfterDisposal, Is.SameAs(routine2));
+        }
+
+        [Test]
+        public void Routine_DisposedAndSet_ThrowsJobObjectDisposedException()
+        {
+            // Arrange
+            var now = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            JobDelegate routine1 = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("First Routine!");
+                await Task.Delay(1500, token);
+            };
+
+            JobDelegate routine2 = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Second Routine!");
+                await Task.Delay(1500, token);
+            };
+
+
+            // Act
+            job.Routine = routine1;
+            var updatedRoutine1 = job.Routine;
+
+            job.IsEnabled = true;
+
+            job.Routine = routine2;
+            var updatedRoutine2 = job.Routine;
+
+            jobManager.Dispose();
+
+            var updatedRoutineAfterDisposal = job.Routine;
+
+            var ex = Assert.Throws<JobObjectDisposedException>(() => job.Routine = routine1);
+
+            // Assert
+            Assert.That(updatedRoutine1, Is.SameAs(routine1));
+            Assert.That(updatedRoutine2, Is.SameAs(routine2));
+
+            Assert.That(updatedRoutineAfterDisposal, Is.SameAs(routine2));
+
+            Assert.That(ex.ObjectName, Is.EqualTo("my-job"));
+        }
 
         #endregion
 
