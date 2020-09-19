@@ -719,7 +719,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(ex.ObjectName, Is.EqualTo("my-job"));
         }
 
-        // - if schedule produces strange results (throws, date before 'now', date after 'never') then sets due time to 'never'
+        // todo: - if schedule produces strange results (throws, date before 'now', date after 'never') then sets due time to 'never'
         [Test]
         public async Task Schedule_ScheduleThrows_DueTimeSetToNever()
         {
@@ -762,6 +762,46 @@ namespace TauCode.Working.Tests.Jobs
             Assert.Pass(_logWriter.ToString());
         }
 
+        #endregion
+
+        #region IJob.Routine
+
+        // todo: IJob.Routine
+        // - cannot be set to null, throws.
+        // - if set while running, finishes job with current routine; next run is performed with new routine.
+        // - when set, updated to new value, regardless of enabled or disabled
+        // - when set after run completed, afterwards runs with new routine.
+        // - if returns strange value (like canceled, or completed), or throws, ==> todo.
+        // - after disposed, can be read.
+        // - after disposed, cannot be set, throws.
+
+        [Test]
+        public async Task Routine_JustCreatedJob_NotNullAndRunsSuccessfully()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            job.Schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start.AddSeconds(2));
+            job.IsEnabled = true;
+
+            // Act
+            var routine = job.Routine;
+            await timeMachine.WaitUntilSecondsElapse(start, 2.7);
+            jobManager.Dispose();
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            Assert.That(routine, Is.Not.Null);
+            var run = info.Runs.First();
+            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+        }
 
         #endregion
 
@@ -861,15 +901,6 @@ namespace TauCode.Working.Tests.Jobs
 
 
 
-        // todo: IJob.Routine
-        // - initially, not null.
-        // - cannot be set to null, throws.
-        // - if set while running, finishes job with current routine; next run is performed with new routine.
-        // - when set, updated to new value, regardless of enabled or disabled
-        // - when set after run completed, afterwards runs with new routine.
-        // - if returns strange value (like canceled, or completed), or throws, ==> todo.
-        // - after disposed, can be read.
-        // - after disposed, cannot be set, throws.
 
         // todo: IJob.Parameter
         // - initially, null

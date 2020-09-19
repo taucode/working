@@ -32,4 +32,9 @@ x   1. Rename 'Lab' demo project to 'Playground'.
 ==========
     1. UT workers (porls) themselves, DoWork throwing error, etc.
     2. Worker logging.
-    
+
+2020-09-19
+==========
+    1. https://nugetmusthaves.com/Tag/cron
+    2. https://github.com/kevincolyar/CronNET/blob/master/CronNET/CronSchedule.cs
+    3. https://nugetmusthaves.com/Package/Quidjibo; https://quidjibo.com/; https://github.com/smiggleworth/Quidjibo
