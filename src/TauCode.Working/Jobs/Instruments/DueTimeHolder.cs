@@ -101,13 +101,30 @@ namespace TauCode.Working.Jobs.Instruments
             {
                 if (_isDisposed)
                 {
-                    // todo: write to log about strange attempt.
+                    _logger.Warning(
+                        $"Rejected attempt to update schedule due time of an exposed '{this.GetType().FullName}'.",
+                        nameof(UpdateScheduleDueTime));
                     return;
                 }
 
                 try
                 {
                     _scheduleDueTime = _schedule.GetDueTimeAfter(now.AddTicks(1));
+                    if (_scheduleDueTime < now)
+                    {
+                        _logger.Warning(
+                            "Due time is earlier than current time. Due time changed to 'never'.",
+                            nameof(UpdateScheduleDueTime));
+                        _scheduleDueTime = JobExtensions.Never;
+                    }
+                    else if (_scheduleDueTime > JobExtensions.Never)
+                    {
+                        _logger.Warning(
+                            "Due time is later than 'never'. Due time changed to 'never'.",
+                            nameof(UpdateScheduleDueTime));
+                        _scheduleDueTime = JobExtensions.Never;
+                    }
+
                 }
                 catch (Exception ex)
                 {

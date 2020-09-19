@@ -719,7 +719,6 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(ex.ObjectName, Is.EqualTo("my-job"));
         }
 
-        // todo: - if schedule produces strange results (throws, date before 'now', date after 'never') then sets due time to 'never'
         [Test]
         public async Task Schedule_ScheduleThrows_DueTimeSetToNever()
         {
@@ -732,7 +731,14 @@ namespace TauCode.Working.Tests.Jobs
             jobManager.Start();
             var job = jobManager.Create("my-job");
 
+            var n = 0;
+
             job.IsEnabled = true;
+            job.Routine = (parameter, tracker, output, token) =>
+            {
+                n = 100;
+                return Task.CompletedTask;
+            };
 
             // set some normal schedule first
             job.Schedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, start);
@@ -748,16 +754,131 @@ namespace TauCode.Working.Tests.Jobs
 
             job.Schedule = scheduleMock.Object;
 
-            await Task.Delay(100);
+            await Task.Delay(3000); // let job try to start (it should not start though)
 
-            var faultedDueTime = job.GetInfo(null).NextDueTime;
+            var info = job.GetInfo(null);
+            var faultedDueTime = info.NextDueTime;
 
             // Assert
             Assert.That(normalDueTime, Is.EqualTo(start.AddMinutes(1)));
             Assert.That(faultedDueTime.Year, Is.EqualTo(9000));
 
+            // job never ran
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.Runs, Is.Empty);
+            Assert.That(info.RunCount, Is.Zero);
+            Assert.That(n, Is.EqualTo(0));
+
             var log = _logWriter.ToString();
             Assert.That(log, Does.Contain($"{exception.GetType().FullName}: {exception.Message}"));
+
+            Assert.Pass(_logWriter.ToString());
+        }
+
+        [Test]
+        public async Task Schedule_ScheduleReturnsDueTimeBeforeNow_DueTimeSetToNever()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var n = 0;
+
+            job.IsEnabled = true;
+            job.Routine = (parameter, tracker, output, token) =>
+            {
+                n = 100;
+                return Task.CompletedTask;
+            };
+
+            // set some normal schedule first
+            job.Schedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, start);
+            var normalDueTime = job.GetInfo(null).NextDueTime;
+
+            // Act
+            var scheduleMock = new Mock<ISchedule>();
+            scheduleMock
+                .Setup(x => x.GetDueTimeAfter(It.IsAny<DateTimeOffset>()))
+                .Returns(start.AddSeconds(-1)); // due time in the past
+
+            job.Schedule = scheduleMock.Object;
+
+            await Task.Delay(3000); // let job try to start (it should not start though)
+
+            var info = job.GetInfo(null);
+            var faultedDueTime = info.NextDueTime;
+
+            // Assert
+            Assert.That(normalDueTime, Is.EqualTo(start.AddMinutes(1)));
+            Assert.That(faultedDueTime.Year, Is.EqualTo(9000));
+
+            // job never ran
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.Runs, Is.Empty);
+            Assert.That(info.RunCount, Is.Zero);
+            Assert.That(n, Is.EqualTo(0));
+
+            var log = _logWriter.ToString();
+            Assert.That(log, Does.Contain($"Due time is earlier than current time. Due time changed to 'never'."));
+
+            Assert.Pass(_logWriter.ToString());
+        }
+
+        [Test]
+        public async Task Schedule_ScheduleReturnsDueTimeAfterNever_DueTimeSetToNever()
+        {
+            // Arrange
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager();
+            jobManager.Start();
+            var job = jobManager.Create("my-job");
+
+            var n = 0;
+
+            job.IsEnabled = true;
+            job.Routine = (parameter, tracker, output, token) =>
+            {
+                n = 100;
+                return Task.CompletedTask;
+            };
+
+            // set some normal schedule first
+            job.Schedule = new SimpleSchedule(SimpleScheduleKind.Minute, 1, start);
+            var normalDueTime = job.GetInfo(null).NextDueTime;
+
+            // Act
+            var scheduleMock = new Mock<ISchedule>();
+            scheduleMock
+                .Setup(x => x.GetDueTimeAfter(It.IsAny<DateTimeOffset>()))
+                .Returns(DateTimeOffset.MaxValue); // due time in the past
+
+            job.Schedule = scheduleMock.Object;
+
+            await Task.Delay(3000); // let job try to start (it should not start though)
+
+            var info = job.GetInfo(null);
+            var faultedDueTime = info.NextDueTime;
+
+            // Assert
+            Assert.That(normalDueTime, Is.EqualTo(start.AddMinutes(1)));
+            Assert.That(faultedDueTime.Year, Is.EqualTo(9000));
+
+            // job never ran
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.Runs, Is.Empty);
+            Assert.That(info.RunCount, Is.Zero);
+            Assert.That(n, Is.EqualTo(0));
+
+            var log = _logWriter.ToString();
+            Assert.That(log, Does.Contain("Due time is later than 'never'. Due time changed to 'never'."));
 
             Assert.Pass(_logWriter.ToString());
         }
