@@ -84,8 +84,11 @@ namespace TauCode.Working.Jobs
 
         internal JobInfo GetInfo(int? maxRunCount) => _runner.GetInfo(maxRunCount);
 
-        internal void OverrideDueTime(DateTimeOffset? dueTime) =>
-            this._runner.DueTimeHolder.OverriddenDueTime = dueTime; // todo: _vice.PulseWork()? ut it!
+        internal void OverrideDueTime(DateTimeOffset? dueTime)
+        {
+            _runner.DueTimeHolder.OverriddenDueTime = dueTime;
+            _vice.PulseWork();
+        }
 
         internal void ForceStart() => this.Start(JobStartReason.Force, null);
 

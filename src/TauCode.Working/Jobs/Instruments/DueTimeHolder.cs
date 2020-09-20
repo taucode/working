@@ -113,14 +113,14 @@ namespace TauCode.Working.Jobs.Instruments
                     if (_scheduleDueTime < now)
                     {
                         _logger.Warning(
-                            "Due time is earlier than current time. Due time changed to 'never'.",
+                            "Due time is earlier than current time. Due time is changed to 'never'.",
                             nameof(UpdateScheduleDueTime));
                         _scheduleDueTime = JobExtensions.Never;
                     }
                     else if (_scheduleDueTime > JobExtensions.Never)
                     {
                         _logger.Warning(
-                            "Due time is later than 'never'. Due time changed to 'never'.",
+                            "Due time is later than 'never'. Due time is changed to 'never'.",
                             nameof(UpdateScheduleDueTime));
                         _scheduleDueTime = JobExtensions.Never;
                     }
@@ -131,7 +131,7 @@ namespace TauCode.Working.Jobs.Instruments
                     _scheduleDueTime = JobExtensions.Never;
 
                     _logger.Warning(
-                        "An exception was thrown on attempt to calculate due time",
+                        "An exception was thrown on attempt to calculate due time. Due time is changed to 'never'.",
                         nameof(UpdateScheduleDueTime),
                         ex);
                 }

@@ -36,12 +36,26 @@ namespace TauCode.Working.Jobs.Instruments
             }
         }
 
-        internal Tuple<JobRunInfo?, IReadOnlyList<JobRunInfo>> Get()
+        internal Tuple<JobRunInfo?, IReadOnlyList<JobRunInfo>> Get(int? maxRunCount)
         {
+            if (maxRunCount.HasValue && maxRunCount.Value < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxRunCount));
+            }
+
             lock (_lock)
             {
                 var item1 = _currentRun;
-                IReadOnlyList<JobRunInfo> item2 = _list.ToList();
+
+                var count = _list.Count;
+                if (maxRunCount.HasValue)
+                {
+                    count = Math.Min(count, maxRunCount.Value);
+                }
+
+                IReadOnlyList<JobRunInfo> item2 = _list
+                    .Take(count)
+                    .ToList();
 
                 return Tuple.Create(item1, item2);
             }

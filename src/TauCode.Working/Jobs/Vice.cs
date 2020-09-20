@@ -119,6 +119,9 @@ namespace TauCode.Working.Jobs
             }
 
             var vacationTimeout = earliest - now;
+
+            _logger.Debug($"Going to vacation, length is '{vacationTimeout}'.", nameof(DoWork));
+
             return Task.FromResult(vacationTimeout);
         }
 

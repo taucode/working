@@ -9,6 +9,8 @@ namespace TauCode.Working.Tests
 {
     internal static class TestHelper
     {
+        internal static readonly DateTimeOffset NeverCopy = new DateTimeOffset(9000, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
         //internal static void DebugPulseJobManager(this IJobManager jobManager)
         //{
         //    var method = jobManager.GetType().GetMethod("DebugPulse", BindingFlags.NonPublic | BindingFlags.Instance);

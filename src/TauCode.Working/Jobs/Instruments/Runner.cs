@@ -155,7 +155,7 @@ namespace TauCode.Working.Jobs.Instruments
 
                     if (!this.IsEnabled)
                     {
-                        throw new NotImplementedException();
+                        throw new JobException($"Job '{this.JobName}' is disabled.");
                     }
 
                     _runContext = this.Run(startReason, token);
@@ -179,11 +179,13 @@ namespace TauCode.Working.Jobs.Instruments
 
                     if (!this.IsEnabled)
                     {
-                        this.DueTimeHolder.UpdateScheduleDueTime();
                         return JobStartResult.Disabled;
                     }
 
                     _runContext = this.Run(startReason, token);
+
+                    // started via due time, so clear overridden due time.
+                    this.DueTimeHolder.OverriddenDueTime = null;
 
                     if (_runContext == null)
                     {
@@ -197,7 +199,7 @@ namespace TauCode.Working.Jobs.Instruments
 
         internal JobInfo GetInfo(int? maxRunCount)
         {
-            var tuple = this.JobRunsHolder.Get();
+            var tuple = this.JobRunsHolder.Get(maxRunCount);
             var currentRun = tuple.Item1;
             var runs = tuple.Item2;
 
