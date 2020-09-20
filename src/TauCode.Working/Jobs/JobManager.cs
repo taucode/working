@@ -107,6 +107,8 @@ namespace TauCode.Working.Jobs
             set => _vice.EnableLogging(value);
         }
 
+        internal bool StartedWorking() => _vice.StartedWorking();
+
         #endregion
     }
 }

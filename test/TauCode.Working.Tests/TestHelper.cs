@@ -11,6 +11,7 @@ namespace TauCode.Working.Tests
     {
         internal static readonly DateTimeOffset NeverCopy = new DateTimeOffset(9000, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
+
         //internal static void DebugPulseJobManager(this IJobManager jobManager)
         //{
         //    var method = jobManager.GetType().GetMethod("DebugPulse", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -22,7 +23,6 @@ namespace TauCode.Working.Tests
         //    method.Invoke(jobManager, new object[] { });
         //}
 
-        // todo move to taucode.infra
         internal static async Task WaitUntil(DateTimeOffset now, DateTimeOffset moment, CancellationToken cancellationToken = default)
         {
             var timeout = moment - now;
@@ -34,58 +34,73 @@ namespace TauCode.Working.Tests
             await Task.Delay(timeout, cancellationToken);
         }
 
-        //internal static IJobManager CreateJobManager() => JobManager.CreateJobManager();
-        internal static IJobManager CreateJobManager()
+        internal static IJobManager CreateJobManager(bool start)
         {
             var jobManager = new JobManager();
-            JobLoggingHelper.EnableLogging(jobManager, true);
+            JobDiagnosticsHelper.EnableLogging(jobManager, true);
+
+            if (start)
+            {
+                jobManager.Start();
+
+                while (true)
+                {
+                    if (JobDiagnosticsHelper.JobManagerStartedWorking(jobManager))
+                    {
+                        break;
+                    }
+
+                    Thread.Sleep(1);
+                }
+            }
+
             return jobManager;
         }
 
-        internal static void WaitUntil(this ITimeProvider timeProvider, DateTimeOffset moment)
-        {
-            var now = timeProvider.GetCurrent();
-            if (now >= moment)
-            {
-                return;
-            }
+        //internal static void WaitUntil(this ITimeProvider timeProvider, DateTimeOffset moment)
+        //{
+        //    var now = timeProvider.GetCurrent();
+        //    if (now >= moment)
+        //    {
+        //        return;
+        //    }
 
-            while (true)
-            {
-                Thread.Sleep(1);
+        //    while (true)
+        //    {
+        //        Thread.Sleep(1);
 
-                now = timeProvider.GetCurrent();
-                if (now >= moment)
-                {
-                    return;
-                }
-            }
-        }
+        //        now = timeProvider.GetCurrent();
+        //        if (now >= moment)
+        //        {
+        //            return;
+        //        }
+        //    }
+        //}
 
-        internal static async Task WaitUntil(
-            this ITimeProvider timeProvider,
-            DateTimeOffset moment,
-            CancellationToken token)
-        {
-            var now = timeProvider.GetCurrent();
-            if (now >= moment)
-            {
-                return;
-            }
+        //internal static async Task WaitUntil(
+        //    this ITimeProvider timeProvider,
+        //    DateTimeOffset moment,
+        //    CancellationToken token)
+        //{
+        //    var now = timeProvider.GetCurrent();
+        //    if (now >= moment)
+        //    {
+        //        return;
+        //    }
 
-            while (true)
-            {
-                await Task.Delay(1, token);
+        //    while (true)
+        //    {
+        //        await Task.Delay(1, token);
 
-                now = timeProvider.GetCurrent();
-                if (now >= moment)
-                {
-                    return;
-                }
-            }
-        }
+        //        now = timeProvider.GetCurrent();
+        //        if (now >= moment)
+        //        {
+        //            return;
+        //        }
+        //    }
+        //}
 
-        internal static async Task WaitUntilSecondsElapse(
+        internal static async Task<bool> WaitUntilSecondsElapse(
             this ITimeProvider timeProvider,
             DateTimeOffset start,
             double seconds,
@@ -97,7 +112,8 @@ namespace TauCode.Working.Tests
             var elapsed = now - start;
             if (elapsed >= timeout)
             {
-                return;
+                //return false;
+                throw new InvalidOperationException("Too late.");
             }
 
             while (true)
@@ -109,7 +125,7 @@ namespace TauCode.Working.Tests
                 elapsed = now - start;
                 if (elapsed >= timeout)
                 {
-                    return;
+                    return true;
                 }
             }
         }

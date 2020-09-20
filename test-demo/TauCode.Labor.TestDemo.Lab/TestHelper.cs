@@ -34,7 +34,7 @@ namespace TauCode.Labor.TestDemo.Lab
         internal static IJobManager CreateJobManager()
         {
             var jobManager = new JobManager();
-            JobLoggingHelper.EnableLogging(jobManager, true);
+            JobDiagnosticsHelper.EnableLogging(jobManager, true);
             return jobManager;
         }
 

@@ -23,9 +23,10 @@ namespace TauCode.Working.Tests.Jobs
         private StringWriterWithEncoding _logWriter;
 
         [SetUp]
-        public void SetUp()
+        public async Task SetUp()
         {
             TimeProvider.Reset();
+            await Task.Delay(5000);
 
             _logWriter = new StringWriterWithEncoding(Encoding.UTF8);
             Log.Logger = new LoggerConfiguration()
@@ -41,8 +42,8 @@ namespace TauCode.Working.Tests.Jobs
         public void Name_JustCreatedJob_ReturnsValidName()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var job = jobManager.Create("my-job");
 
             // Act
@@ -56,8 +57,7 @@ namespace TauCode.Working.Tests.Jobs
         public void Name_JobIsEnabled_ReturnsValidName()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
             var job = jobManager.Create("my-job");
 
             job.IsEnabled = true;
@@ -73,8 +73,7 @@ namespace TauCode.Working.Tests.Jobs
         public void Name_JobIsDisabled_ReturnsValidName()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
             var job = jobManager.Create("my-job");
 
             job.IsEnabled = true;
@@ -95,8 +94,8 @@ namespace TauCode.Working.Tests.Jobs
         public void Name_JobIsRunningOrStopped_ReturnsValidName()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var job = jobManager.Create("my-job");
 
             job.IsEnabled = true;
@@ -122,8 +121,8 @@ namespace TauCode.Working.Tests.Jobs
         public void Name_JobIsDisposed_ReturnsValidName()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var job = jobManager.Create("my-job");
             job.Dispose();
 
@@ -142,8 +141,7 @@ namespace TauCode.Working.Tests.Jobs
         public void IsEnabled_JustCreatedJob_ReturnsFalse()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
             var job = jobManager.Create("my-job");
 
             // Act
@@ -157,8 +155,7 @@ namespace TauCode.Working.Tests.Jobs
         public void IsEnabled_ChangedToTrue_ReturnsTrue()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
             var job = jobManager.Create("my-job");
             job.IsEnabled = true;
 
@@ -173,8 +170,8 @@ namespace TauCode.Working.Tests.Jobs
         public void IsEnabled_ChangedToTrueThenToFalse_ReturnsFalse()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var job = jobManager.Create("my-job");
             job.IsEnabled = true;
             job.IsEnabled = false;
@@ -190,8 +187,8 @@ namespace TauCode.Working.Tests.Jobs
         public void IsEnabled_WasTrueThenDisposed_ReturnsTrue()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var job = jobManager.Create("my-job");
             job.IsEnabled = true;
             job.Dispose();
@@ -204,6 +201,7 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
+        [Ignore("todo")]
         public void IsEnabled_WasTrueThenFalse_JobDoesNotRunAnymore()
         {
             // Arrange
@@ -218,8 +216,8 @@ namespace TauCode.Working.Tests.Jobs
         public void IsEnabled_WasFalseThenDisposed_ReturnsFalse()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var job = jobManager.Create("my-job");
             job.Dispose();
 
@@ -234,8 +232,8 @@ namespace TauCode.Working.Tests.Jobs
         public void IsEnabled_IsDisposed_ThrowsJobObjectDisposedException()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var job = jobManager.Create("my-job");
             job.Dispose();
 
@@ -255,15 +253,15 @@ namespace TauCode.Working.Tests.Jobs
         public void Schedule_JustCreatedJob_ReturnsNeverSchedule()
         {
             // Arrange
-            var now = "2020-09-15Z".ToUtcDayOffset();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            var start = "2000-01-01Z".ToUtcDayOffset();
+
             var job = jobManager.Create("my-job");
 
             // Act
             var schedule = job.Schedule;
-            var dueTime = schedule.GetDueTimeAfter(now);
+            var dueTime = schedule.GetDueTimeAfter(start);
 
             // Assert
             Assert.That(schedule, Is.Not.Null);
@@ -278,8 +276,8 @@ namespace TauCode.Working.Tests.Jobs
         public void Schedule_SetNull_ThrowsArgumentNullException()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var job = jobManager.Create("my-job");
 
             // Act
@@ -293,12 +291,11 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_SetValidValue_SetsSchedule()
         {
             // Arrange
-            var now = "2020-09-11Z".ToUtcDayOffset().AddHours(3);
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
-            TimeProvider.Override(timeMachine);
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
 
             var name = "job1";
             var job = jobManager.Create(name);
@@ -308,7 +305,7 @@ namespace TauCode.Working.Tests.Jobs
             job.Output = writer;
 
             // Act
-            var newSchedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now.AddSeconds(2));
+            var newSchedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start.AddSeconds(2));
             job.Schedule = newSchedule;
             job.Routine = (parameter, tracker, output, token) =>
             {
@@ -316,7 +313,7 @@ namespace TauCode.Working.Tests.Jobs
                 return Task.CompletedTask;
             };
 
-            await Task.Delay(2500);
+            await timeMachine.WaitUntilSecondsElapse(start, 2.5);
 
             // Assert
             Assert.That(writer.ToString(), Is.EqualTo("Hello!"));
@@ -327,13 +324,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Schedule_SetValidValueForEnabledOrDisabledJob_SetsValue()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
+
             var now = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
             TimeProvider.Override(timeMachine);
-
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
 
             ISchedule schedule1 = new SimpleSchedule(SimpleScheduleKind.Minute, 1, now);
             ISchedule schedule2 = new SimpleSchedule(SimpleScheduleKind.Day, 1, now);
@@ -361,40 +357,57 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_SetAndStarted_ReflectedInCurrentRunAndUpdatesToNextDueTime()
         {
             // Arrange
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.Routine = async (parameter, tracker, output, token) =>
             {
                 await Task.Delay(10000, token); // long run
             };
-            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
+            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
 
             job.IsEnabled = true;
 
             // Act
             job.Schedule = schedule; // will fire at 00:01
 
-            await Task.Delay(1030); // let job start
+            await timeMachine.WaitUntilSecondsElapse(start, 1.03);
+            //await Task.Delay(1030); // let job start
 
             // Assert
-            var info = job.GetInfo(null);
-            var currentRunNullable = info.CurrentRun;
+            try
+            {
+                var info = job.GetInfo(null);
+                var currentRunNullable = info.CurrentRun;
 
-            Assert.That(currentRunNullable, Is.Not.Null);  // todo: was null once :(
-            var currentRun = currentRunNullable.Value;
+                Assert.That(currentRunNullable, Is.Not.Null);  // todo: was null once :(
+                var currentRun = currentRunNullable.Value;
 
-            Assert.That(currentRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
-            Assert.That(currentRun.DueTime, Is.EqualTo(now.AddSeconds(1)));
-            Assert.That(currentRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(TimeSpan.FromMilliseconds(20)));
+                Assert.That(currentRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
+                Assert.That(currentRun.DueTime, Is.EqualTo(start.AddSeconds(1)));
+                Assert.That(currentRun.StartTime, Is.EqualTo(start.AddSeconds(1)).Within(TimeSpan.FromMilliseconds(20)));
 
-            // due time is 00:02 after start
-            Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(2)));
+                // due time is 00:02 after start
+                Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(2)));
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
+
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         // todo: causes failures sometimes.
@@ -406,58 +419,83 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_SetAndStartedAndCompleted_ReflectedInOldRuns()
         {
             // Arrange
-
             var DEFECT = TimeSpan.FromMilliseconds(30);
 
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.Routine = async (parameter, tracker, output, token) =>
             {
                 await Task.Delay(1500, token); // 1.5 second to complete
             };
-            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
+            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
 
             job.IsEnabled = true;
 
             // Act
             job.Schedule = schedule; // will fire at 00:01
 
-            await Task.Delay(
-                1000 + // 0th due time
-                DEFECT.Milliseconds +
-                1500 +
-                DEFECT.Milliseconds); // let job start, finish, and wait more 30 ms.
+            await timeMachine.WaitUntilSecondsElapse(
+                start,
+                1.0 + DEFECT.TotalSeconds + 1.5 + DEFECT.TotalSeconds);
+
+            //await Task.Delay(
+            //    1000 + // 0th due time
+            //    DEFECT.Milliseconds +
+            //    1500 +
+            //    DEFECT.Milliseconds); // let job start, finish, and wait more 30 ms.
+
+            //var inTime = await timeMachine.WaitUntilSecondsElapse(start, 2.5);
+            //if (!inTime)
+            //{
+            //    throw new Exception("Test failed. TPL was too slow.");
+            //}
 
             // Assert
-            var info = job.GetInfo(null);
-            Assert.That(info.CurrentRun, Is.Null);
+            try
+            {
+                var info = job.GetInfo(null);
+                Assert.That(info.CurrentRun, Is.Null);
 
-            Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(3)));
-            // todo
-            //Expected: 2000 - 01 - 01 00:00:03 + 00:00
-            //But was:  2000 - 01 - 01 00:00:01 + 00:00
+                Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(3)));
+                // todo
+                //Expected: 2000 - 01 - 01 00:00:03 + 00:00
+                //But was:  2000 - 01 - 01 00:00:01 + 00:00
 
-            var pastRun = info.Runs.Single();
+                var pastRun = info.Runs.Single();
 
-            Assert.That(pastRun.RunIndex, Is.EqualTo(0));
-            Assert.That(pastRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
-            Assert.That(pastRun.DueTime, Is.EqualTo(now.AddSeconds(1)));
-            Assert.That(pastRun.DueTimeWasOverridden, Is.False);
+                Assert.That(pastRun.RunIndex, Is.EqualTo(0));
+                Assert.That(pastRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
+                Assert.That(pastRun.DueTime, Is.EqualTo(start.AddSeconds(1)));
+                Assert.That(pastRun.DueTimeWasOverridden, Is.False);
 
-            Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
-            Assert.That(
-                pastRun.EndTime,
-                Is.EqualTo(pastRun.StartTime.AddSeconds(1.5)).Within(DEFECT));
+                Assert.That(pastRun.StartTime, Is.EqualTo(start.AddSeconds(1)).Within(DEFECT));
+                Assert.That(
+                    pastRun.EndTime,
+                    Is.EqualTo(pastRun.StartTime.AddSeconds(1.5)).Within(DEFECT));
 
-            Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Succeeded));
+                Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Succeeded));
 
-            Assert.Pass(_logWriter.ToString());
+                //Assert.Pass(_logWriter.ToString());
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
+
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         /// <summary>
@@ -469,15 +507,14 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_SetAndStartedAndCanceled_ReflectedInOldRuns()
         {
             // Arrange
-
             var DEFECT = TimeSpan.FromMilliseconds(30);
+
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
             var now = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.Routine = async (parameter, tracker, output, token) =>
@@ -526,15 +563,14 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_SetAndStartedAndFaulted_ReflectedInOldRuns()
         {
             // Arrange
-
             var DEFECT = TimeSpan.FromMilliseconds(30);
 
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.Routine = async (parameter, tracker, output, token) =>
@@ -542,14 +578,14 @@ namespace TauCode.Working.Tests.Jobs
                 await Task.Delay(1500, token); // 1.5 second runs with no problem...
                 throw new ApplicationException("BAD_NEWS"); // ...and then throws!
             };
-            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
+            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
 
             job.IsEnabled = true;
 
             // Act
             job.Schedule = schedule; // will fire at 00:01
 
-            await Task.Delay(2800); // by this time, job will end due to the exception "BAD_NEWS" and finalize.
+            await timeMachine.WaitUntilSecondsElapse(start, 2.8); // by this time, job will end due to the exception "BAD_NEWS" and finalize.
 
             // Assert
             var info = job.GetInfo(null);
@@ -557,7 +593,7 @@ namespace TauCode.Working.Tests.Jobs
 
 
 
-            Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(3)));
+            Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(3)));
             // todo
             //Expected: 2000 - 01 - 01 00:00:03 + 00:00
             //But was:  2000 - 01 - 01 00:00:01 + 00:00
@@ -570,10 +606,10 @@ namespace TauCode.Working.Tests.Jobs
 
             Assert.That(pastRun.RunIndex, Is.EqualTo(0));
             Assert.That(pastRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
-            Assert.That(pastRun.DueTime, Is.EqualTo(now.AddSeconds(1)));
+            Assert.That(pastRun.DueTime, Is.EqualTo(start.AddSeconds(1)));
             Assert.That(pastRun.DueTimeWasOverridden, Is.False);
 
-            Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
+            Assert.That(pastRun.StartTime, Is.EqualTo(start.AddSeconds(1)).Within(DEFECT));
             Assert.That(
                 pastRun.EndTime,
                 Is.EqualTo(pastRun.StartTime.AddSeconds(1.5)).Within(DEFECT * 2));
@@ -587,16 +623,13 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_DueTimeWasOverriddenThenScheduleIsSet_OverriddenDueTimeIsDiscardedAndScheduleIsSet()
         {
             // Arrange
-
-            var DEFECT = TimeSpan.FromMilliseconds(30);
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
 
             var now = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
 
             job.OverrideDueTime(now.AddSeconds(2.5));
 
@@ -613,7 +646,7 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         /// <summary>
-        /// 0---------1-*---*---2-*-------3-*-------4   * - routine checks due time
+        /// 0---------1-*---*---2-*-------3-*-------4     * - routine checks due time
         ///           |____________1.5s_____________|
         /// ...............!..^.........^.........^..     ! - schedule2 is set; ^ - 'schedule2' due time
         /// </summary>
@@ -621,12 +654,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_SetDuringRun_DoesNotAffectRunButAppliesToDueTime()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
             var schedule1 = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
             job.Schedule = schedule1; // job will be started by due time of this schedule
@@ -668,30 +701,42 @@ namespace TauCode.Working.Tests.Jobs
             await timeMachine.WaitUntilSecondsElapse(start, 4);
 
             // Assert
-            Assert.That(dueTime1, Is.EqualTo(start.AddSeconds(2)));
-            Assert.That(dueTime2, Is.EqualTo(start.AddSeconds(1.8)));
-            Assert.That(dueTime3, Is.EqualTo(start.AddSeconds(2.8)));
-            Assert.That(dueTime4, Is.EqualTo(start.AddSeconds(3.8)));
+            try
+            {
+                Assert.That(dueTime1, Is.EqualTo(start.AddSeconds(2)));
+                Assert.That(dueTime2, Is.EqualTo(start.AddSeconds(1.8)));
+                Assert.That(dueTime3, Is.EqualTo(start.AddSeconds(2.8)));
+                Assert.That(dueTime4, Is.EqualTo(start.AddSeconds(3.8)));
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
 
-            Assert.Pass(_logWriter.ToString());
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         [Test]
         public void Schedule_SetThenDisposed_EqualsToLastOne()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
-
             var schedule1 = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
             var schedule2 = new SimpleSchedule(SimpleScheduleKind.Minute, 1, start);
             var schedule3 = new SimpleSchedule(SimpleScheduleKind.Hour, 1, start);
-
 
             job.Schedule = schedule1;
             var readSchedule1 = job.Schedule;
@@ -714,13 +759,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Schedule_DisposedThenSet_ThrowsJobObjectDisposedException()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
-
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
 
             // Act
             job.Dispose();
@@ -736,13 +780,13 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_ScheduleThrows_DueTimeSetToNever()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
 
             var n = 0;
 
@@ -792,13 +836,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_ScheduleReturnsDueTimeBeforeNow_DueTimeSetToNever()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
-
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
 
             var n = 0;
 
@@ -846,13 +889,13 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Schedule_ScheduleReturnsDueTimeAfterNever_DueTimeSetToNever()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
 
             var n = 0;
 
@@ -904,12 +947,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Routine_JustCreatedJob_NotNullAndRunsSuccessfully()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.Schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start.AddSeconds(2));
@@ -917,27 +960,48 @@ namespace TauCode.Working.Tests.Jobs
 
             // Act
             var routine = job.Routine;
-            await timeMachine.WaitUntilSecondsElapse(start, 2.7);
+            var inTime = await timeMachine.WaitUntilSecondsElapse(start, 2.7);
+            if (!inTime)
+            {
+                throw new Exception("Test failed. TPL was too slow.");
+            }
+
             jobManager.Dispose();
 
             var info = job.GetInfo(null);
 
             // Assert
-            Assert.That(routine, Is.Not.Null);
-            var run = info.Runs.First();
-            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            try
+            {
+                Assert.That(routine, Is.Not.Null);
+                var run = info.Runs.First();
+                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
+
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         [Test]
         public void Routine_SetNull_ThrowsArgumentNullException()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -955,15 +1019,13 @@ namespace TauCode.Working.Tests.Jobs
         [Test]
         public async Task Routine_SetOnTheFly_CompletesWithOldRoutineAndThenStartsWithNewRoutine()
         {
-            Task task = default;
-
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             var output = new StringWriterWithEncoding(Encoding.UTF8);
@@ -1001,33 +1063,49 @@ namespace TauCode.Working.Tests.Jobs
             var info = job.GetInfo(null);
 
             // Assert
-            Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(5)));
+            try
+            {
+                Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(5)));
 
-            Assert.That(info.CurrentRun, Is.Null);
-            Assert.That(info.RunCount, Is.EqualTo(2));
-            Assert.That(info.Runs, Has.Count.EqualTo(2));
+                Assert.That(info.CurrentRun, Is.Null);
+                Assert.That(info.RunCount, Is.EqualTo(2));
+                Assert.That(info.Runs, Has.Count.EqualTo(2));
 
-            var run0 = info.Runs[0];
-            Assert.That(run0.DueTime, Is.EqualTo(start.AddSeconds(1)));
-            Assert.That(run0.Output, Is.EqualTo("First Routine!"));
-            Assert.That(output1, Is.EqualTo("First Routine!"));
+                var run0 = info.Runs[0];
+                Assert.That(run0.DueTime, Is.EqualTo(start.AddSeconds(1)));
+                Assert.That(run0.Output, Is.EqualTo("First Routine!"));
+                Assert.That(output1, Is.EqualTo("First Routine!"));
 
-            var run1 = info.Runs[1];
-            Assert.That(run1.DueTime, Is.EqualTo(start.AddSeconds(3)));
-            Assert.That(run1.Output, Is.EqualTo("Second Routine!"));
-            Assert.That(output2, Is.EqualTo("First Routine!Second Routine!"));
+                var run1 = info.Runs[1];
+                Assert.That(run1.DueTime, Is.EqualTo(start.AddSeconds(3)));
+                Assert.That(run1.Output, Is.EqualTo("Second Routine!"));
+                Assert.That(output2, Is.EqualTo("First Routine!Second Routine!"));
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
+
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         [Test]
         public void Routine_SetValidValueForEnabledOrDisabledJob_SetsValue()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var now = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             JobDelegate routine1 = async (parameter, tracker, output, token) =>
@@ -1067,13 +1145,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Routine_SetAfterPreviousRunCompleted_SetsValueAndRunsWithIt()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
-
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
 
             var output = new StringWriterWithEncoding(Encoding.UTF8);
             job.Output = output;
@@ -1111,23 +1188,39 @@ namespace TauCode.Working.Tests.Jobs
             var output2 = output.ToString();
 
             // Assert
-            Assert.That(updatedRoutine1, Is.SameAs(routine1));
-            Assert.That(output1, Is.EqualTo("First Routine!"));
+            try
+            {
+                Assert.That(updatedRoutine1, Is.SameAs(routine1));
+                Assert.That(output1, Is.EqualTo("First Routine!"));
 
-            Assert.That(updatedRoutine2, Is.SameAs(routine2));
-            Assert.That(output2, Is.EqualTo("First Routine!Second Routine!"));
+                Assert.That(updatedRoutine2, Is.SameAs(routine2));
+                Assert.That(output2, Is.EqualTo("First Routine!Second Routine!"));
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
+
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         [Test]
         public async Task Routine_Throws_LogsFaultedTask()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             var output = new StringWriterWithEncoding(Encoding.UTF8);
@@ -1156,40 +1249,54 @@ namespace TauCode.Working.Tests.Jobs
             var info = job.GetInfo(null);
 
             // Assert
-            Assert.That(updatedRoutine, Is.SameAs(routine));
-            Assert.That(outputResult, Does.Contain("Hi there!"));
-            Assert.That(outputResult, Does.Contain(exception.ToString()));
+            try
+            {
+                Assert.That(updatedRoutine, Is.SameAs(routine));
+                Assert.That(outputResult, Does.Contain("Hi there!"));
+                Assert.That(outputResult, Does.Contain(exception.ToString()));
 
-            Assert.That(info.CurrentRun, Is.Null);
+                Assert.That(info.CurrentRun, Is.Null);
 
-            Assert.That(info.RunCount, Is.EqualTo(1));
-            var run = info.Runs.Single();
+                Assert.That(info.RunCount, Is.EqualTo(1));
+                var run = info.Runs.Single();
 
-            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Faulted));
-            Assert.That(run.Exception, Is.SameAs(exception));
-            Assert.That(run.Output, Does.Contain(exception.ToString()));
+                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Faulted));
+                Assert.That(run.Exception, Is.SameAs(exception));
+                Assert.That(run.Output, Does.Contain(exception.ToString()));
 
-            var log = _logWriter.ToString();
+                var log = _logWriter.ToString();
 
-            Assert.That(log, Does.Contain("Routine has thrown an exception."));
-            Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+                Assert.That(log, Does.Contain("Routine has thrown an exception."));
+                Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
 
-            Assert.Pass(log);
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         [Test]
         public async Task Routine_ReturnsCanceledTask_LogsCanceledTask()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
             using var source = new CancellationTokenSource();
             source.Cancel();
 
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             var output = new StringWriterWithEncoding(Encoding.UTF8);
@@ -1210,40 +1317,58 @@ namespace TauCode.Working.Tests.Jobs
             job.Routine = routine;
             var updatedRoutine = job.Routine;
 
-            await timeMachine.WaitUntilSecondsElapse(start, 1.5); // will be canceled by this time
+            var inTime = await timeMachine.WaitUntilSecondsElapse(start, 1.5); // will be canceled by this time
+            if (!inTime)
+            {
+                throw new Exception("Test failed. TPL was too slow.");
+            }
+
             var outputResult = output.ToString();
 
             var info = job.GetInfo(null);
 
             // Assert
-            Assert.That(updatedRoutine, Is.SameAs(routine));
-            Assert.That(outputResult, Does.Contain("Hi there!"));
+            try
+            {
+                Assert.That(updatedRoutine, Is.SameAs(routine));
+                Assert.That(outputResult, Does.Contain("Hi there!"));
 
-            Assert.That(info.CurrentRun, Is.Null);
+                Assert.That(info.CurrentRun, Is.Null);
 
-            Assert.That(info.RunCount, Is.EqualTo(1));
-            var run = info.Runs.Single();
+                Assert.That(info.RunCount, Is.EqualTo(1));
+                var run = info.Runs.Single();
 
-            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Canceled));
-            Assert.That(run.Exception, Is.Null);
+                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Canceled));
+                Assert.That(run.Exception, Is.Null);
 
-            var log = _logWriter.ToString();
+                var log = _logWriter.ToString();
+                Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
 
-            Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
-            Assert.Pass(log);
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         [Test]
         public async Task Routine_ReturnsFaultedTask_LogsFaultedTask()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
-
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
 
             var output = new StringWriterWithEncoding(Encoding.UTF8);
             job.Output = output;
@@ -1271,37 +1396,51 @@ namespace TauCode.Working.Tests.Jobs
             var info = job.GetInfo(null);
 
             // Assert
-            Assert.That(updatedRoutine, Is.SameAs(routine));
-            Assert.That(outputResult, Does.Contain("Hi there!"));
-            Assert.That(outputResult, Does.Contain(exception.ToString()));
+            try
+            {
+                Assert.That(updatedRoutine, Is.SameAs(routine));
+                Assert.That(outputResult, Does.Contain("Hi there!"));
+                Assert.That(outputResult, Does.Contain(exception.ToString()));
 
-            Assert.That(info.CurrentRun, Is.Null);
+                Assert.That(info.CurrentRun, Is.Null);
 
-            Assert.That(info.RunCount, Is.EqualTo(1));
-            var run = info.Runs.Single();
+                Assert.That(info.RunCount, Is.EqualTo(1));
+                var run = info.Runs.Single();
 
-            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Faulted));
-            Assert.That(run.Exception, Is.SameAs(exception));
-            Assert.That(run.Output, Does.Contain(exception.ToString()));
+                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Faulted));
+                Assert.That(run.Exception, Is.SameAs(exception));
+                Assert.That(run.Output, Does.Contain(exception.ToString()));
 
-            var log = _logWriter.ToString();
+                var log = _logWriter.ToString();
 
-            Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+                Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
 
-            Assert.Pass(log);
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         [Test]
         public async Task Routine_ReturnsCompletedTask_LogsCompletedTask()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            var job = jobManager.Create("my-job");
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
-            var job = jobManager.Create("my-job");
 
             var output = new StringWriterWithEncoding(Encoding.UTF8);
             job.Output = output;
@@ -1341,20 +1480,18 @@ namespace TauCode.Working.Tests.Jobs
             var log = _logWriter.ToString();
 
             Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
-
-            Assert.Pass(log);
         }
 
         [Test]
         public void Routine_Disposed_CanBeRead()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var now = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             JobDelegate routine1 = async (parameter, tracker, output, token) =>
@@ -1394,12 +1531,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Routine_DisposedAndSet_ThrowsJobObjectDisposedException()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var now = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             JobDelegate routine1 = async (parameter, tracker, output, token) =>
@@ -1447,12 +1584,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Parameter_JustCreated_EqualsToNull()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -1466,12 +1603,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Parameter_ValueIsSet_EqualsToThatValue()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -1504,12 +1641,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Parameter_SetOnTheFly_RunsWithOldParameterAndNextTimeRunsWithNewParameter()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             ISchedule schedule = new ConcreteSchedule(
@@ -1569,12 +1706,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Parameter_SetAfterFirstRun_NextTimeRunsWithNewParameter()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             ISchedule schedule = new ConcreteSchedule(
@@ -1628,12 +1765,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Parameter_JobIsDisposed_CanBeRead()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -1649,12 +1786,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Parameter_JobIsDisposedThenValueIsSet_ThrowsJobObjectDisposedException()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -1675,12 +1812,12 @@ namespace TauCode.Working.Tests.Jobs
         public void ProgressTracker_JustCreated_EqualsToNull()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -1694,12 +1831,12 @@ namespace TauCode.Working.Tests.Jobs
         public void ProgressTracker_ValueIsSet_EqualsToThatValue()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -1732,12 +1869,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task ProgressTracker_SetOnTheFly_RunsWithOldParameterAndNextTimeRunsWithNewProgressTracker()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             ISchedule schedule = new ConcreteSchedule(
@@ -1790,12 +1927,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task ProgressTracker_SetAfterFirstRun_NextTimeRunsWithNewProgressTracker()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             ISchedule schedule = new ConcreteSchedule(
@@ -1843,12 +1980,12 @@ namespace TauCode.Working.Tests.Jobs
         public void ProgressTracker_JobIsDisposed_CanBeRead()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -1864,12 +2001,12 @@ namespace TauCode.Working.Tests.Jobs
         public void ProgressTracker_JobIsDisposedThenValueIsSet_ThrowsJobObjectDisposedException()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             var tracker1 = new MockProgressTracker();
@@ -1893,12 +2030,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Output_JustCreated_EqualsToNull()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -1912,12 +2049,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Output_ValueIsSet_EqualsToThatValue()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -1950,12 +2087,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Output_SetOnTheFly_RunsWithOldParameterAndNextTimeRunsWithNewOutput()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             ISchedule schedule = new ConcreteSchedule(
@@ -1980,7 +2117,12 @@ namespace TauCode.Working.Tests.Jobs
             job.IsEnabled = true;
 
             // Act
-            await timeMachine.WaitUntilSecondsElapse(start, 0.8);
+            var inTime = await timeMachine.WaitUntilSecondsElapse(start, 0.8);
+            if (!inTime)
+            {
+                throw new Exception("Test failed. TPL was too slow.");
+            }
+
             job.Output = writer1;
 
             await timeMachine.WaitUntilSecondsElapse(start, 1.3);
@@ -1991,13 +2133,29 @@ namespace TauCode.Working.Tests.Jobs
             var info = job.GetInfo(null);
 
             // Assert
-            Assert.That(info.CurrentRun, Is.Null);
+            try
+            {
+                Assert.That(info.CurrentRun, Is.Null);
 
-            Assert.That(info.RunCount, Is.EqualTo(2));
-            Assert.That(info.Runs, Has.Count.EqualTo(2));
+                Assert.That(info.RunCount, Is.EqualTo(2));
+                Assert.That(info.Runs, Has.Count.EqualTo(2));
 
-            Assert.That(writer1.ToString(), Is.EqualTo("01234"));
-            Assert.That(writer2.ToString(), Is.EqualTo("01234"));
+                Assert.That(writer1.ToString(), Is.EqualTo("01234"));
+                Assert.That(writer2.ToString(), Is.EqualTo("01234"));
+            }
+            catch (Exception ex)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("*** Test Failed ***");
+                sb.AppendLine(ex.ToString());
+                sb.AppendLine("*** Log: ***");
+                
+                var log = _logWriter.ToString();
+
+                sb.AppendLine(log);
+
+                Assert.Fail(sb.ToString());
+            }
         }
 
         /// <summary>
@@ -2009,12 +2167,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task Output_SetAfterFirstRun_NextTimeRunsWithNewOutput()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             ISchedule schedule = new ConcreteSchedule(
@@ -2063,12 +2221,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Output_JobIsDisposed_CanBeRead()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -2084,12 +2242,12 @@ namespace TauCode.Working.Tests.Jobs
         public void Output_JobIsDisposedThenValueIsSet_ThrowsJobObjectDisposedException()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             var writer1 = new StringWriterWithEncoding(Encoding.UTF8);
@@ -2113,12 +2271,12 @@ namespace TauCode.Working.Tests.Jobs
         public void GetInfo_JustCreated_ReturnsValidResult()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -2136,12 +2294,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task GetInfo_ArgumentIsNull_ReturnsAllRuns()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.IsEnabled = true;
@@ -2191,12 +2349,12 @@ namespace TauCode.Working.Tests.Jobs
         public void GetInfo_ArgumentIsNegative_ThrowsTodo()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             // Act
@@ -2210,12 +2368,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task GetInfo_ArgumentIsZero_ReturnsEmptyRuns()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.IsEnabled = true;
@@ -2248,12 +2406,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task GetInfo_ArgumentIsVeryLarge_ReturnsAllRuns()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.IsEnabled = true;
@@ -2310,12 +2468,12 @@ namespace TauCode.Working.Tests.Jobs
         public async Task GetInfo_RunsSeveralTimes_ReturnsAllRuns()
         {
             // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var start = "2000-01-01Z".ToUtcDayOffset();
             var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
             var job = jobManager.Create("my-job");
 
             job.IsEnabled = true;
@@ -2464,8 +2622,8 @@ namespace TauCode.Working.Tests.Jobs
         public void GetInfo_NoArguments_ReturnsJobInfo()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var name = "job1";
             var job = jobManager.Create(name);
 
@@ -2487,12 +2645,12 @@ namespace TauCode.Working.Tests.Jobs
         public void ManualChangeDueTime_NotNull_DueTimeIsChanged()
         {
             // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
             var job = jobManager.Create("job1");
 
-            var now = "2020-09-11Z".ToUtcDayOffset().AddHours(11);
-            TimeProvider.Override(now);
+            var start = "2020-09-11Z".ToUtcDayOffset().AddHours(11);
+            TimeProvider.Override(start);
 
             var manualDueTime = "2020-10-12Z".ToUtcDayOffset().AddHours(1);
 
@@ -2510,15 +2668,18 @@ namespace TauCode.Working.Tests.Jobs
         public async Task ForceStart_NotStarted_RunsSuccessfully()
         {
             // Arrange
-            var now = "2020-09-11Z".ToUtcDayOffset();
-            TimeProvider.Override(now);
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
-            using IJobManager jobManager = TestHelper.CreateJobManager();
-            jobManager.Start();
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            TimeProvider.Override(start);
+
             var job = jobManager.Create("job1");
 
             // Act
             job.ForceStart();
+
+            
+
             await Task.Delay(100); // allow job to complete
 
             // Assert

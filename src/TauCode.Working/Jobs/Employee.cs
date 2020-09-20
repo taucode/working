@@ -54,7 +54,7 @@ namespace TauCode.Working.Jobs
             set
             {
                 _runner.DueTimeHolder.Schedule = value;
-                _vice.PulseWork();
+                _vice.PulseWork($"Pulsing due to '{nameof(Schedule)}'.");
             }
         }
 
@@ -87,7 +87,7 @@ namespace TauCode.Working.Jobs
         internal void OverrideDueTime(DateTimeOffset? dueTime)
         {
             _runner.DueTimeHolder.OverriddenDueTime = dueTime;
-            _vice.PulseWork();
+            _vice.PulseWork($"Pulsing due to '{nameof(OverrideDueTime)}'.");
         }
 
         internal void ForceStart() => this.Start(JobStartReason.Force, null);

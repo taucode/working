@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions.Lab;
 
+// todo clean
 namespace TauCode.Working
 {
     public abstract class LoopWorkerBase : WorkerBase
@@ -85,13 +86,7 @@ namespace TauCode.Working
 
         #region Protected
 
-        protected void WorkArrived() => this.AdvanceWorkGeneration();
-
-        #endregion
-
-        #region Private
-
-        private void AdvanceWorkGeneration()
+        protected void AdvanceWorkGeneration()
         {
             lock (_threadLock)
             {
@@ -100,13 +95,21 @@ namespace TauCode.Working
             }
         }
 
-        private long GetCurrentWorkGeneration()
+        protected long GetCurrentWorkGeneration()
         {
             lock (_threadLock)
             {
                 return _workGeneration;
             }
         }
+
+        #endregion
+
+        #region Private
+
+
+
+
 
         private void CycleRoutine()
         {

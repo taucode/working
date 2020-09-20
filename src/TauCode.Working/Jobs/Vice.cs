@@ -7,6 +7,7 @@ using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 
+// todo clean up
 namespace TauCode.Working.Jobs
 {
     internal class Vice : LoopWorkerBase
@@ -17,6 +18,7 @@ namespace TauCode.Working.Jobs
         private readonly object _lock;
 
         private readonly ObjectLogger _logger; // todo: WorkerBase will have its own ObjectLogger.
+        private bool _startedWorking;
 
         #endregion
 
@@ -39,13 +41,13 @@ namespace TauCode.Working.Jobs
             _logger.Debug("Entered method", nameof(DoWork));
 
             var now = TimeProvider.GetCurrent();
-
             var employeesToWakeUp = new List<Tuple<Employee, DueTimeInfo>>();
-
             var earliest = JobExtensions.Never;
 
             lock (_lock)
             {
+                _startedWorking = true;
+
                 foreach (var employee in _employees.Values)
                 {
                     var info = employee.GetDueTimeInfoForVice(false);
@@ -160,7 +162,7 @@ namespace TauCode.Working.Jobs
 
                 _employees.Add(employee.Name, employee);
 
-                this.WorkArrived();
+                this.PulseWork($"Pulsing due to '{nameof(CreateJob)}'.");
                 return employee.GetJob();
             }
         }
@@ -187,7 +189,11 @@ namespace TauCode.Working.Jobs
             }
         }
 
-        internal void PulseWork() => this.WorkArrived();
+        internal void PulseWork(string pulseReason)
+        {
+            _logger.Debug(pulseReason, nameof(PulseWork));
+            this.AdvanceWorkGeneration();
+        }
 
         internal bool IsLoggingEnabled => _logger.IsEnabled;
 
@@ -200,6 +206,14 @@ namespace TauCode.Working.Jobs
                 {
                     employee.EnableLogging(enable);
                 }
+            }
+        }
+
+        internal bool StartedWorking()
+        {
+            lock (_lock)
+            {
+                return _startedWorking;
             }
         }
 
