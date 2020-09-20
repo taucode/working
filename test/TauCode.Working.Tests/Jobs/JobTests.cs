@@ -20,13 +20,17 @@ namespace TauCode.Working.Tests.Jobs
     [TestFixture]
     public class JobTests
     {
+        //private const int SetUpTimeout = 2000;
+        private const int SetUpTimeout = 0;
+
         private StringWriterWithEncoding _logWriter;
 
         [SetUp]
         public async Task SetUp()
         {
             TimeProvider.Reset();
-            await Task.Delay(5000);
+            GC.Collect();
+            await Task.Delay(SetUpTimeout);
 
             _logWriter = new StringWriterWithEncoding(Encoding.UTF8);
             Log.Logger = new LoggerConfiguration()
@@ -327,12 +331,12 @@ namespace TauCode.Working.Tests.Jobs
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
             var job = jobManager.Create("my-job");
 
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
-            ISchedule schedule1 = new SimpleSchedule(SimpleScheduleKind.Minute, 1, now);
-            ISchedule schedule2 = new SimpleSchedule(SimpleScheduleKind.Day, 1, now);
+            ISchedule schedule1 = new SimpleSchedule(SimpleScheduleKind.Minute, 1, start);
+            ISchedule schedule2 = new SimpleSchedule(SimpleScheduleKind.Day, 1, start);
 
             // Act
             job.Schedule = schedule1;
@@ -347,10 +351,10 @@ namespace TauCode.Working.Tests.Jobs
 
             // Assert
             Assert.That(updatedSchedule1, Is.SameAs(schedule1));
-            Assert.That(dueTime1, Is.EqualTo(now.AddMinutes(1)));
+            Assert.That(dueTime1, Is.EqualTo(start.AddMinutes(1)));
 
             Assert.That(updatedSchedule2, Is.SameAs(schedule2));
-            Assert.That(dueTime2, Is.EqualTo(now.AddDays(1)));
+            Assert.That(dueTime2, Is.EqualTo(start.AddDays(1)));
         }
 
         [Test]
@@ -511,8 +515,8 @@ namespace TauCode.Working.Tests.Jobs
 
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
             var job = jobManager.Create("my-job");
@@ -521,14 +525,15 @@ namespace TauCode.Working.Tests.Jobs
             {
                 await Task.Delay(1500, token); // 1.5 second to complete
             };
-            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
+            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
 
             job.IsEnabled = true;
 
             // Act
             job.Schedule = schedule; // will fire at 00:01
 
-            await Task.Delay(1400 + DEFECT.Milliseconds);
+            await timeMachine.WaitUntilSecondsElapse(start, 1.4 + DEFECT.TotalSeconds);
+
             var canceled = job.Cancel(); // will be canceled almost right after start
 
             Assert.That(canceled, Is.True);
@@ -537,17 +542,17 @@ namespace TauCode.Working.Tests.Jobs
             // Assert
             var info = job.GetInfo(null);
             Assert.That(info.CurrentRun, Is.Null);
-            Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(2)));
+            Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(2)));
             Assert.That(info.NextDueTimeIsOverridden, Is.False);
 
             var pastRun = info.Runs.Single();
 
             Assert.That(pastRun.RunIndex, Is.EqualTo(0));
             Assert.That(pastRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
-            Assert.That(pastRun.DueTime, Is.EqualTo(now.AddSeconds(1)));
+            Assert.That(pastRun.DueTime, Is.EqualTo(start.AddSeconds(1)));
             Assert.That(pastRun.DueTimeWasOverridden, Is.False);
 
-            Assert.That(pastRun.StartTime, Is.EqualTo(now.AddSeconds(1)).Within(DEFECT));
+            Assert.That(pastRun.StartTime, Is.EqualTo(start.AddSeconds(1)).Within(DEFECT));
             Assert.That(
                 pastRun.EndTime,
                 Is.EqualTo(pastRun.StartTime.AddSeconds(0.4)).Within(DEFECT * 2));
@@ -626,22 +631,22 @@ namespace TauCode.Working.Tests.Jobs
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
             var job = jobManager.Create("my-job");
 
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
 
-            job.OverrideDueTime(now.AddSeconds(2.5));
+            job.OverrideDueTime(start.AddSeconds(2.5));
 
-            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, now);
+            ISchedule schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
 
             // Act
-            await Task.Delay(1800);
+            await timeMachine.WaitUntilSecondsElapse(start, 1.8);
             job.Schedule = schedule;
 
             // Assert
             var info = job.GetInfo(null);
-            Assert.That(info.NextDueTime, Is.EqualTo(now.AddSeconds(2)));
+            Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(2)));
             Assert.That(info.NextDueTimeIsOverridden, Is.False);
         }
 
@@ -1102,8 +1107,8 @@ namespace TauCode.Working.Tests.Jobs
             // Arrange
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
             var job = jobManager.Create("my-job");
@@ -1488,8 +1493,8 @@ namespace TauCode.Working.Tests.Jobs
             // Arrange
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
             var job = jobManager.Create("my-job");
@@ -1533,8 +1538,8 @@ namespace TauCode.Working.Tests.Jobs
             // Arrange
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
-            var now = "2000-01-01Z".ToUtcDayOffset();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(now);
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
             TimeProvider.Override(timeMachine);
 
             var job = jobManager.Create("my-job");
@@ -2149,7 +2154,7 @@ namespace TauCode.Working.Tests.Jobs
                 sb.AppendLine("*** Test Failed ***");
                 sb.AppendLine(ex.ToString());
                 sb.AppendLine("*** Log: ***");
-                
+
                 var log = _logWriter.ToString();
 
                 sb.AppendLine(log);
@@ -2346,7 +2351,7 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
-        public void GetInfo_ArgumentIsNegative_ThrowsTodo()
+        public void GetInfo_ArgumentIsNegative_ThrowsArgumentOutOfRangeException()
         {
             // Arrange
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
@@ -2457,17 +2462,41 @@ namespace TauCode.Working.Tests.Jobs
             }
         }
 
-        // todo - run several times (by force, schedule, overridden due time) and check the runs.
-
         /// <summary>
-        /// 0---------1---------2---------3---------4---------5---------
-        ///      |__~1s__|          |___~1s____|    |________|           
-        /// _____!1_________!2______*_______________!3__________________ (!1 - force start, !2 - due time is overridden to ('*' == 2.4s), !3 - starts by schedule)
+        ///                     v         v         v         v                    (v - should start via schedule unless interfered)
+        /// 0---------1---------2---------3---------4---------5---------6---------
+        ///                |_~0.7s_|          |_~0.7s_|       |_~0.7s_|           
+        /// _______________!1__________!2_____!3______________!4__________________ (!1 - force start, !2 - due time is overridden, !3 - overridden due time, !4 - starts by schedule)
+        /// ___________^A____^B______^C____^D____^E________^F_____^G_______^H_____ (GetInfo during lifecycle:
+        ///                                                                             ^A - before all runs
+        ///                                                                             ^B - right after force start
+        ///                                                                             ^C - after forced run completes, but before time override
+        ///                                                                             ^D - after time override, but before overridden-due-time start
+        ///                                                                             ^E - after overridden-due-time start
+        ///                                                                             ^F - after overridden-due-time run completes, and before schedule-due-time start
+        ///                                                                             ^G - after schedule-due-time start
+        ///                                                                             ^H - after schedule-due-time run completes
         /// </summary>
         [Test]
         public async Task GetInfo_RunsSeveralTimes_ReturnsAllRuns()
         {
             // Arrange
+            const double runTime = 0.7;
+
+            const double t1 = 1.6; // !1 - force start
+            const double t2 = 2.8; // !2 - due time is overridden
+            const double t3 = 3.4; // !3 - overridden due time
+            const double t4 = 5.0; // !4 - starts by schedule
+
+            const double tA = 1.1; // ^A - before all runs
+            const double tB = 1.9; // ^B - right after force start
+            const double tC = 2.6; // ^C - after forced run completes, but before time override
+            const double tD = 3.1; // ^D - after time override, but before overridden-due-time start
+            const double tE = 3.9; // ^E - after overridden-due-time start
+            const double tF = 4.8; // ^F - after overridden-due-time run completes, and before schedule-due-time start
+            const double tG = 5.3; // ^G - after schedule-due-time start
+            const double tH = 6.6; // ^H - after schedule-due-time run completes
+
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
             var start = "2000-01-01Z".ToUtcDayOffset();
@@ -2478,82 +2507,265 @@ namespace TauCode.Working.Tests.Jobs
 
             job.IsEnabled = true;
 
+            bool over1488 = false;
+            DateTimeOffset? d1488 = null;
+
             job.Routine = async (parameter, tracker, output, token) =>
             {
                 var msg = (string)parameter;
+
+                if (msg == "overridden")
+                {
+                    over1488 = true;
+                    d1488 = TimeProvider.GetCurrent();
+                }
+
                 await output.WriteAsync(msg);
-                await Task.Delay(700, token);
+                await Task.Delay(TimeSpan.FromSeconds(runTime), token);
             };
 
-            var schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
-            
-            // Act
-            job.Parameter = "force";
-            await timeMachine.WaitUntilSecondsElapse(start, 0.6);
-            job.ForceStart();
+            ISchedule schedule = new ConcreteSchedule(
+                start.AddSeconds(2),
+                start.AddSeconds(3),
+                start.AddSeconds(4),
+                start.AddSeconds(5));
 
-            await timeMachine.WaitUntilSecondsElapse(start, 1.8);
-            job.Parameter = "overridden";
-            job.OverrideDueTime(start.AddSeconds(2.6));
-
-            await timeMachine.WaitUntilSecondsElapse(start, 3.0);
-            job.Parameter = "schedule";
             job.Schedule = schedule;
 
-            await timeMachine.WaitUntilSecondsElapse(start, 4.8);
+            // Act
 
-            job.IsEnabled = false;
+            // ^A - before all runs
+            await timeMachine.WaitUntilSecondsElapse(start, tA);
+            var infoA = job.GetInfo(null);
 
-            var info = job.GetInfo(null);
+            // !1 - force start
+            await timeMachine.WaitUntilSecondsElapse(start, t1);
+            job.Parameter = "force";
+            job.ForceStart();
+
+            // ^B - right after force start
+            await timeMachine.WaitUntilSecondsElapse(start, tB);
+            var infoB = job.GetInfo(null);
+
+            // ^C - after forced run completes, but before time override
+            await timeMachine.WaitUntilSecondsElapse(start, tC);
+            var infoC = job.GetInfo(null);
+
+            // !2 - due time is overridden
+            await timeMachine.WaitUntilSecondsElapse(start, t2);
+            job.Parameter = "overridden";
+            job.OverrideDueTime(start.AddSeconds(t3));
+
+            // ^D - after time override, but before overridden-due-time start
+            await timeMachine.WaitUntilSecondsElapse(start, tD);
+            var infoD = job.GetInfo(null);
+
+            // !3 - overridden due time
+            await timeMachine.WaitUntilSecondsElapse(start, t3);
+            await _logWriter.WriteLineAsync($"=== t3 came! {t3} ===");
+
+            // ^E - after overridden-due-time start
+            await timeMachine.WaitUntilSecondsElapse(start, tE);
+            var infoE = job.GetInfo(null);
+
+            // ^F - after overridden-due-time run completes, and before schedule-due-time start
+            await timeMachine.WaitUntilSecondsElapse(start, tF);
+            var infoF = job.GetInfo(null);
+            job.Parameter = "schedule";
+
+            // !4 - starts by schedule
+            await timeMachine.WaitUntilSecondsElapse(start, t4);
+            await _logWriter.WriteLineAsync($"=== t4 came! {t4} ===");
+
+            // ^G - after schedule-due-time start
+            await timeMachine.WaitUntilSecondsElapse(start, tG);
+            var infoG = job.GetInfo(null);
+
+            // ^H - after schedule-due-time run completes
+            await timeMachine.WaitUntilSecondsElapse(start, tH);
+            var infoH = job.GetInfo(null);
+
+            // dispose
+            jobManager.Dispose();
+            var infoFinal = job.GetInfo(null);
 
             // Assert
             var DEFECT = TimeSpan.FromMilliseconds(30);
 
-            Assert.That(info.CurrentRun, Is.Null);
-            Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(5)));
-            Assert.That(info.NextDueTimeIsOverridden, Is.False);
-            Assert.That(info.RunCount, Is.EqualTo(3));
-            Assert.That(info.Runs, Has.Count.EqualTo(3));
 
-            var run0 = info.Runs[0];
-            var run1 = info.Runs[1];
-            var run2 = info.Runs[2];
+            #region ^A - before all runs
 
-            Assert.That(run0.RunIndex, Is.EqualTo(0));
-            Assert.That(run0.StartReason, Is.EqualTo(JobStartReason.Force));
-            Assert.That(run0.DueTime, Is.EqualTo(TestHelper.NeverCopy));
-            Assert.That(run0.DueTimeWasOverridden, Is.False);
-            Assert.That(run0.StartTime, Is.EqualTo(start.AddSeconds(0.6)).Within(DEFECT));
-            Assert.That(run0.EndTime, Is.EqualTo(start.AddSeconds(1.3)).Within(DEFECT * 2));
-            Assert.That(run0.Status, Is.EqualTo(JobRunStatus.Succeeded));
-            Assert.That(run0.Output, Is.EqualTo("force"));
-            Assert.That(run0.Exception, Is.Null);
+            Assert.That(infoA.CurrentRun, Is.Null);
+            Assert.That(infoA.NextDueTime, Is.EqualTo(start.AddSeconds(2)));
+            Assert.That(infoA.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoA.RunCount, Is.Zero);
+            Assert.That(infoA.Runs, Is.Empty);
 
-            Assert.That(run1.RunIndex, Is.EqualTo(1));
-            Assert.That(run1.StartReason, Is.EqualTo(JobStartReason.OverriddenDueTime));
-            Assert.That(run1.DueTime, Is.EqualTo(start.AddSeconds(2.6)));
-            Assert.That(run1.DueTimeWasOverridden, Is.True);
-            Assert.That(run1.StartTime, Is.EqualTo(start.AddSeconds(2.6)).Within(DEFECT));
-            Assert.That(run1.EndTime, Is.EqualTo(start.AddSeconds(3.3)).Within(DEFECT * 2));
-            Assert.That(run1.Status, Is.EqualTo(JobRunStatus.Succeeded));
-            Assert.That(run1.Output, Is.EqualTo("overridden"));
-            Assert.That(run1.Exception, Is.Null);
+            #endregion
 
-            Assert.That(run2.RunIndex, Is.EqualTo(2));
-            Assert.That(run2.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
-            Assert.That(run2.DueTime, Is.EqualTo(start.AddSeconds(4)));
-            Assert.That(run2.DueTimeWasOverridden, Is.False);
-            Assert.That(run2.StartTime, Is.EqualTo(start.AddSeconds(4.0)).Within(DEFECT));
-            Assert.That(run2.EndTime, Is.EqualTo(start.AddSeconds(4.7)).Within(DEFECT * 2));
-            Assert.That(run2.Status, Is.EqualTo(JobRunStatus.Succeeded));
-            Assert.That(run2.Output, Is.EqualTo("schedule"));
-            Assert.That(run2.Exception, Is.Null);
+            #region ^B - right after force start
+
+            Assert.That(infoB.CurrentRun, Is.Not.Null);
+            Assert.That(infoB.NextDueTime, Is.EqualTo(start.AddSeconds(2)));
+            Assert.That(infoB.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoB.RunCount, Is.Zero);
+            Assert.That(infoB.Runs, Is.Empty);
+
+            var currentB = infoB.CurrentRun.Value;
+            Assert.That(currentB.RunIndex, Is.EqualTo(0));
+            Assert.That(currentB.StartReason, Is.EqualTo(JobStartReason.Force));
+            Assert.That(currentB.DueTime, Is.EqualTo(start.AddSeconds(2)));
+            Assert.That(currentB.DueTimeWasOverridden, Is.False);
+            Assert.That(currentB.StartTime, Is.EqualTo(start.AddSeconds(t1)).Within(DEFECT));
+            Assert.That(currentB.EndTime, Is.Null);
+            Assert.That(currentB.Status, Is.EqualTo(JobRunStatus.Running));
+            Assert.That(currentB.Output, Is.EqualTo("force"));
+            Assert.That(currentB.Exception, Is.Null);
+
+            #endregion
+
+            #region ^C - after forced run completes, but before time override
+
+            Assert.That(infoC.CurrentRun, Is.Null);
+            Assert.That(infoC.NextDueTime, Is.EqualTo(start.AddSeconds(3)));
+            Assert.That(infoC.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoC.RunCount, Is.EqualTo(1));
+            Assert.That(infoC.Runs, Has.Count.EqualTo(1));
+
+            var infoCRun0 = infoC.Runs[0];
+            Assert.That(infoCRun0.RunIndex, Is.EqualTo(0));
+            Assert.That(infoCRun0.StartReason, Is.EqualTo(JobStartReason.Force));
+            Assert.That(infoCRun0.DueTime, Is.EqualTo(start.AddSeconds(2)));
+            Assert.That(infoCRun0.DueTimeWasOverridden, Is.False);
+            Assert.That(infoCRun0.StartTime, Is.EqualTo(currentB.StartTime));
+            Assert.That(infoCRun0.EndTime, Is.EqualTo(infoCRun0.StartTime.AddSeconds(runTime)).Within(DEFECT * 2));
+            Assert.That(infoCRun0.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(infoCRun0.Output, Is.EqualTo("force"));
+            Assert.That(infoCRun0.Exception, Is.Null);
+
+            #endregion
+
+            #region ^D - after time override, but before overridden-due-time start
+
+            Assert.That(infoD.CurrentRun, Is.Null);
+            Assert.That(infoD.NextDueTime, Is.EqualTo(start.AddSeconds(t3)));
+            Assert.That(infoD.NextDueTimeIsOverridden, Is.True);
+            Assert.That(infoD.RunCount, Is.EqualTo(1));
+            Assert.That(infoD.Runs, Has.Count.EqualTo(1));
+
+            Assert.That(infoD.Runs[0], Is.EqualTo(infoC.Runs[0]));
+
+            #endregion
+
+            #region ^E - after overridden-due-time start
+
+            Assert.That(infoE.CurrentRun, Is.Not.Null);
+            Assert.That(infoE.NextDueTime, Is.EqualTo(start.AddSeconds(4)));
+            Assert.That(infoE.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoE.RunCount, Is.EqualTo(1));
+            Assert.That(infoE.Runs, Has.Count.EqualTo(1));
+
+            var currentE = infoE.CurrentRun.Value;
+            Assert.That(currentE.RunIndex, Is.EqualTo(1));
+            Assert.That(currentE.StartReason, Is.EqualTo(JobStartReason.OverriddenDueTime));
+            Assert.That(currentE.DueTime, Is.EqualTo(start.AddSeconds(t3)));
+            Assert.That(currentE.DueTimeWasOverridden, Is.True);
+            Assert.That(currentE.StartTime, Is.EqualTo(start.AddSeconds(t3)).Within(DEFECT));
+            Assert.That(currentE.EndTime, Is.Null);
+            Assert.That(currentE.Status, Is.EqualTo(JobRunStatus.Running));
+            Assert.That(currentE.Output, Is.EqualTo("overridden"));
+            Assert.That(currentE.Exception, Is.Null);
+
+
+            #endregion
+
+            #region ^F - after overridden-due-time run completes, and before schedule-due-time start
+
+            Assert.That(infoF.CurrentRun, Is.Null);
+            Assert.That(infoF.NextDueTime, Is.EqualTo(start.AddSeconds(5)));
+            Assert.That(infoF.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoF.RunCount, Is.EqualTo(2));
+            Assert.That(infoF.Runs, Has.Count.EqualTo(2));
+
+            var infoFRun0 = infoF.Runs[0];
+            var infoFRun1 = infoF.Runs[1];
+
+            Assert.That(infoFRun0, Is.EqualTo(infoD.Runs[0]));
+
+            Assert.That(infoFRun1.RunIndex, Is.EqualTo(1));
+            Assert.That(infoFRun1.StartReason, Is.EqualTo(JobStartReason.OverriddenDueTime));
+            Assert.That(infoFRun1.DueTime, Is.EqualTo(start.AddSeconds(t3)));
+            Assert.That(infoFRun1.DueTimeWasOverridden, Is.True);
+            Assert.That(infoFRun1.StartTime, Is.EqualTo(currentE.StartTime));
+            Assert.That(infoFRun1.EndTime, Is.EqualTo(infoFRun1.StartTime.AddSeconds(runTime)).Within(DEFECT * 2));
+            Assert.That(infoFRun1.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(infoFRun1.Output, Is.EqualTo("overridden"));
+            Assert.That(infoFRun1.Exception, Is.Null);
+
+
+            #endregion
+
+            #region ^G - after schedule-due-time start
+
+            Assert.That(infoG.CurrentRun, Is.Not.Null);
+            Assert.That(infoG.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(infoG.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoG.RunCount, Is.EqualTo(2));
+            Assert.That(infoG.Runs, Has.Count.EqualTo(2));
+
+            var currentG = infoG.CurrentRun.Value;
+            Assert.That(currentG.RunIndex, Is.EqualTo(2));
+            Assert.That(currentG.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
+            Assert.That(currentG.DueTime, Is.EqualTo(start.AddSeconds(5)));
+            Assert.That(currentG.DueTimeWasOverridden, Is.False);
+            Assert.That(currentG.StartTime, Is.EqualTo(start.AddSeconds(5)).Within(DEFECT));
+            Assert.That(currentG.EndTime, Is.Null);
+            Assert.That(currentG.Status, Is.EqualTo(JobRunStatus.Running));
+            Assert.That(currentG.Output, Is.EqualTo("schedule"));
+            Assert.That(currentG.Exception, Is.Null);
+
+            CollectionAssert.AreEqual(infoF.Runs, infoG.Runs);
+
+            #endregion
+
+            #region ^H - after schedule-due-time run completes
+
+            Assert.That(infoH.CurrentRun, Is.Null);
+            Assert.That(infoH.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(infoH.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoH.RunCount, Is.EqualTo(3));
+            Assert.That(infoH.Runs, Has.Count.EqualTo(3));
+
+            CollectionAssert.AreEqual(infoG.Runs.Take(2), infoH.Runs.Take(2));
+
+            var infoHRun2 = infoH.Runs[2];
+
+            Assert.That(infoHRun2.RunIndex, Is.EqualTo(2));
+            Assert.That(infoHRun2.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
+            Assert.That(infoHRun2.DueTime, Is.EqualTo(start.AddSeconds(5)));
+            Assert.That(infoHRun2.DueTimeWasOverridden, Is.False);
+            Assert.That(infoHRun2.StartTime, Is.EqualTo(currentG.StartTime));
+            Assert.That(infoHRun2.EndTime, Is.EqualTo(infoHRun2.StartTime.AddSeconds(runTime)).Within(DEFECT * 2));
+            Assert.That(infoHRun2.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(infoHRun2.Output, Is.EqualTo("schedule"));
+            Assert.That(infoHRun2.Exception, Is.Null);
+
+            #endregion
+
+            #region after disposal
+
+            Assert.That(infoFinal.CurrentRun, Is.EqualTo(infoH.CurrentRun));
+            Assert.That(infoFinal.NextDueTime, Is.EqualTo(infoH.NextDueTime));
+            Assert.That(infoFinal.NextDueTimeIsOverridden, Is.EqualTo(infoH.NextDueTimeIsOverridden));
+            Assert.That(infoFinal.RunCount, Is.EqualTo(infoH.RunCount));
+            Assert.That(infoFinal.Runs.Count, Is.EqualTo(infoH.Runs.Count));
+
+            CollectionAssert.AreEqual(infoH.Runs, infoFinal.Runs);
+
+            #endregion
         }
 
-
-
-        // todo - if routine runs for long, GetInfo shows correct due time during the routine run. after routine ends, due time is also valid. NB: Vice should log due time changes while job's long run.
-        // todo - after disposed, still can be called.
+        // todo - when requested run count less than actual, returns requested count.
 
         #endregion
 
@@ -2678,7 +2890,7 @@ namespace TauCode.Working.Tests.Jobs
             // Act
             job.ForceStart();
 
-            
+
 
             await Task.Delay(100); // allow job to complete
 

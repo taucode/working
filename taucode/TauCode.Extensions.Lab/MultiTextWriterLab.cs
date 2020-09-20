@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace TauCode.Extensions.Lab
 {
@@ -45,6 +46,22 @@ namespace TauCode.Extensions.Lab
             foreach (var innerWriter in _innerWriters)
             {
                 innerWriter.Write(s);
+            }
+        }
+
+        public override async Task WriteAsync(char value)
+        {
+            foreach (var innerWriter in _innerWriters)
+            {
+                await innerWriter.WriteAsync(value);
+            }
+        }
+
+        public override async Task WriteAsync(string value)
+        {
+            foreach (var innerWriter in _innerWriters)
+            {
+                await innerWriter.WriteAsync(value);
             }
         }
 

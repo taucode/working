@@ -2,7 +2,7 @@
 
 namespace TauCode.Working.Jobs
 {
-    public readonly struct JobRunInfo
+    public readonly struct JobRunInfo : IEquatable<JobRunInfo>
     {
         public JobRunInfo(
             int runIndex,
@@ -38,5 +38,39 @@ namespace TauCode.Working.Jobs
         public JobRunStatus Status { get; }
         public string Output { get; }
         public Exception Exception { get; }
+
+        public bool Equals(JobRunInfo other)
+        {
+            return
+                RunIndex == other.RunIndex &&
+                StartReason == other.StartReason &&
+                DueTime.Equals(other.DueTime) &&
+                DueTimeWasOverridden == other.DueTimeWasOverridden &&
+                StartTime.Equals(other.StartTime) &&
+                Nullable.Equals(EndTime, other.EndTime) &&
+                Status == other.Status &&
+                Output == other.Output &&
+                Equals(Exception, other.Exception);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is JobRunInfo other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = new HashCode();
+            hashCode.Add(RunIndex);
+            hashCode.Add((int)StartReason);
+            hashCode.Add(DueTime);
+            hashCode.Add(DueTimeWasOverridden);
+            hashCode.Add(StartTime);
+            hashCode.Add(EndTime);
+            hashCode.Add((int)Status);
+            hashCode.Add(Output);
+            hashCode.Add(Exception);
+            return hashCode.ToHashCode();
+        }
     }
 }

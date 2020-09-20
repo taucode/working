@@ -89,6 +89,13 @@ namespace TauCode.Working.Jobs.Instruments
                 lock (_lock)
                 {
                     this.CheckNotDisposed();
+
+                    var now = TimeProvider.GetCurrent();
+                    if (now > value)
+                    {
+                        throw new NotImplementedException(); // already came
+                    }
+
                     _overriddenDueTime = value;
                 }
             }
