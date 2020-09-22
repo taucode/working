@@ -20,7 +20,7 @@ namespace TauCode.Working.Tests.Jobs
     [TestFixture]
     public class JobTests
     {
-        //private const int SetUpTimeout = 2000;
+        //private const int SetUpTimeout = 5000;
         private const int SetUpTimeout = 0;
 
         private StringWriterWithEncoding _logWriter;
@@ -104,10 +104,7 @@ namespace TauCode.Working.Tests.Jobs
 
             job.IsEnabled = true;
 
-            job.Routine = async (parameter, tracker, output, token) =>
-            {
-                await Task.Delay(5000, token);
-            };
+            job.Routine = async (parameter, tracker, output, token) => { await Task.Delay(5000, token); };
 
             job.ForceStart();
 
@@ -153,6 +150,22 @@ namespace TauCode.Working.Tests.Jobs
 
             // Assert
             Assert.That(isEnabled, Is.False);
+        }
+
+        [Test]
+        public void IsEnabled_SetToFalseDuringRun_RunCompletesThenDoesNotStart()
+        {
+            // Arrange
+            throw new NotImplementedException();
+            //using IJobManager jobManager = TestHelper.CreateJobManager(true);
+            //var job = jobManager.Create("my-job");
+            //job.IsEnabled = true;
+
+            //// Act
+            //var isEnabled = job.IsEnabled;
+
+            //// Assert
+            //Assert.That(isEnabled, Is.True);
         }
 
         [Test]
@@ -205,7 +218,6 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
-        [Ignore("todo")]
         public void IsEnabled_WasTrueThenFalse_JobDoesNotRunAnymore()
         {
             // Arrange
@@ -252,6 +264,8 @@ namespace TauCode.Working.Tests.Jobs
         #endregion
 
         #region IJob.Schedule
+
+        // todo: long run, discards overridden due time
 
         [Test]
         public void Schedule_JustCreatedJob_ReturnsNeverSchedule()
@@ -389,12 +403,13 @@ namespace TauCode.Working.Tests.Jobs
                 var info = job.GetInfo(null);
                 var currentRunNullable = info.CurrentRun;
 
-                Assert.That(currentRunNullable, Is.Not.Null);  // todo: was null once :(
+                Assert.That(currentRunNullable, Is.Not.Null); // todo: was null once :(
                 var currentRun = currentRunNullable.Value;
 
                 Assert.That(currentRun.StartReason, Is.EqualTo(JobStartReason.ScheduleDueTime));
                 Assert.That(currentRun.DueTime, Is.EqualTo(start.AddSeconds(1)));
-                Assert.That(currentRun.StartTime, Is.EqualTo(start.AddSeconds(1)).Within(TimeSpan.FromMilliseconds(20)));
+                Assert.That(currentRun.StartTime,
+                    Is.EqualTo(start.AddSeconds(1)).Within(TimeSpan.FromMilliseconds(20)));
 
                 // due time is 00:02 after start
                 Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(2)));
@@ -414,11 +429,6 @@ namespace TauCode.Working.Tests.Jobs
             }
         }
 
-        // todo: causes failures sometimes.
-        // do not remove this todo until bug is found and fixed.
-        // Expected: 2000-01-01 00:00:03+00:00
-        // But was:  2000-01-01 00:00:01+00:00 
-        // Looks like Vice never was started.
         [Test]
         public async Task Schedule_SetAndStartedAndCompleted_ReflectedInOldRuns()
         {
@@ -448,18 +458,6 @@ namespace TauCode.Working.Tests.Jobs
                 start,
                 1.0 + DEFECT.TotalSeconds + 1.5 + DEFECT.TotalSeconds);
 
-            //await Task.Delay(
-            //    1000 + // 0th due time
-            //    DEFECT.Milliseconds +
-            //    1500 +
-            //    DEFECT.Milliseconds); // let job start, finish, and wait more 30 ms.
-
-            //var inTime = await timeMachine.WaitUntilSecondsElapse(start, 2.5);
-            //if (!inTime)
-            //{
-            //    throw new Exception("Test failed. TPL was too slow.");
-            //}
-
             // Assert
             try
             {
@@ -467,9 +465,6 @@ namespace TauCode.Working.Tests.Jobs
                 Assert.That(info.CurrentRun, Is.Null);
 
                 Assert.That(info.NextDueTime, Is.EqualTo(start.AddSeconds(3)));
-                // todo
-                //Expected: 2000 - 01 - 01 00:00:03 + 00:00
-                //But was:  2000 - 01 - 01 00:00:01 + 00:00
 
                 var pastRun = info.Runs.Single();
 
@@ -590,7 +585,8 @@ namespace TauCode.Working.Tests.Jobs
             // Act
             job.Schedule = schedule; // will fire at 00:01
 
-            await timeMachine.WaitUntilSecondsElapse(start, 2.8); // by this time, job will end due to the exception "BAD_NEWS" and finalize.
+            await timeMachine.WaitUntilSecondsElapse(start,
+                2.8); // by this time, job will end due to the exception "BAD_NEWS" and finalize.
 
             // Assert
             var info = job.GetInfo(null);
@@ -1272,7 +1268,8 @@ namespace TauCode.Working.Tests.Jobs
                 var log = _logWriter.ToString();
 
                 Assert.That(log, Does.Contain("Routine has thrown an exception."));
-                Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+                Assert.That(log,
+                    Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
             }
             catch (Exception ex)
             {
@@ -1347,7 +1344,8 @@ namespace TauCode.Working.Tests.Jobs
                 Assert.That(run.Exception, Is.Null);
 
                 var log = _logWriter.ToString();
-                Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+                Assert.That(log,
+                    Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
             }
             catch (Exception ex)
             {
@@ -1418,7 +1416,8 @@ namespace TauCode.Working.Tests.Jobs
 
                 var log = _logWriter.ToString();
 
-                Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+                Assert.That(log,
+                    Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
             }
             catch (Exception ex)
             {
@@ -1484,7 +1483,8 @@ namespace TauCode.Working.Tests.Jobs
 
             var log = _logWriter.ToString();
 
-            Assert.That(log, Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
+            Assert.That(log,
+                Does.Contain($"Job 'my-job' completed synchronously. Reason of start was 'ScheduleDueTime'."));
         }
 
         [Test]
@@ -1895,7 +1895,7 @@ namespace TauCode.Working.Tests.Jobs
             {
                 for (int i = 0; i < 5; i++)
                 {
-                    tracker.UpdateProgress((decimal)i * 20, null);
+                    tracker.UpdateProgress((decimal) i * 20, null);
                 }
 
                 await Task.Delay(200, token);
@@ -1919,8 +1919,8 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(info.RunCount, Is.EqualTo(2));
             Assert.That(info.Runs, Has.Count.EqualTo(2));
 
-            CollectionAssert.AreEquivalent(new decimal[] { 0m, 20m, 40m, 60m, 80m }, tracker1.GetList());
-            CollectionAssert.AreEquivalent(new decimal[] { 0m, 20m, 40m, 60m, 80m }, tracker2.GetList());
+            CollectionAssert.AreEquivalent(new decimal[] {0m, 20m, 40m, 60m, 80m}, tracker1.GetList());
+            CollectionAssert.AreEquivalent(new decimal[] {0m, 20m, 40m, 60m, 80m}, tracker2.GetList());
         }
 
         /// <summary>
@@ -1953,7 +1953,7 @@ namespace TauCode.Working.Tests.Jobs
             {
                 for (int i = 0; i < 5; i++)
                 {
-                    tracker.UpdateProgress((decimal)i * 20, null);
+                    tracker.UpdateProgress((decimal) i * 20, null);
                 }
 
                 await Task.Delay(200, token);
@@ -1977,8 +1977,8 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(info.RunCount, Is.EqualTo(2));
             Assert.That(info.Runs, Has.Count.EqualTo(2));
 
-            CollectionAssert.AreEquivalent(new decimal[] { 0m, 20m, 40m, 60m, 80m }, tracker1.GetList());
-            CollectionAssert.AreEquivalent(new decimal[] { 0m, 20m, 40m, 60m, 80m }, tracker2.GetList());
+            CollectionAssert.AreEquivalent(new decimal[] {0m, 20m, 40m, 60m, 80m}, tracker1.GetList());
+            CollectionAssert.AreEquivalent(new decimal[] {0m, 20m, 40m, 60m, 80m}, tracker2.GetList());
         }
 
         [Test]
@@ -2507,19 +2507,9 @@ namespace TauCode.Working.Tests.Jobs
 
             job.IsEnabled = true;
 
-            bool over1488 = false;
-            DateTimeOffset? d1488 = null;
-
             job.Routine = async (parameter, tracker, output, token) =>
             {
-                var msg = (string)parameter;
-
-                if (msg == "overridden")
-                {
-                    over1488 = true;
-                    d1488 = TimeProvider.GetCurrent();
-                }
-
+                var msg = (string) parameter;
                 await output.WriteAsync(msg);
                 await Task.Delay(TimeSpan.FromSeconds(runTime), token);
             };
@@ -2765,161 +2755,557 @@ namespace TauCode.Working.Tests.Jobs
             #endregion
         }
 
-        // todo - when requested run count less than actual, returns requested count.
+        [Test]
+        public async Task GetInfo_ArgumentIsGreaterThanRunCount_ReturnsRequestedNumberOfRuns()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                var n = (int) parameter;
+                await output.WriteAsync(n.ToString());
+            };
+
+
+            // Act
+            for (var i = 0; i < 10; i++)
+            {
+                job.Parameter = i;
+                job.ForceStart();
+                await Task.Delay(50);
+            }
+
+            var info = job.GetInfo(5);
+
+            // Assert
+
+            for (int i = 0; i < 5; i++)
+            {
+                var runInfo = info.Runs[i];
+                Assert.That(runInfo.RunIndex, Is.EqualTo(i));
+                Assert.That(runInfo.Output, Is.EqualTo(i.ToString()));
+            }
+        }
 
         #endregion
 
         #region IJob.OverrideDueTime
 
-        // todo - when set to non-null value => reflected in get-info
-        // todo - when set to null => defaults to schedule, which reflects in get-info
-        // todo - if arg is < 'now' => throws, nothing happens to schedule
-        // todo - when set and that moment comes => starts and defaults to schedule, check get-info.
-        // todo - when set to non-null during run => set to next due time, but not current run.
-        // todo - when set to non-null during run and that run turned out too long => will not have effect at the very end. (+logs)
-        // todo - after disposed => cannot be set, but remains forever, even after its due time comes.
-        // todo - if IJob is disabled, won't run whichever  values do you set.
+        /// <summary>
+        /// 0---------1---------2---------3--------
+        ///                           |_~0.7s_|    
+        /// _________________!1_______!2___________ (!1 -moment the due time is overridden, !2 - overridden due time)
+        /// _____________________^A_______^B_____^C (GetInfo during lifecycle:
+        ///                                            ^A - after due time was overridden
+        ///                                            ^B - after run starts due to overridden due time
+        ///                                            ^C - after run with overridden due time ends 
+        /// </summary>
+        [Test]
+        public async Task OverrideDueTime_NotNull_StartsAndDiscards()
+        {
+            // Arrange
+            const double runLength = 0.7;
+            const double t1 = 1.7;
+            const double tA = 2.1;
+            const double t2 = 2.5;
+            const double tB = 3.1;
+            const double tC = 4.0;
 
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                var msg = (string) parameter;
+                await output.WriteAsync(msg);
+                await Task.Delay(TimeSpan.FromSeconds(runLength), token);
+            };
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, t1);
+            job.OverrideDueTime(start.AddSeconds(t2));
+
+            await timeMachine.WaitUntilSecondsElapse(start, tA);
+            var infoA = job.GetInfo(null);
+
+            job.Parameter = "Hello!";
+
+            await timeMachine.WaitUntilSecondsElapse(start, tB);
+            var infoB = job.GetInfo(null);
+
+            await timeMachine.WaitUntilSecondsElapse(start, tC);
+            var infoC = job.GetInfo(null);
+
+            // Assert
+            var DEFECT = TimeSpan.FromMilliseconds(30);
+
+            #region ^A
+
+            Assert.That(infoA.CurrentRun, Is.Null);
+            Assert.That(infoA.NextDueTime, Is.EqualTo(start.AddSeconds(t2)));
+            Assert.That(infoA.NextDueTimeIsOverridden, Is.True);
+            Assert.That(infoA.RunCount, Is.Zero);
+            Assert.That(infoA.Runs, Is.Empty);
+
+            #endregion
+
+            #region ^B
+
+            Assert.That(infoB.CurrentRun, Is.Not.Null);
+            Assert.That(infoB.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(infoB.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoB.RunCount, Is.Zero);
+            Assert.That(infoB.Runs, Is.Empty);
+
+            var currentB = infoB.CurrentRun.Value;
+            Assert.That(currentB.RunIndex, Is.EqualTo(0));
+            Assert.That(currentB.StartReason, Is.EqualTo(JobStartReason.OverriddenDueTime));
+            Assert.That(currentB.DueTime, Is.EqualTo(start.AddSeconds(t2)));
+            Assert.That(currentB.DueTimeWasOverridden, Is.True);
+            Assert.That(currentB.StartTime, Is.EqualTo(start.AddSeconds(t2)).Within(DEFECT));
+            Assert.That(currentB.EndTime, Is.Null);
+            Assert.That(currentB.Status, Is.EqualTo(JobRunStatus.Running));
+            Assert.That(currentB.Output, Is.EqualTo("Hello!"));
+            Assert.That(currentB.Exception, Is.Null);
+
+            #endregion
+
+            #region ^C
+
+            Assert.That(infoC.CurrentRun, Is.Null);
+            Assert.That(infoC.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(infoC.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoC.RunCount, Is.EqualTo(1));
+            Assert.That(infoC.Runs, Has.Count.EqualTo(1));
+
+            var infoCRun0 = infoC.Runs[0];
+            Assert.That(infoCRun0.RunIndex, Is.EqualTo(0));
+            Assert.That(infoCRun0.StartReason, Is.EqualTo(JobStartReason.OverriddenDueTime));
+            Assert.That(infoCRun0.DueTime, Is.EqualTo(start.AddSeconds(t2)));
+            Assert.That(infoCRun0.DueTimeWasOverridden, Is.True);
+            Assert.That(infoCRun0.StartTime, Is.EqualTo(currentB.StartTime));
+            Assert.That(infoCRun0.EndTime, Is.EqualTo(infoCRun0.StartTime.AddSeconds(runLength)).Within(DEFECT * 2));
+            Assert.That(infoCRun0.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(infoCRun0.Output, Is.EqualTo("Hello!"));
+            Assert.That(infoCRun0.Exception, Is.Null);
+
+            #endregion
+        }
+
+        /// <summary>
+        /// 0---------1---------2---------3--------
+        ///                           |.no.run.|    
+        /// ______________!1___!2_____!3___________    !1 - moment the due time is overridden
+        ///                                            !2 - moment the overridden due time is discarded   
+        ///                                            !3 - overridden due time value   
+        /// _______________________^A_______^B_____    ^A - after overridden due time is discarded
+        ///                                            ^B - there should be no runs
+        /// </summary>
+        [Test]
+        public async Task OverrideDueTime_Null_DefaultsToSchedule()
+        {
+            // Arrange
+            const double runLength = 0.7;
+            const double t1 = 1.5;
+            const double t2 = 1.9;
+            const double tA = 2.2;
+            const double t3 = 2.5;
+            const double tB = 3.3;
+
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                var msg = (string) parameter;
+                await output.WriteAsync(msg);
+                await Task.Delay(TimeSpan.FromSeconds(runLength), token);
+            };
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, t1);
+            job.OverrideDueTime(start.AddSeconds(t3));
+
+            job.Parameter = "Hello!";
+
+            await timeMachine.WaitUntilSecondsElapse(start, t2);
+            job.OverrideDueTime(null);
+
+            await timeMachine.WaitUntilSecondsElapse(start, tA);
+            var infoA = job.GetInfo(null);
+
+            await timeMachine.WaitUntilSecondsElapse(start, tB);
+            var infoB = job.GetInfo(null);
+
+            // Assert
+
+            #region ^A
+
+            Assert.That(infoA.CurrentRun, Is.Null);
+            Assert.That(infoA.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(infoA.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoA.RunCount, Is.Zero);
+            Assert.That(infoA.Runs, Is.Empty);
+
+            #endregion
+
+            #region ^B
+
+            Assert.That(infoB.CurrentRun, Is.Null);
+            Assert.That(infoB.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(infoB.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoB.RunCount, Is.Zero);
+            Assert.That(infoB.Runs, Is.Empty);
+
+            #endregion
+        }
+
+        [Test]
+        public void OverrideDueTime_ArgumentIsInPast_ThrowsJobException()
+        {
+            // Arrange
+
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            // Act
+            var ex = Assert.Throws<JobException>(() => job.OverrideDueTime(start.AddSeconds(-1)));
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("Cannot override due time in the past."));
+        }
+
+        // todo - when set to non-null during run => set to next due time, but not current run.
+
+        [Test]
+        public async Task OverrideDueTime_DuringRun_AppliesToNextRun()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - when set to non-null during run and that run turned out too long => will not have effect at the very end. (+logs)
+        [Test]
+        public async Task OverrideDueTime_DuringLongRun_HasNoEfect()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was set, then disposed, stays forever, but doesn't start
+        [Test]
+        public async Task OverrideDueTime_SetThenDisposed_NeverDiscarded()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was disposed, throws when set
+        [Test]
+        public async Task OverrideDueTime_Disposed_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - if IJob is disabled, won't run whichever  values do you set.
+        [Test]
+        public async Task OverrideDueTime_JobIsDisabled_DoesNotStartThenDiscarded()
+        {
+            throw new NotImplementedException();
+        }
 
         #endregion
 
         #region IJob.ForceStart
 
         // todo - happy path, get-info
-        // todo - already running, throws
-        // todo - long run, due time evolution + logs
+        [Test]
+        public async Task ForceStart_IsEnabledAndNotRunning_Starts()
+        {
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void ForceStart_IsDisabled_ThrowsJobException()
+        {
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            // Act
+            var ex = Assert.Throws<JobException>(() => job.ForceStart());
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("Job 'my-job' is disabled."));
+        }
+
+        // todo - already started by force, throws
+        [Test]
+        public async Task ForceStart_AlreadyStartedByForce_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - already started by schedule, throws
+        [Test]
+        public async Task ForceStart_AlreadyStartedBySchedule_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - already started by overridden due time, throws
+        [Test]
+        public async Task ForceStart_AlreadyStartedByOverriddenDueTime_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - long run, get-info changes correctly
+        [Test]
+        public async Task ForceStart_LongRun_GetInfoChangesCorrectlyWithTime()
+        {
+            throw new NotImplementedException();
+        }
+
         // todo - disposed, throws.
+        [Test]
+        public async Task ForceStart_JobIsDisposed_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
 
         #endregion
 
         #region IJob.Cancel
 
         // todo - was running => cancelled, returns true + logs
-        // todo - was stopped => returns false
-        // todo - disposed => throws
+        [Test]
+        public async Task Cancel_WasRunning_Cancels()
+        {
+            throw new NotImplementedException();
+        }
 
+        // todo - was stopped => returns false
+        [Test]
+        public async Task Cancel_NotRunning_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - disposed => throws
+        [Test]
+        public async Task Cancel_JobIsDisposed_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
 
         #endregion
 
-        #region IJob.Wait(int)
+        #region IJob.Wait(Int)
 
-        // todo - ...
+        // todo - was running, then ends => waits and returns true
+        [Test]
+        public async Task WaitInt_WasRunningThenEnds_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - negative arg, throws
+        [Test]
+        public async Task WaitInt_NegativeArgument_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, then canceled => waits and returns true
+        [Test]
+        public async Task WaitInt_WasRunningThenCanceled_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, then faulted => waits and returns true
+        [Test]
+        public async Task WaitInt_WasRunningThenFaulted_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, then job disposed => waits and returns true
+        [Test]
+        public async Task WaitInt_WasRunningThenJobIsDisposed_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, then job manager disposed => waits and returns true
+        [Test]
+        public async Task WaitInt_WasRunningThenJobManagerIsDisposed_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, timeout => returns false
+        [Test]
+        public async Task WaitInt_WasRunningTooLong_WaitsAndReturnsFalse()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - not running => returns true immediately
+        [Test]
+        public async Task WaitInt_NotRunning_ReturnsTrueImmediately()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was disposed => throws
+        [Test]
+        public async Task WaitInt_JobIsDisposed_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
 
         #endregion
 
         #region IJob.Wait(TimeSpan)
 
-        // todo - ...
+        // todo - was running, then ends => waits and returns true
+        [Test]
+        public async Task WaitTimeSpan_WasRunningThenEnds_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - negative arg, throws
+        [Test]
+        public async Task WaitTimeSpan_NegativeArgument_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, then canceled => waits and returns true
+        [Test]
+        public async Task WaitTimeSpan_WasRunningThenCanceled_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, then faulted => waits and returns true
+        [Test]
+        public async Task WaitTimeSpan_WasRunningThenFaulted_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, then job disposed => waits and returns true
+        [Test]
+        public async Task WaitTimeSpan_WasRunningThenJobIsDisposed_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, then job manager disposed => waits and returns true
+        [Test]
+        public async Task WaitTimeSpan_WasRunningThenJobManagerIsDisposed_WaitsAndReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was running, timeout => returns false
+        [Test]
+        public async Task WaitTimeSpan_WasRunningTooLong_WaitsAndReturnsFalse()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - not running => returns true immediately
+        [Test]
+        public async Task WaitTimeSpan_NotRunning_ReturnsTrueImmediately()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - was disposed => throws
+        [Test]
+        public async Task WaitTimeSpan_JobIsDisposed_ThrowsTodo()
+        {
+            throw new NotImplementedException();
+        }
 
         #endregion
 
         #region IJob.IsDisposed
 
-        // todo - obvious
+        // todo - ...
+        [Test]
+        public async Task IsDisposed_JobIsNotDisposed_ReturnsFalse()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - ...
+        [Test]
+        public async Task IsDisposed_JobIsDisposed_ReturnsTrue()
+        {
+            throw new NotImplementedException();
+        }
 
         #endregion
 
         #region IJob.Dispose
 
-        // todo - dispose not running IJob, checks
-        // todo - dispose running IJob, checks
+        // todo - dispose not running IJob, checks: removed from job manager, canceled job-info etc
+        [Test]
+        public async Task Dispose_NotRunning_Disposes()
+        {
+            throw new NotImplementedException();
+        }
+
+        // todo - dispose running IJob, checks: removed from job manager, canceled job-info etc
+        [Test]
+        public async Task Dispose_WasRunning_Disposes()
+        {
+            throw new NotImplementedException();
+        }
+
         // todo - dispose disposed, no problem.
+        [Test]
+        public async Task Dispose_WasDisposedAlready_ChangesNothing()
+        {
+            throw new NotImplementedException();
+        }
 
         #endregion
-
-        //====================================================================================
-
-        [Test]
-        [Ignore("todo")]
-        public void GetInfo_NoArguments_ReturnsJobInfo()
-        {
-            // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager(true);
-
-            var name = "job1";
-            var job = jobManager.Create(name);
-
-            // Act
-            var info = job.GetInfo(null);
-
-            // Assert
-            Assert.That(info.CurrentRun, Is.Null);
-            throw new NotImplementedException();
-            //Assert.That(info.NextDueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
-            //Assert.That(info.NextDueTimeInfo.DueTime, Is.EqualTo(JobExtensions.Never));
-
-            ////Assert.That(info.IsEnabled, Is.True);
-            //Assert.That(info.RunCount, Is.Zero);
-            //Assert.That(info.Runs, Is.Empty);
-        }
-
-        [Test]
-        public void ManualChangeDueTime_NotNull_DueTimeIsChanged()
-        {
-            // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager(true);
-
-            var job = jobManager.Create("job1");
-
-            var start = "2020-09-11Z".ToUtcDayOffset().AddHours(11);
-            TimeProvider.Override(start);
-
-            var manualDueTime = "2020-10-12Z".ToUtcDayOffset().AddHours(1);
-
-            // Act
-            job.OverrideDueTime(manualDueTime);
-
-            // Assert
-            var info = job.GetInfo(null);
-            Assert.That(info.NextDueTime, Is.EqualTo(manualDueTime));
-            Assert.That(info.NextDueTimeIsOverridden, Is.True);
-        }
-
-        [Test]
-        [Ignore("todo")]
-        public async Task ForceStart_NotStarted_RunsSuccessfully()
-        {
-            // Arrange
-            using IJobManager jobManager = TestHelper.CreateJobManager(true);
-
-            var start = "2000-01-01Z".ToUtcDayOffset();
-            TimeProvider.Override(start);
-
-            var job = jobManager.Create("job1");
-
-            // Act
-            job.ForceStart();
-
-
-
-            await Task.Delay(100); // allow job to complete
-
-            // Assert
-            var info = job.GetInfo(null);
-
-            Assert.That(info.CurrentRun, Is.Null);
-            Assert.That(info.RunCount, Is.EqualTo(1));
-
-            throw new NotImplementedException();
-            //Assert.That(info.NextDueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
-            //Assert.That(info.NextDueTimeInfo.IsNever(), Is.True);
-
-            //Assert.That(info.Runs, Has.Count.EqualTo(1));
-            //var run = info.Runs.Single();
-
-            //Assert.That(run.Index, Is.EqualTo(0));
-            //Assert.That(run.StartReason, Is.EqualTo(JobStartReason.Force));
-
-            //Assert.That(run.DueTimeInfo.Type, Is.EqualTo(DueTimeType.BySchedule));
-            //Assert.That(run.DueTimeInfo.IsNever(), Is.True);
-
-            //Assert.That(run.StartTime, Is.EqualTo(now));
-            //Assert.That(run.EndTime, Is.EqualTo(now));
-            //Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
-            //Assert.That(run.Output, Does.StartWith("Warning: usage of default idle routine."));
-            //Assert.That(run.Exception, Is.Null);
-        }
-
-        //====================================================================================
     }
 }

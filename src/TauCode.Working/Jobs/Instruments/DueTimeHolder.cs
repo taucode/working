@@ -93,7 +93,7 @@ namespace TauCode.Working.Jobs.Instruments
                     var now = TimeProvider.GetCurrent();
                     if (now > value)
                     {
-                        throw new NotImplementedException(); // already came
+                        throw new JobException("Cannot override due time in the past."); // already came
                     }
 
                     _overriddenDueTime = value;
