@@ -132,6 +132,8 @@ namespace TauCode.Working.Jobs.Instruments
         {
             lock (_lock)
             {
+                this.CheckNotDisposed();
+
                 if (_runContext == null)
                 {
                     return false;

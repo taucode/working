@@ -3108,25 +3108,108 @@ namespace TauCode.Working.Tests.Jobs
 
         #region IJob.Cancel
 
-        // todo - was running => cancelled, returns true + logs
         [Test]
         public async Task Cancel_WasRunning_Cancels()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await Task.Delay(TimeSpan.FromHours(1), token);
+            };
+
+            job.IsEnabled = true;
+
+            job.ForceStart();
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, 2.0);
+            var canceled = job.Cancel();
+
+            await timeMachine.WaitUntilSecondsElapse(start, 2.2);
+
+            var info = job.GetInfo(null);
+
+            // Assert
+            var DEFECT = TimeSpan.FromMilliseconds(30);
+
+            Assert.That(canceled, Is.True);
+
+            Assert.That(job.IsDisposed, Is.False);
+
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(info.NextDueTimeIsOverridden, Is.False);
+            Assert.That(info.RunCount, Is.EqualTo(1));
+            Assert.That(info.Runs, Has.Count.EqualTo(1));
+
+            var run = info.Runs.Single();
+
+            Assert.That(run.RunIndex, Is.EqualTo(0));
+            Assert.That(run.StartReason, Is.EqualTo(JobStartReason.Force));
+            Assert.That(run.DueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(run.DueTimeWasOverridden, Is.False);
+            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Canceled));
+            Assert.That(run.Output, Is.EqualTo("Hello!"));
+            Assert.That(run.Exception, Is.Null);
         }
 
-        // todo - was stopped => returns false
         [Test]
-        public async Task Cancel_NotRunning_ThrowsTodo()
+        public void Cancel_NotRunning_ReturnsFalse()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+            job.IsEnabled = true;
+
+            // Act
+            var canceled = job.Cancel();
+
+            // Assert
+            Assert.That(canceled, Is.False);
+
+            var info = job.GetInfo(null);
+
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(info.NextDueTimeIsOverridden, Is.False);
+            Assert.That(info.RunCount, Is.Zero);
+            Assert.That(info.Runs, Is.Empty);
         }
 
-        // todo - disposed => throws
         [Test]
-        public async Task Cancel_JobIsDisposed_ThrowsTodo()
+        public void Cancel_JobIsDisposed_ThrowsTodo()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+            job.IsEnabled = true;
+
+            job.Dispose();
+
+            // Act
+            var ex = Assert.Throws<JobObjectDisposedException>(() => job.Cancel());
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("'my-job' is disposed."));
         }
 
         #endregion
@@ -3285,25 +3368,121 @@ namespace TauCode.Working.Tests.Jobs
 
         #region IJob.Dispose
 
-        // todo - dispose not running IJob, checks: removed from job manager, canceled job-info etc
         [Test]
-        public async Task Dispose_NotRunning_Disposes()
+        public void Dispose_NotRunning_Disposes()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+            job.IsEnabled = true;
+
+            // Act
+            job.Dispose();
+
+            // Assert
+            Assert.That(job.IsDisposed, Is.True);
+            var names = jobManager.GetNames();
+            Assert.That(names, Is.Empty);
+
+            var info = job.GetInfo(null);
+
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(info.NextDueTimeIsOverridden, Is.False);
+            Assert.That(info.RunCount, Is.Zero);
+            Assert.That(info.Runs, Is.Empty);
         }
 
-        // todo - dispose running IJob, checks: removed from job manager, canceled job-info etc
         [Test]
         public async Task Dispose_WasRunning_Disposes()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await Task.Delay(TimeSpan.FromHours(1), token);
+            };
+
+            // Act
+            job.ForceStart();
+
+            await Task.Delay(50);
+            job.Dispose();
+            await Task.Delay(50);
+
+            // Assert
+            Assert.That(job.IsDisposed, Is.True);
+            var names = jobManager.GetNames();
+            Assert.That(names, Is.Empty);
+
+            var info = job.GetInfo(null);
+
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(info.NextDueTimeIsOverridden, Is.False);
+            Assert.That(info.RunCount, Is.EqualTo(1));
+            Assert.That(info.Runs, Has.Count.EqualTo(1));
+
+            var run = info.Runs.Single();
+
+            Assert.That(run.RunIndex, Is.EqualTo(0));
+            Assert.That(run.StartReason, Is.EqualTo(JobStartReason.Force));
+            Assert.That(run.DueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(run.DueTimeWasOverridden, Is.False);
+            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Canceled));
+            Assert.That(run.Output, Is.EqualTo("Hello!"));
+            Assert.That(run.Exception, Is.Null);
         }
 
-        // todo - dispose disposed, no problem.
         [Test]
-        public async Task Dispose_WasDisposedAlready_ChangesNothing()
+        public void Dispose_WasDisposedAlready_ChangesNothing()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await Task.Delay(TimeSpan.FromHours(1), token);
+            };
+
+            // Act
+            job.Dispose();
+            job.Dispose();
+
+            // Assert
+            Assert.That(job.IsDisposed, Is.True);
+            var names = jobManager.GetNames();
+            Assert.That(names, Is.Empty);
+
+            var info = job.GetInfo(null);
+
+            Assert.That(info.CurrentRun, Is.Null);
+            Assert.That(info.NextDueTime, Is.EqualTo(TestHelper.NeverCopy));
+            Assert.That(info.NextDueTimeIsOverridden, Is.False);
+            Assert.That(info.RunCount, Is.Zero);
+            Assert.That(info.Runs, Is.Empty);
         }
 
         #endregion

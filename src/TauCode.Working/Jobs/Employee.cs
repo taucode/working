@@ -123,7 +123,11 @@ namespace TauCode.Working.Jobs
 
         #region IDisposable Members
 
-        public void Dispose() => _runner.Dispose();
+        public void Dispose()
+        {
+            _runner.Dispose();
+            _vice.Remove(this.Name);
+        }
 
         #endregion
     }

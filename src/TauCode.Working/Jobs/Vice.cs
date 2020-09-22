@@ -167,6 +167,14 @@ namespace TauCode.Working.Jobs
             }
         }
 
+        internal void Remove(string jobName)
+        {
+            lock (_logger)
+            {
+                _employees.Remove(jobName);
+            }
+        }
+
         internal IJob GetJob(string jobName)
         {
             lock (_lock)
