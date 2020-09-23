@@ -150,6 +150,8 @@ namespace TauCode.Working.Jobs.Instruments
             {
                 lock (_lock)
                 {
+                    this.CheckNotDisposed();
+
                     if (this.IsRunning)
                     {
                         throw new NotImplementedException();

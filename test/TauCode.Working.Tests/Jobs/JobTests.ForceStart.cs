@@ -96,11 +96,25 @@ namespace TauCode.Working.Tests.Jobs
             throw new NotImplementedException();
         }
 
-        // todo - disposed, throws.
         [Test]
-        public async Task ForceStart_JobIsDisposed_ThrowsTodo()
+        public void ForceStart_JobIsDisposed_ThrowsJobObjectDisposedException()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+            job.IsEnabled = true;
+            job.Dispose();
+
+            // Act
+            var ex = Assert.Throws<JobObjectDisposedException>(() => job.ForceStart());
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("'my-job' is disposed."));
         }
     }
 }
