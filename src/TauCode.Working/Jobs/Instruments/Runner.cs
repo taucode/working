@@ -222,7 +222,7 @@ namespace TauCode.Working.Jobs.Instruments
                 runs);
         }
 
-        internal bool Wait(in int millisecondsTimeout)
+        internal JobRunStatus? Wait(in int millisecondsTimeout)
         {
             if (millisecondsTimeout < 0)
             {
@@ -239,7 +239,7 @@ namespace TauCode.Working.Jobs.Instruments
 
             if (runContext == null)
             {
-                return true; // nothing to wait for
+                return JobRunStatus.Completed; // nothing to wait for, not in process of running.
             }
 
             return runContext.Wait(millisecondsTimeout);

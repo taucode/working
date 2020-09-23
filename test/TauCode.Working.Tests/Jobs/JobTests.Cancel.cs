@@ -13,7 +13,7 @@ namespace TauCode.Working.Tests.Jobs
     public partial class JobTests
     {
         [Test]
-        public async Task Cancel_WasRunning_Cancels()
+        public async Task Cancel_WasRunning_CancelsAndReturnsTrue()
         {
             // Arrange
             using IJobManager jobManager = TestHelper.CreateJobManager(true);

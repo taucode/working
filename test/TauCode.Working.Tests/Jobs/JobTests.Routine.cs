@@ -49,7 +49,7 @@ namespace TauCode.Working.Tests.Jobs
             {
                 Assert.That(routine, Is.Not.Null);
                 var run = info.Runs.First();
-                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Completed));
             }
             catch (Exception ex)
             {
@@ -552,7 +552,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(info.RunCount, Is.EqualTo(1));
             var run = info.Runs.Single();
 
-            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(run.Status, Is.EqualTo(JobRunStatus.Completed));
 
             var log = _logWriter.ToString();
 

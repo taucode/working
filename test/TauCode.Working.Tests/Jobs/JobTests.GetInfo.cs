@@ -84,7 +84,7 @@ namespace TauCode.Working.Tests.Jobs
                 Assert.That(run.DueTimeWasOverridden, Is.False);
                 Assert.That(run.StartTime, Is.InRange(start, start.AddSeconds(2)));
                 Assert.That(run.EndTime, Is.InRange(run.StartTime, run.StartTime.Add(DEFECT)));
-                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Completed));
                 Assert.That(run.Output, Is.EqualTo(i.ToString()));
                 Assert.That(run.Exception, Is.Null);
             }
@@ -196,7 +196,7 @@ namespace TauCode.Working.Tests.Jobs
                 Assert.That(run.DueTimeWasOverridden, Is.False);
                 Assert.That(run.StartTime, Is.InRange(start, start.AddSeconds(2)));
                 Assert.That(run.EndTime, Is.InRange(run.StartTime, run.StartTime.Add(DEFECT)));
-                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Succeeded));
+                Assert.That(run.Status, Is.EqualTo(JobRunStatus.Completed));
                 Assert.That(run.Output, Is.EqualTo(i.ToString()));
                 Assert.That(run.Exception, Is.Null);
             }
@@ -369,7 +369,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(infoCRun0.DueTimeWasOverridden, Is.False);
             Assert.That(infoCRun0.StartTime, Is.EqualTo(currentB.StartTime));
             Assert.That(infoCRun0.EndTime, Is.EqualTo(infoCRun0.StartTime.AddSeconds(runTime)).Within(DEFECT * 2));
-            Assert.That(infoCRun0.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(infoCRun0.Status, Is.EqualTo(JobRunStatus.Completed));
             Assert.That(infoCRun0.Output, Is.EqualTo("force"));
             Assert.That(infoCRun0.Exception, Is.Null);
 
@@ -428,7 +428,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(infoFRun1.DueTimeWasOverridden, Is.True);
             Assert.That(infoFRun1.StartTime, Is.EqualTo(currentE.StartTime));
             Assert.That(infoFRun1.EndTime, Is.EqualTo(infoFRun1.StartTime.AddSeconds(runTime)).Within(DEFECT * 2));
-            Assert.That(infoFRun1.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(infoFRun1.Status, Is.EqualTo(JobRunStatus.Completed));
             Assert.That(infoFRun1.Output, Is.EqualTo("overridden"));
             Assert.That(infoFRun1.Exception, Is.Null);
 
@@ -476,7 +476,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(infoHRun2.DueTimeWasOverridden, Is.False);
             Assert.That(infoHRun2.StartTime, Is.EqualTo(currentG.StartTime));
             Assert.That(infoHRun2.EndTime, Is.EqualTo(infoHRun2.StartTime.AddSeconds(runTime)).Within(DEFECT * 2));
-            Assert.That(infoHRun2.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(infoHRun2.Status, Is.EqualTo(JobRunStatus.Completed));
             Assert.That(infoHRun2.Output, Is.EqualTo("schedule"));
             Assert.That(infoHRun2.Exception, Is.Null);
 

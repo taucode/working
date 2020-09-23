@@ -2,9 +2,9 @@
 using System.IO;
 using TauCode.Working.Schedules;
 
-// todo clean
 namespace TauCode.Working.Jobs
 {
+    // todo #regions
     internal class Job : IJob
     {
         private readonly Employee _employee;
@@ -27,13 +27,13 @@ namespace TauCode.Working.Jobs
         public ISchedule Schedule
         {
             get => _employee.Schedule;
-            set => _employee.Schedule = value; // ?? throw new ArgumentNullException(nameof(IJob.Schedule));
+            set => _employee.Schedule = value;
         }
 
         public JobDelegate Routine
         {
             get => _employee.Routine;
-            set => _employee.Routine = value; // ?? throw new ArgumentNullException(nameof(IJob.Routine));
+            set => _employee.Routine = value;
         }
 
         public object Parameter
@@ -62,9 +62,9 @@ namespace TauCode.Working.Jobs
 
         public bool Cancel() => _employee.Cancel();
 
-        public bool Wait(int millisecondsTimeout) => _employee.Wait(millisecondsTimeout);
+        public JobRunStatus? Wait(int millisecondsTimeout) => _employee.Wait(millisecondsTimeout);
 
-        public bool Wait(TimeSpan timeout) => _employee.Wait(timeout);
+        public JobRunStatus? Wait(TimeSpan timeout) => _employee.Wait(timeout);
 
         public bool IsDisposed => _employee.IsDisposed;
     }

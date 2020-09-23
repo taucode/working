@@ -1,5 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
@@ -12,11 +14,32 @@ namespace TauCode.Working.Tests.Jobs
     [TestFixture]
     public partial class JobTests
     {
-        // todo - was running, then ends => waits and returns true
         [Test]
-        public async Task WaitInt_WasRunningThenEnds_WaitsAndReturnsTrue()
+        public void WaitInt_WasRunningThenEnds_WaitsAndReturnsCompleted()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+            
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await Task.Delay(500, token);
+            };
+
+            // Act
+            job.ForceStart();
+
+            var waitResult = job.Wait(1000);
+
+            // Assert
+            Assert.That(waitResult, Is.EqualTo(JobRunStatus.Completed));
         }
 
         [Test]
@@ -48,35 +71,140 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(ex.ParamName, Is.EqualTo("millisecondsTimeout"));
         }
 
-        // todo - was running, then canceled => waits and returns true
         [Test]
-        public async Task WaitInt_WasRunningThenCanceled_WaitsAndReturnsTrue()
+        public void WaitInt_WasRunningThenCanceled_WaitsAndReturnsCanceled()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await Task.Delay(500, token);
+            };
+
+            // Act
+            job.ForceStart();
+
+            ThreadPool.QueueUserWorkItem(state =>
+            {
+                Thread.Sleep(200);
+                job.Cancel();
+            });
+
+            var waitResult = job.Wait(1000);
+
+            // Assert
+            Assert.That(waitResult, Is.EqualTo(JobRunStatus.Canceled));
         }
 
-        // todo - was running, then faulted => waits and returns true
         [Test]
-        public async Task WaitInt_WasRunningThenFaulted_WaitsAndReturnsTrue()
+        public async Task WaitInt_WasRunningThenFaulted_WaitsAndReturnsFaulted()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await Task.Delay(500, token);
+                throw new AbandonedMutexException("Hello there!");
+            };
+
+            // Act
+            job.ForceStart();
+
+            var waitResult = job.Wait(1000);
+
+            await Task.Delay(50); // let job run get written.
+
+            // Assert
+            Assert.That(waitResult, Is.EqualTo(JobRunStatus.Faulted));
+            Assert.That(job.GetInfo(null).Runs.Single().Exception, Is.TypeOf<AbandonedMutexException>());
         }
 
-        // todo - was running, then job disposed => waits and returns true
         [Test]
-        public async Task WaitInt_WasRunningThenJobIsDisposed_WaitsAndReturnsTrue()
+        public void WaitInt_WasRunningThenJobIsDisposed_WaitsAndReturnsCanceled()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await Task.Delay(500, token);
+            };
+
+            // Act
+            job.ForceStart();
+
+            ThreadPool.QueueUserWorkItem(state =>
+            {
+                Thread.Sleep(200);
+                job.Dispose();
+            });
+
+            var waitResult = job.Wait(1000);
+
+            // Assert
+            Assert.That(waitResult, Is.EqualTo(JobRunStatus.Canceled));
         }
 
-        // todo - was running, then job manager disposed => waits and returns true
         [Test]
-        public async Task WaitInt_WasRunningThenJobManagerIsDisposed_WaitsAndReturnsTrue()
+        public void WaitInt_WasRunningThenJobManagerIsDisposed_WaitsAndReturnsCanceled()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await Task.Delay(500, token);
+            };
+
+            // Act
+            job.ForceStart();
+
+            ThreadPool.QueueUserWorkItem(state =>
+            {
+                Thread.Sleep(200);
+                jobManager.Dispose();
+            });
+
+            var waitResult = job.Wait(1000);
+
+            // Assert
+            Assert.That(waitResult, Is.EqualTo(JobRunStatus.Canceled));
         }
 
-        // todo - was running, timeout => returns false
         [Test]
         public async Task WaitInt_WasRunningTooLong_WaitsAndReturnsFalse()
         {

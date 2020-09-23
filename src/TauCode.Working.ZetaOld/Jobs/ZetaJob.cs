@@ -90,12 +90,12 @@ namespace TauCode.Working.ZetaOld.Jobs
             throw new NotImplementedException();
         }
 
-        public bool Wait(int millisecondsTimeout)
+        public JobRunStatus? Wait(int millisecondsTimeout)
         {
             throw new NotImplementedException();
         }
 
-        public bool Wait(TimeSpan timeout)
+        public JobRunStatus? Wait(TimeSpan timeout)
         {
             throw new NotImplementedException();
         }

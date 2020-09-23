@@ -4,7 +4,7 @@
     {
         Unknown = 0,
         Running = 2,
-        Succeeded = 3,
+        Completed = 3,
         Faulted = 4,
         Canceled = 5,
     }

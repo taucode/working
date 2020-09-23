@@ -230,12 +230,13 @@ namespace TauCode.Working.Tests.Jobs
                     pastRun.EndTime,
                     Is.EqualTo(pastRun.StartTime.AddSeconds(1.5)).Within(DEFECT));
 
-                Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Succeeded));
-
-                //Assert.Pass(_logWriter.ToString());
+                Assert.That(pastRun.Status, Is.EqualTo(JobRunStatus.Completed));
             }
             catch (Exception ex)
             {
+                // todo: need this block, here & in other places?
+                // it is known now that the reason was slowpok TPL
+
                 var sb = new StringBuilder();
                 sb.AppendLine("*** Test Failed ***");
                 sb.AppendLine(ex.ToString());

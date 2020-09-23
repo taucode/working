@@ -114,7 +114,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(runB0.DueTimeWasOverridden, Is.False);
             Assert.That(runB0.StartTime, Is.EqualTo(currentA.StartTime));
             Assert.That(runB0.EndTime, Is.EqualTo(runB0.StartTime.AddSeconds(runLength)).Within(DEFECT));
-            Assert.That(runB0.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(runB0.Status, Is.EqualTo(JobRunStatus.Completed));
 
             #endregion
         }

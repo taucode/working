@@ -117,7 +117,7 @@ namespace TauCode.Working.Jobs.Instruments
             switch (task.Status)
             {
                 case TaskStatus.RanToCompletion:
-                    status = JobRunStatus.Succeeded;
+                    status = JobRunStatus.Completed;
                     break;
 
                 case TaskStatus.Canceled:
@@ -130,7 +130,7 @@ namespace TauCode.Working.Jobs.Instruments
                     break;
 
                 default:
-                    status = JobRunStatus.Unknown;
+                    status = JobRunStatus.Unknown; // actually, very strange and should never happen.
                     break;
             }
 
@@ -179,10 +179,30 @@ namespace TauCode.Working.Jobs.Instruments
             _tokenSource.Cancel(); // todo: throws if disposed. take care of it and ut it.
         }
 
-        // todo: instead of bool - enum: NotRunning, Canceled, Faulted, Succeeded, Timeout
-        internal bool Wait(in int millisecondsTimeout)
+        internal JobRunStatus? Wait(in int millisecondsTimeout)
         {
-            return _task?.Wait(millisecondsTimeout) ?? true;
+            try
+            {
+                var result = _task.Wait(millisecondsTimeout);
+
+                if (result)
+                {
+                    return JobRunStatus.Completed;
+                }
+
+                return null;
+            }
+            catch (AggregateException ex)
+            {
+                var innerEx = ExtractTaskException(ex);
+
+                if (innerEx is TaskCanceledException)
+                {
+                    return JobRunStatus.Canceled;
+                }
+
+                return JobRunStatus.Faulted;
+            }
         }
 
         #endregion

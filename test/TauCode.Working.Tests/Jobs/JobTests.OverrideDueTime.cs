@@ -114,7 +114,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(infoCRun0.DueTimeWasOverridden, Is.True);
             Assert.That(infoCRun0.StartTime, Is.EqualTo(currentB.StartTime));
             Assert.That(infoCRun0.EndTime, Is.EqualTo(infoCRun0.StartTime.AddSeconds(runLength)).Within(DEFECT * 2));
-            Assert.That(infoCRun0.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(infoCRun0.Status, Is.EqualTo(JobRunStatus.Completed));
             Assert.That(infoCRun0.Output, Is.EqualTo("Hello!"));
             Assert.That(infoCRun0.Exception, Is.Null);
 
@@ -353,7 +353,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(runC0.DueTimeWasOverridden, Is.False);
             Assert.That(runC0.StartTime, Is.EqualTo(currentA.StartTime));
             Assert.That(runC0.EndTime, Is.EqualTo(runC0.StartTime.AddSeconds(runLength)).Within(DEFECT));
-            Assert.That(runC0.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(runC0.Status, Is.EqualTo(JobRunStatus.Completed));
             Assert.That(runC0.Output, Is.EqualTo("Scheduled1"));
             Assert.That(runC0.Exception, Is.Null);
 
@@ -400,7 +400,7 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(runE1.DueTimeWasOverridden, Is.True);
             Assert.That(runE1.StartTime, Is.EqualTo(currentD.StartTime));
             Assert.That(runE1.EndTime, Is.EqualTo(runE1.StartTime.AddSeconds(runLength)).Within(DEFECT));
-            Assert.That(runE1.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(runE1.Status, Is.EqualTo(JobRunStatus.Completed));
             Assert.That(runE1.Output, Is.EqualTo("Overridden"));
             Assert.That(runE1.Exception, Is.Null);
 
@@ -449,14 +449,13 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(runG2.DueTimeWasOverridden, Is.False);
             Assert.That(runG2.StartTime, Is.EqualTo(currentF.StartTime));
             Assert.That(runG2.EndTime, Is.EqualTo(runG2.StartTime.AddSeconds(runLength)).Within(DEFECT));
-            Assert.That(runG2.Status, Is.EqualTo(JobRunStatus.Succeeded));
+            Assert.That(runG2.Status, Is.EqualTo(JobRunStatus.Completed));
             Assert.That(runG2.Output, Is.EqualTo("Scheduled2"));
             Assert.That(runG2.Exception, Is.Null);
 
             #endregion
         }
 
-        // todo - when set to non-null during run and that run turned out too long => will not have effect at the very end. (+logs)
         /// <summary>
         /// 0---------1---------2---------3---------4--------
         ///    |____________________________________|
