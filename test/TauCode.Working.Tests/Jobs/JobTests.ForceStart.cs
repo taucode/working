@@ -6,6 +6,7 @@ using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs;
+using TauCode.Working.Schedules;
 
 namespace TauCode.Working.Tests.Jobs
 {
@@ -68,32 +69,63 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(ex, Has.Message.EqualTo("Job 'my-job' is disabled."));
         }
 
-        // todo - already started by force, throws
         [Test]
-        public async Task ForceStart_AlreadyStartedByForce_ThrowsTodo()
+        public void ForceStart_AlreadyStartedByForce_ThrowsJobException()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await Task.Delay(800, token);
+            };
+
+            job.ForceStart();
+
+            // Act
+            var ex = Assert.Throws<JobException>(() => job.ForceStart());
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("Job 'my-job' is already running."));
         }
 
-        // todo - already started by schedule, throws
         [Test]
-        public async Task ForceStart_AlreadyStartedBySchedule_ThrowsTodo()
+        public async Task ForceStart_AlreadyStartedBySchedule_ThrowsJobException()
         {
-            throw new NotImplementedException();
-        }
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
 
-        // todo - already started by overridden due time, throws
-        [Test]
-        public async Task ForceStart_AlreadyStartedByOverriddenDueTime_ThrowsTodo()
-        {
-            throw new NotImplementedException();
-        }
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
 
-        // todo - long run, get-info changes correctly
-        [Test]
-        public async Task ForceStart_LongRun_GetInfoChangesCorrectlyWithTime()
-        {
-            throw new NotImplementedException();
+            var job = jobManager.Create("my-job");
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await Task.Delay(TimeSpan.FromSeconds(0.7), token);
+            };
+
+            job.IsEnabled = true;
+
+            job.Schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, 1.1);
+            var ex = Assert.Throws<JobException>(() => job.ForceStart());
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("Job 'my-job' is already running."));
         }
 
         [Test]

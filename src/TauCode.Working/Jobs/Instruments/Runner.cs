@@ -154,7 +154,7 @@ namespace TauCode.Working.Jobs.Instruments
 
                     if (this.IsRunning)
                     {
-                        throw new NotImplementedException();
+                        throw new JobException($"Job '{this.JobName}' is already running.");
                     }
 
                     if (!this.IsEnabled)
