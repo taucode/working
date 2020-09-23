@@ -107,6 +107,7 @@ namespace TauCode.Working
 
         #region Private
 
+        // todo rename
         private void CycleRoutine()
         {
             lock (_runningLock)
