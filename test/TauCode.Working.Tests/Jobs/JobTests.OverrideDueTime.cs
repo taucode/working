@@ -216,8 +216,6 @@ namespace TauCode.Working.Tests.Jobs
             Assert.That(ex, Has.Message.EqualTo("Cannot override due time in the past."));
         }
 
-        // todo - when set to non-null during run => set to next due time, but not current run.
-
         /// <summary>
         /// 0---------1---------2---------3---------4---------5---
         ///           |_________|    |_________|    |_________|
@@ -247,7 +245,7 @@ namespace TauCode.Working.Tests.Jobs
             const double t3 = 2.5;
             const double tD = 2.8;
             const double tE = 3.8;
-            var t4 = 4.0;
+            const double t4 = 4.0;
             const double tF = 4.3;
             const double tG = 5.3;
 
@@ -459,31 +457,240 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         // todo - when set to non-null during run and that run turned out too long => will not have effect at the very end. (+logs)
+        /// <summary>
+        /// 0---------1---------2---------3---------4--------
+        ///    |____________________________________|
+        /// _______!1______!2________________________________ !1 - due time is overridden
+        ///                                                   !2 - overridden due time
+        /// __________________^A________________________^B___ ^A - overridden due time is discarded
+        ///                                                   ^B - single run was performed
+        /// </summary>
         [Test]
-        public async Task OverrideDueTime_DuringLongRun_HasNoEfect()
+        public async Task OverrideDueTime_DuringLongRun_HasNoEffect()
         {
-            throw new NotImplementedException();
+            // Arrange
+            const double t1 = 0.8;
+            const double t2 = 1.5;
+            const double tA = 1.9;
+            const double tB = 4.5;
+
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await timeMachine.WaitUntilSecondsElapse(start, 4.0, token);
+            };
+
+            // Act
+            job.ForceStart();
+
+            await timeMachine.WaitUntilSecondsElapse(start, t1);
+            job.OverrideDueTime(start.AddSeconds(t2));
+
+            await timeMachine.WaitUntilSecondsElapse(start, tA);
+            var infoA = job.GetInfo(null);
+
+            await timeMachine.WaitUntilSecondsElapse(start, tB);
+            var infoB = job.GetInfo(null);
+
+            job.Dispose();
+
+            // Assert
+
+            #region ^A
+
+            Assert.That(infoA.CurrentRun, Is.Not.Null);
+            Assert.That(infoA.NextDueTime, Is.EqualTo(start.AddSeconds(2.0)));
+            Assert.That(infoA.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoA.RunCount, Is.Zero);
+            Assert.That(infoA.Runs, Is.Empty);
+
+            #endregion
+
+            #region ^B
+
+            Assert.That(infoB.CurrentRun, Is.Null);
+            Assert.That(infoB.NextDueTime, Is.EqualTo(start.AddSeconds(5.0)));
+            Assert.That(infoB.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoB.RunCount, Is.EqualTo(1));
+            Assert.That(infoB.Runs, Has.Count.EqualTo(1));
+
+            #endregion
         }
 
-        // todo - was set, then disposed, stays forever, but doesn't start
+        /// <summary>
+        /// 0---------1---------2---------3---------4--------
+        ///                 |.no.run.|    
+        /// _______!1___!2__!3_______________________________ !1 - due time is overridden
+        ///                                                   !2 - disposed
+        ///                                                   !3 - overridden due time
+        /// __________________^A________________________^B___ ^A - doesn't start, overridden due time remains
+        ///                                                   ^B - never starts, overridden due time remains.
+        /// </summary>
         [Test]
-        public async Task OverrideDueTime_SetThenDisposed_NeverDiscarded()
+        public async Task OverrideDueTime_SetThenDisposed_NeverDiscardedNeverRuns()
         {
-            throw new NotImplementedException();
+            // Arrange
+            const double runLength = 1.0;
+
+            const double t1 = 0.8;
+            const double t2 = 1.1;
+            const double t3 = 1.5;
+            const double tA = 1.9;
+            const double tB = 4.5;
+
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.IsEnabled = true;
+
+            job.Schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await Task.Delay(TimeSpan.FromSeconds(runLength), token);
+            };
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, t1);
+            job.OverrideDueTime(start.AddSeconds(t3));
+
+            await timeMachine.WaitUntilSecondsElapse(start, t2);
+            job.Dispose();
+
+            await timeMachine.WaitUntilSecondsElapse(start, tA);
+            var infoA = job.GetInfo(null);
+
+            await timeMachine.WaitUntilSecondsElapse(start, tB);
+            var infoB = job.GetInfo(null);
+
+            job.Dispose();
+
+            // Assert
+
+            #region ^A
+
+            Assert.That(infoA.CurrentRun, Is.Null);
+            Assert.That(infoA.NextDueTime, Is.EqualTo(start.AddSeconds(1.5)));
+            Assert.That(infoA.NextDueTimeIsOverridden, Is.True);
+            Assert.That(infoA.RunCount, Is.Zero);
+            Assert.That(infoA.Runs, Is.Empty);
+
+            #endregion
+
+            #region ^B
+
+            Assert.That(infoB.CurrentRun, Is.Null);
+            Assert.That(infoB.NextDueTime, Is.EqualTo(start.AddSeconds(1.5)));
+            Assert.That(infoB.NextDueTimeIsOverridden, Is.True);
+            Assert.That(infoB.RunCount, Is.Zero);
+            Assert.That(infoB.Runs, Is.Empty);
+
+            #endregion
         }
 
-        // todo - was disposed, throws when set
         [Test]
-        public async Task OverrideDueTime_Disposed_ThrowsTodo()
+        public void OverrideDueTime_Disposed_ThrowsJobObjectDisposedException()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var job = jobManager.Create("my-job");
+            job.Dispose();
+
+            // Act
+            var ex = Assert.Throws<JobObjectDisposedException>(() => job.OverrideDueTime(DateTimeOffset.UtcNow.AddHours(3)));
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("'my-job' is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo("my-job"));
         }
 
-        // todo - if IJob is disabled, won't run whichever  values do you set.
+        /// <summary>
+        /// 0---------1---------2---------3---------4--------
+        ///                 |.no.run.|    
+        /// _______!1_______!2_______________________________ !1 - due time is overridden
+        ///                                                   !2 - overridden due time
+        /// __________________^A________________________^B___ ^A - doesn't start, overridden due time discarded
+        ///                                                   ^B - never starts
+        /// </summary>
         [Test]
         public async Task OverrideDueTime_JobIsDisabled_DoesNotStartThenDiscarded()
         {
-            throw new NotImplementedException();
+            // Arrange
+            const double runLength = 1.0;
+
+            const double t1 = 0.8;
+            const double t2 = 1.5;
+            const double tA = 1.9;
+            const double tB = 4.5;
+
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.Schedule = new SimpleSchedule(SimpleScheduleKind.Second, 1, start);
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await Task.Delay(TimeSpan.FromSeconds(runLength), token);
+            };
+
+            // Act
+            await timeMachine.WaitUntilSecondsElapse(start, t1);
+            job.OverrideDueTime(start.AddSeconds(t2));
+
+            await timeMachine.WaitUntilSecondsElapse(start, tA);
+            var infoA = job.GetInfo(null);
+
+            await timeMachine.WaitUntilSecondsElapse(start, tB);
+            var infoB = job.GetInfo(null);
+
+            job.Dispose();
+
+            // Assert
+
+            #region ^A
+
+            Assert.That(infoA.CurrentRun, Is.Null);
+            Assert.That(infoA.NextDueTime, Is.EqualTo(start.AddSeconds(2.0)));
+            Assert.That(infoA.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoA.RunCount, Is.Zero);
+            Assert.That(infoA.Runs, Is.Empty);
+
+            #endregion
+
+            #region ^B
+
+            Assert.That(infoB.CurrentRun, Is.Null);
+            Assert.That(infoB.NextDueTime, Is.EqualTo(start.AddSeconds(5.0)));
+            Assert.That(infoB.NextDueTimeIsOverridden, Is.False);
+            Assert.That(infoB.RunCount, Is.Zero);
+            Assert.That(infoB.Runs, Is.Empty);
+
+            #endregion
         }
     }
 }

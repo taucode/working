@@ -7,7 +7,6 @@ using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 
-// todo clean up
 namespace TauCode.Working.Jobs
 {
     internal class Vice : LoopWorkerBase
@@ -169,7 +168,7 @@ namespace TauCode.Working.Jobs
 
         internal void Remove(string jobName)
         {
-            lock (_logger)
+            lock (_lock)
             {
                 _employees.Remove(jobName);
             }
@@ -208,7 +207,7 @@ namespace TauCode.Working.Jobs
         internal void EnableLogging(bool enable)
         {
             _logger.IsEnabled = enable;
-            lock (_logger)
+            lock (_lock)
             {
                 foreach (var employee in _employees.Values)
                 {

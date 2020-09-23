@@ -176,27 +176,32 @@ namespace TauCode.Working.Jobs.Instruments
             {
                 lock (_lock)
                 {
-                    if (this.IsRunning)
+                    try
                     {
-                        return JobStartResult.AlreadyRunning;
-                    }
+                        if (this.IsRunning)
+                        {
+                            return JobStartResult.AlreadyRunning;
+                        }
 
-                    if (!this.IsEnabled)
+                        if (!this.IsEnabled)
+                        {
+                            return JobStartResult.Disabled;
+                        }
+
+                        _runContext = this.Run(startReason, token);
+
+                        if (_runContext == null)
+                        {
+                            return JobStartResult.CompletedSynchronously;
+                        }
+
+                        return JobStartResult.Started;
+                    }
+                    finally
                     {
-                        return JobStartResult.Disabled;
+                        // started via due time (either overridden or scheduled), so clear overridden due time.
+                        this.DueTimeHolder.OverriddenDueTime = null;
                     }
-
-                    _runContext = this.Run(startReason, token);
-
-                    // started via due time, so clear overridden due time.
-                    this.DueTimeHolder.OverriddenDueTime = null;
-
-                    if (_runContext == null)
-                    {
-                        return JobStartResult.CompletedSynchronously;
-                    }
-
-                    return JobStartResult.Started;
                 }
             }
         }

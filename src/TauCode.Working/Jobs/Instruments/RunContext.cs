@@ -82,6 +82,8 @@ namespace TauCode.Working.Jobs.Instruments
                     multiTextWriter,
                     _tokenSource.Token);
 
+                // todo: if routine returns null?
+
                 if (_task.IsFaulted && _task.Exception != null)
                 {
                     var ex = ExtractTaskException(_task.Exception);

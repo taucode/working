@@ -107,10 +107,6 @@ namespace TauCode.Working
 
         #region Private
 
-
-
-
-
         private void CycleRoutine()
         {
             lock (_runningLock)
