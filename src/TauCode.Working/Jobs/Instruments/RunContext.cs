@@ -177,6 +177,12 @@ namespace TauCode.Working.Jobs.Instruments
             _tokenSource.Cancel(); // todo: throws if disposed. take care of it and ut it.
         }
 
+        // todo: instead of bool - enum: NotRunning, Canceled, Faulted, Succeeded, Timeout
+        internal bool Wait(in int millisecondsTimeout)
+        {
+            return _task?.Wait(millisecondsTimeout) ?? true;
+        }
+
         #endregion
     }
 }

@@ -94,7 +94,7 @@ namespace TauCode.Working.Jobs
 
         internal bool Cancel() => _runner.Cancel();
 
-        internal bool Wait(int millisecondsTimeout) => throw new NotImplementedException();
+        internal bool Wait(int millisecondsTimeout) => _runner.Wait(millisecondsTimeout);
 
         internal bool Wait(TimeSpan timeout) => throw new NotImplementedException();
 

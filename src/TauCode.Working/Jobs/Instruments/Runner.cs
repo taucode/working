@@ -217,6 +217,29 @@ namespace TauCode.Working.Jobs.Instruments
                 runs);
         }
 
+        internal bool Wait(in int millisecondsTimeout)
+        {
+            if (millisecondsTimeout < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
+            }
+
+            RunContext runContext;
+
+            lock (_lock)
+            {
+                this.CheckNotDisposed();
+                runContext = _runContext;
+            }
+
+            if (runContext == null)
+            {
+                return true; // nothing to wait for
+            }
+
+            return runContext.Wait(millisecondsTimeout);
+        }
+
         internal void OnTaskEnded()
         {
             lock (_lock)

@@ -95,7 +95,7 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
-        public void Cancel_JobIsDisposed_ThrowsTodo()
+        public void Cancel_JobIsDisposed_ThrowsJobObjectDisposedException()
         {
             // Arrange
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
