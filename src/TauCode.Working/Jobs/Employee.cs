@@ -96,7 +96,7 @@ namespace TauCode.Working.Jobs
 
         internal JobRunStatus? Wait(int millisecondsTimeout) => _runner.Wait(millisecondsTimeout);
 
-        internal JobRunStatus? Wait(TimeSpan timeout) => throw new NotImplementedException();
+        internal JobRunStatus? Wait(TimeSpan timeout) => _runner.Wait(timeout);
 
         internal bool IsDisposed => _runner.IsDisposed;
 

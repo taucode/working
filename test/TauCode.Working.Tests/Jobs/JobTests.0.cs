@@ -11,6 +11,7 @@ namespace TauCode.Working.Tests.Jobs
     [TestFixture]
     public partial class JobTests
     {
+        // todo: describe what's going on here - why 5000 and 0?
         //private const int SetUpTimeout = 5000;
         private const int SetUpTimeout = 0;
 

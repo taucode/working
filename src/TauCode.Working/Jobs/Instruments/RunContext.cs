@@ -179,7 +179,7 @@ namespace TauCode.Working.Jobs.Instruments
             _tokenSource.Cancel(); // todo: throws if disposed. take care of it and ut it.
         }
 
-        internal JobRunStatus? Wait(in int millisecondsTimeout)
+        internal JobRunStatus? Wait(int millisecondsTimeout)
         {
             try
             {

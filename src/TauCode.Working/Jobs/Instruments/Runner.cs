@@ -222,7 +222,7 @@ namespace TauCode.Working.Jobs.Instruments
                 runs);
         }
 
-        internal JobRunStatus? Wait(in int millisecondsTimeout)
+        internal JobRunStatus? Wait(int millisecondsTimeout)
         {
             if (millisecondsTimeout < 0)
             {
@@ -243,6 +243,17 @@ namespace TauCode.Working.Jobs.Instruments
             }
 
             return runContext.Wait(millisecondsTimeout);
+        }
+
+        internal JobRunStatus? Wait(TimeSpan timeout)
+        {
+            if (timeout < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+
+            var millisecondsTimeout = (int)timeout.TotalMilliseconds;
+            return this.Wait(millisecondsTimeout);
         }
 
         internal void OnTaskEnded()

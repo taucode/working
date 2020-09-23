@@ -206,7 +206,7 @@ namespace TauCode.Working.Tests.Jobs
         }
 
         [Test]
-        public async Task WaitInt_WasRunningTooLong_WaitsAndReturnsFalse()
+        public async Task WaitInt_WasRunningTooLong_WaitsAndReturnsNull()
         {
             // Arrange
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
@@ -234,11 +234,11 @@ namespace TauCode.Working.Tests.Jobs
             var gotSignal = job.Wait(1000);
 
             // Assert
-            Assert.That(gotSignal, Is.False);
+            Assert.That(gotSignal, Is.Null);
         }
 
         [Test]
-        public void WaitInt_NotRunning_ReturnsTrueImmediately()
+        public void WaitInt_NotRunning_ReturnsCompletedImmediately()
         {
             // Arrange
             using IJobManager jobManager = TestHelper.CreateJobManager(true);
@@ -256,10 +256,10 @@ namespace TauCode.Working.Tests.Jobs
             };
 
             // Act
-            var gotSignal = job.Wait(10);
+            var waitResult = job.Wait(10);
 
             // Assert
-            Assert.That(gotSignal, Is.True);
+            Assert.That(waitResult, Is.EqualTo(JobRunStatus.Completed));
         }
 
         [Test]
