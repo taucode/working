@@ -48,12 +48,6 @@ steps:
       Write-Host "nuspecName is:"
       Write-Host $(nuspecName)
 
-- task: NuGetCommand@2
-  inputs:
-    command: 'pack'
-    packagesToPack: 'nuget\$(nuspecName)'
-    versioningScheme: 'off'
-
 - task: PowerShell@2
   inputs:
     targetType: 'inline'
@@ -67,4 +61,4 @@ steps:
 - task: NuGetCommand@2
   inputs:
     command: 'custom'
-    arguments: 'push $(Build.ArtifactStagingDirectory)\$(packageName) -ApiKey az_dummy -Source "taucode"'
+    arguments: 'push $(Build.ArtifactStagingDirectory)\$(packageName) -ApiKey az_dummy -Source "TauCode"'
