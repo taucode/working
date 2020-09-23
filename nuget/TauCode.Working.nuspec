@@ -16,6 +16,8 @@
     <dependencies>
       <group targetFramework=".NETStandard2.1">
         <dependency id="Serilog" version="2.9.0" />
+        <dependency id="TauCode.Extensions" version="1.3.0" />
+        <dependency id="TauCode.Infrastructure" version="1.3.2-dev-2020-09-13-08-50" />
       </group>
     </dependencies>
   </metadata>
