@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\DisposeWorkerExecutor.lisp" />
+    <None Remove="Resources\GetWorkerInfoExecutor.lisp" />
+    <None Remove="Resources\PauseWorkerExecutor.lisp" />
+    <None Remove="Resources\QueueWorkerExecutor.lisp" />
+    <None Remove="Resources\ResumeWorkerExecutor.lisp" />
+    <None Remove="Resources\StartWorkerExecutor.lisp" />
+    <None Remove="Resources\StopWorkerExecutor.lisp" />
+    <None Remove="Resources\TimeoutWorkerExecutor.lisp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\GetWorkerInfoExecutor.lisp" />
+    <EmbeddedResource Include="Resources\DisposeWorkerExecutor.lisp" />
+    <EmbeddedResource Include="Resources\QueueWorkerExecutor.lisp" />
+    <EmbeddedResource Include="Resources\TimeoutWorkerExecutor.lisp" />
+    <EmbeddedResource Include="Resources\ResumeWorkerExecutor.lisp" />
+    <EmbeddedResource Include="Resources\PauseWorkerExecutor.lisp" />
+    <EmbeddedResource Include="Resources\StopWorkerExecutor.lisp" />
+    <EmbeddedResource Include="Resources\StartWorkerExecutor.lisp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EasyNetQ" Version="5.2.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.7" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+    <PackageReference Include="TauCode.Cli" Version="1.3.2-dev-2020-09-06-23-27" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TauCode.Working.TestDemo.Cui.Common\TauCode.Working.TestDemo.Cui.Common.csproj" />
+    <ProjectReference Include="..\TauCode.Working.TestDemo.Cui.EasyNetQ\TauCode.Working.TestDemo.Cui.EasyNetQ.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

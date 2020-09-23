@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
+using TauCode.Working.ZetaOld.Workers;
 
 namespace TauCode.Working.TestDemo.Lab
 {
-    public class DemoTimeoutWorker : TimeoutWorkerBase
+    public class DemoTimeoutWorker : ZetaTimeoutWorkerBase
     {
         private int _step;
 

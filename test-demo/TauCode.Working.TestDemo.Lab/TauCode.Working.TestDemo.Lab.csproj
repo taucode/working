@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\TauCode.Working.ZetaOld\TauCode.Working.ZetaOld.csproj" />
     <ProjectReference Include="..\..\src\TauCode.Working\TauCode.Working.csproj" />
   </ItemGroup>
 

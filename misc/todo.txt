@@ -2,3 +2,42 @@
 ==========
     1. Consider this: https://github.com/msgpack/msgpack-cli
     2. Consider this: https://github.com/ElectronNET/Electron.NET/
+    3. https://stackoverflow.com/questions/16442484/datetime-unspecified-kind
+    4. https://nodatime.org/
+
+2020-09-06
+==========
+    1. Get rid of old Wokrer Bases
+    2. UT-s.
+    3. Plug UT-s into Azure Pipelines
+    4. Local .bat files for building and deploying
+
+2020-09-07
+==========
++   1. Test-demo server bug on input "0" (which is "exit")
+
+2020-09-10
+==========
+    1. Check all operations fail on disposed IJobManager
+    
+2020-09-11
+==========
+x   1. Rename 'Lab' demo project to 'Playground'.
+    
+2020-09-12
+==========
+    1. Graceful 'Dispose': Dispose must not throw. E.g. using(myDisposable){} etc. https://stackoverflow.com/questions/1030455/how-to-handle-exception-thrown-from-dispose
+    
+2020-09-15
+==========
+    1. UT workers (porls) themselves, DoWork throwing error, etc.
+    2. Worker logging.
+
+2020-09-19
+==========
+    1. https://nugetmusthaves.com/Tag/cron
+    2. https://github.com/kevincolyar/CronNET/blob/master/CronNET/CronSchedule.cs
+    3. https://nugetmusthaves.com/Package/Quidjibo; https://quidjibo.com/; https://github.com/smiggleworth/Quidjibo
+    4. Check this out! https://www.postsharp.net/
+    5. todo.txt should not go to master anywhere.
+    6. update changelog.txt

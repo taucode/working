@@ -4,12 +4,10 @@ namespace TauCode.Working
 {
     public interface IWorker : IDisposable
     {
-        string Name { get; set; }
+        string Name { get; }
         WorkerState State { get; }
         void Start();
-        void Pause();
-        void Resume();
         void Stop();
-        WorkerState? WaitForStateChange(int millisecondsTimeout, params WorkerState[] states);
+        bool IsDisposed { get; }
     }
 }
