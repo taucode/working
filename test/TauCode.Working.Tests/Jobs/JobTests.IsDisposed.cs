@@ -1,24 +1,74 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
+using TauCode.Extensions.Lab;
+using TauCode.Infrastructure.Time;
+using TauCode.Working.Jobs;
 
 namespace TauCode.Working.Tests.Jobs
 {
     [TestFixture]
     public partial class JobTests
     {
-        // todo - ...
         [Test]
-        public async Task IsDisposed_JobIsNotDisposed_ReturnsFalse()
+        public void IsDisposed_JobIsNotDisposed_ReturnsFalse()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await Task.Delay(TimeSpan.FromHours(1), token);
+            };
+
+            job.IsEnabled = true;
+
+            job.ForceStart();
+
+            // Act
+            var isDisposed = job.IsDisposed;
+
+
+            // Assert
+            Assert.That(isDisposed, Is.False);
         }
 
-        // todo - ...
         [Test]
-        public async Task IsDisposed_JobIsDisposed_ReturnsTrue()
+        public void IsDisposed_JobIsDisposed_ReturnsTrue()
         {
-            throw new NotImplementedException();
+            // Arrange
+            using IJobManager jobManager = TestHelper.CreateJobManager(true);
+
+            var start = "2000-01-01Z".ToUtcDayOffset();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(start);
+            TimeProvider.Override(timeMachine);
+
+            var job = jobManager.Create("my-job");
+
+            job.Routine = async (parameter, tracker, output, token) =>
+            {
+                await output.WriteAsync("Hello!");
+                await Task.Delay(TimeSpan.FromHours(1), token);
+            };
+
+            job.IsEnabled = true;
+
+            job.ForceStart();
+            job.Dispose();
+
+            // Act
+            var isDisposed = job.IsDisposed;
+
+
+            // Assert
+            Assert.That(isDisposed, Is.True);
         }
     }
 }
