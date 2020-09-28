@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TauCode.Extensions.Lab;
+using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs;
@@ -167,7 +167,7 @@ namespace TauCode.Working.ZetaOld.Jobs
                     }
                     else
                     {
-                        earliest = DateTimeExtensionsLab.Min(earliest, dueTime.Value);
+                        earliest = DateTimeExtensions.Min(earliest, dueTime.Value);
                     }
                 }
             }
@@ -178,7 +178,7 @@ namespace TauCode.Working.ZetaOld.Jobs
             }
 
             _vacationTimeout = earliest - now;
-            _vacationTimeout = DateTimeExtensionsLab.Min(_vacationTimeout, VeryLongVacation);
+            _vacationTimeout = DateTimeExtensions.Min(_vacationTimeout, VeryLongVacation);
 
             return Task.FromResult(WorkFinishReason.WorkIsDone);
 
@@ -297,7 +297,8 @@ namespace TauCode.Working.ZetaOld.Jobs
 
         protected override Task<VacationFinishReason> TakeVacationAsyncImpl()
         {
-            _vacationTimeout = DateTimeExtensionsLab.Max(_vacationTimeout, TimeQuantum);
+            throw new NotImplementedException();
+            //_vacationTimeout = DateTimeExtensionsLab.Max(_vacationTimeout, TimeQuantum);
 
 
 

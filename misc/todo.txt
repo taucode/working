@@ -41,3 +41,8 @@ x   1. Rename 'Lab' demo project to 'Playground'.
     4. Check this out! https://www.postsharp.net/
     5. todo.txt should not go to master anywhere.
     6. update changelog.txt
+
+2020-09-28
+==========
+    1. Consider removing all demos - gui, cui...
+    2. Consider moving ToUtcDayOffset to 'TauCode.Tests' or something...

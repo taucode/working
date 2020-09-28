@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using TauCode.Extensions.Lab;
+using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Jobs;
 using TauCode.Working.Schedules;

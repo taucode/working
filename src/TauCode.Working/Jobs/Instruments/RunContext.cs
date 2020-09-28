@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions;
-using TauCode.Extensions.Lab;
 using TauCode.Infrastructure.Time;
 
 namespace TauCode.Working.Jobs.Instruments
@@ -52,7 +51,7 @@ namespace TauCode.Working.Jobs.Instruments
                 writers.Add(jobProperties.Output);
             }
 
-            var multiTextWriter = new MultiTextWriterLab(Encoding.UTF8, writers);
+            var multiTextWriter = new MultiTextWriter(Encoding.UTF8, writers);
 
             var dueTimeInfo = _initiator.DueTimeHolder.GetDueTimeInfo();
             var dueTime = dueTimeInfo.GetEffectiveDueTime();

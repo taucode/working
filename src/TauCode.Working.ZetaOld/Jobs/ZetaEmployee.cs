@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using TauCode.Extensions.Lab;
+using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs;
@@ -28,7 +28,7 @@ namespace TauCode.Working.ZetaOld.Jobs
         private object _parameter;
         private IProgressTracker _progressTracker;
         private TextWriter _output;
-        private MultiTextWriterLab _currentRunTextWriter;
+        private MultiTextWriter _currentRunTextWriter;
         private CancellationTokenSource _currentRunCancellationTokenSource;
         //private JobRunInfoBuilder _currentJobRunResultBuilder;
         private readonly List<JobRunInfo> _runs;
