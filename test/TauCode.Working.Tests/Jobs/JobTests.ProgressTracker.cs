@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 using System.Threading.Tasks;
-using TauCode.Extensions.Lab;
+using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
 using TauCode.Working.Exceptions;
 using TauCode.Working.Jobs;

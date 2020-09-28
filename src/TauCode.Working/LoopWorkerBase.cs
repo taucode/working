@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using TauCode.Extensions.Lab;
+using TauCode.Extensions;
 
 // todo clean
 namespace TauCode.Working
@@ -136,7 +136,7 @@ namespace TauCode.Working
                     {
                         // todo: log warning if task status is not 'RanToCompletion'
                         var wantedVacation = task.Result;
-                        vacation = DateTimeExtensionsLab.MinMax(
+                        vacation = DateTimeExtensions.MinMax(
                             TimeQuantum,
                             VeryLongVacation,
                             wantedVacation);

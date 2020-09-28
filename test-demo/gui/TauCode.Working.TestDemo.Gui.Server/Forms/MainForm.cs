@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
-using TauCode.Extensions.Lab;
+using TauCode.Extensions;
 using TauCode.Working.Jobs;
 using TauCode.Working.Schedules;
 using TauCode.Working.TestDemo.Gui.Common;
