@@ -18,7 +18,7 @@
 
 2020-09-10
 ==========
-    1. Check all operations fail on disposed IJobManager
++   1. Check all operations fail on disposed IJobManager
     
 2020-09-11
 ==========
@@ -26,11 +26,11 @@ x   1. Rename 'Lab' demo project to 'Playground'.
     
 2020-09-12
 ==========
-    1. Graceful 'Dispose': Dispose must not throw. E.g. using(myDisposable){} etc. https://stackoverflow.com/questions/1030455/how-to-handle-exception-thrown-from-dispose
++   1. Graceful 'Dispose': Dispose must not throw. E.g. using(myDisposable){} etc. https://stackoverflow.com/questions/1030455/how-to-handle-exception-thrown-from-dispose
     
 2020-09-15
 ==========
-    1. UT workers (porls) themselves, DoWork throwing error, etc.
+    1. UT workers themselves, DoWork throwing error, etc.
     2. Worker logging.
 
 2020-09-19
@@ -44,5 +44,11 @@ x   1. Rename 'Lab' demo project to 'Playground'.
 
 2020-09-28
 ==========
-    1. Consider removing all demos - gui, cui...
-    2. Consider moving ToUtcDayOffset to 'TauCode.Tests' or something...
+    1. Consider removing all demos - gui, cui, etc
+    2. Consider moving ToUtcDayOffset to 'TauCode.Tests' or something
+    3. Add logging to workers.
+
+2020-09-29
+==========
+    1. Introduce Pause/Resume conecpt.
+
