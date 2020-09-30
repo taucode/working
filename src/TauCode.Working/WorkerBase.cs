@@ -77,11 +77,12 @@ namespace TauCode.Working
                     }
                 }
 
-                if (this.GetState() != WorkerState.Stopped)
+                var state = this.GetState();
+                if (state != WorkerState.Stopped)
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw new InappropriateWorkerStateException();
+                        throw new InappropriateWorkerStateException(state);
                     }
                     else
                     {
@@ -123,11 +124,12 @@ namespace TauCode.Working
                     }
                 }
 
-                if (this.GetState() != WorkerState.Running)
+                var state = this.GetState();
+                if (state != WorkerState.Running)
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw new InappropriateWorkerStateException();
+                        throw new InappropriateWorkerStateException(state);
                     }
                     else
                     {
@@ -173,6 +175,11 @@ namespace TauCode.Working
             }
             set
             {
+                if (this.GetIsDisposed())
+                {
+                    throw new ObjectDisposedException(this.Name);
+                }
+
                 lock (_nameLock)
                 {
                     _name = value;
