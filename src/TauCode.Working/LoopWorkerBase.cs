@@ -45,7 +45,7 @@ namespace TauCode.Working
 
         #region Abstract
 
-        protected abstract Task<TimeSpan> DoWork(CancellationToken token);
+        protected abstract Task<TimeSpan> DoWork(CancellationToken cancellationToken);
 
         #endregion
 
@@ -54,7 +54,7 @@ namespace TauCode.Working
         protected override void OnStarting()
         {
             // todo: check '_thread' is null
-            _thread = new Thread(CycleRoutine);
+            _thread = new Thread(LoopRoutine);
 
             lock (_startingLock)
             {
@@ -107,8 +107,7 @@ namespace TauCode.Working
 
         #region Private
 
-        // todo rename
-        private void CycleRoutine()
+        private void LoopRoutine()
         {
             lock (_runningLock)
             {
@@ -148,6 +147,7 @@ namespace TauCode.Working
                     }
                 }
 
+                // todo: what if 'endTask' ended here? or WorkGeneration changed 'tipa'?
                 var workStateBeforeVacation = this.GetCurrentWorkGeneration();
 
                 lock (_threadLock)
