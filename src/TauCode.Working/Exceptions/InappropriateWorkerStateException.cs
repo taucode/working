@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 namespace TauCode.Working.Exceptions
 {
     [Serializable]
-    public class InappropriateWorkerStateException : LaborException
+    public class InappropriateWorkerStateException : WorkingException
     {
         public InappropriateWorkerStateException(WorkerState workerState)
             : this($"Inappropriate worker state ({workerState}).")

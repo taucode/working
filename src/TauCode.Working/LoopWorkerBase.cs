@@ -135,7 +135,7 @@ namespace TauCode.Working
                     {
                         // todo: log warning if task status is not 'RanToCompletion'
                         var wantedVacation = task.Result;
-                        vacation = DateTimeExtensions.MinMax(
+                        vacation = TimeSpanExtensions.MinMax(
                             TimeQuantum,
                             VeryLongVacation,
                             wantedVacation);
