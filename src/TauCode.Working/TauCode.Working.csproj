@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Serilog" Version="2.10.0" />
-    <PackageReference Include="TauCode.Extensions" Version="1.3.2.1-dev-2020-10-11-10-58" />
+    <PackageReference Include="TauCode.Extensions" Version="1.3.2.1-dev-2020-11-14-21-06" />
   </ItemGroup>
 
 </Project>
