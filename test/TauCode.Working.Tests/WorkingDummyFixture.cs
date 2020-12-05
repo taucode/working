@@ -8,7 +8,12 @@ namespace TauCode.Working.Tests
         [Test]
         public void WorkingDummyTest()
         {
-            Assert.Pass("Added for passing Jenkins.");
+            // Arrange
+
+            // Act
+
+            // Assert
+            Assert.Pass("Added for Azure DevOps compliance.");
         }
     }
 }

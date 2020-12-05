@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
-namespace TauCode.Working
+namespace TauCode.Working.Exceptions
 {
     [Serializable]
     public class WorkingException : Exception
@@ -16,6 +17,11 @@ namespace TauCode.Working
 
         public WorkingException(string message, Exception inner)
             : base(message, inner)
+        {
+        }
+
+        protected WorkingException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }

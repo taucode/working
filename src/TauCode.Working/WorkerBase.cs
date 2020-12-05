@@ -1,163 +1,163 @@
-﻿using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
+﻿using System;
 using System.Threading;
+using TauCode.Working.Exceptions;
 
 namespace TauCode.Working
 {
-    // todo clean
-    public abstract class WorkerBase : IWorker
+    public class WorkerBase : IWorker
     {
         #region Fields
 
-        private string _name;
-        private WorkerState _state;
-        private readonly object _stateLock;
-        private readonly object _controlLock;
+        private long _stateValue;
+        private long _isDisposedValue;
 
-        private readonly Dictionary<WorkerState, AutoResetEvent> _stateSignals;
+        private string _name;
+        private readonly object _nameLock;
+
+        private readonly object _lock;
 
         #endregion
 
         #region Constructor
 
-        protected WorkerBase()
+        public WorkerBase()
         {
-            _stateLock = new object();
-            _controlLock = new object();
+            _lock = new object();
+            _nameLock = new object();
 
-            _state = WorkerState.Stopped;
-
-            _stateSignals = Enum
-                .GetValues(typeof(WorkerState))
-                .Cast<WorkerState>()
-                .ToDictionary(x => x, x => new AutoResetEvent(false));
-        }
-
-        #endregion
-
-        #region Abstract
-
-        protected abstract void StartImpl();
-        protected abstract void PauseImpl();
-        protected abstract void ResumeImpl();
-        protected abstract void StopImpl();
-        protected abstract void DisposeImpl();
-
-        #endregion
-
-        #region Protected
-
-        protected void LogDebug(string message, int shiftFromCaller = 0)
-        {
-            StackTrace stackTrace = new StackTrace();
-            var frame = stackTrace.GetFrame(1 + shiftFromCaller);
-            var method = frame.GetMethod();
-
-            var debugMessage = $"[{this.Name}][{this.GetType().Name}.{method.Name}] {message}";
-            Log.Debug(debugMessage);
-
-            Log.ForContext("taucode.working", true).Debug(debugMessage);
-        }
-
-        protected void LogError(string message, int shiftFromCaller = 0)
-        {
-            StackTrace stackTrace = new StackTrace();
-            var frame = stackTrace.GetFrame(1 + shiftFromCaller);
-            var method = frame.GetMethod();
-
-            var information = $"[{this.Name}][{method.Name}] {message}";
-            Log.Error(information);
-        }
-
-        protected void ChangeState(WorkerState state)
-        {
-            lock (_stateLock)
-            {
-                _state = state;
-
-                this.LogDebug($"State changed to '{_state}'");
-
-                _stateSignals[_state].Set();
-            }
-        }
-
-        protected WorkingException CreateInternalErrorException() => new WorkingException("Internal error.");
-
-        protected void CheckInternalIntegrity(bool condition)
-        {
-            if (!condition)
-            {
-                throw this.CreateInternalErrorException();
-            }
+            this.SetState(WorkerState.Stopped);
+            this.SetIsDisposed(false);
         }
 
         #endregion
 
         #region Private
 
-        protected void CheckStateForOperation(params WorkerState[] acceptedStates)
+        private WorkerState GetState()
         {
-            var state = this.State;
+            var stateValue = Interlocked.Read(ref _stateValue);
+            return (WorkerState)stateValue;
+        }
 
-            if (!acceptedStates.Contains(state))
+        private void SetState(WorkerState state)
+        {
+            var stateValue = (long)state;
+            Interlocked.Exchange(ref _stateValue, stateValue);
+        }
+
+        private bool GetIsDisposed()
+        {
+            var isDisposedValue = Interlocked.Read(ref _isDisposedValue);
+            return isDisposedValue == 1L;
+        }
+
+        private void SetIsDisposed(bool isDisposed)
+        {
+            var isDisposedValue = isDisposed ? 1L : 0L;
+            Interlocked.Exchange(ref _isDisposedValue, isDisposedValue);
+        }
+
+        #endregion
+
+        #region Protected
+
+        protected void Start(bool throwOnDisposedOrWrongState)
+        {
+            lock (_lock)
             {
-                var sb = new StringBuilder();
-                sb.Append($"To perform this operation, '{nameof(State)}' must be ");
-
-                for (var i = 0; i < acceptedStates.Length; i++)
+                if (this.GetIsDisposed())
                 {
-                    var acceptedState = acceptedStates[i];
-                    sb.Append($"'{acceptedState}'");
-
-                    if (i < acceptedStates.Length - 2)
+                    if (throwOnDisposedOrWrongState)
                     {
-                        sb.Append(", ");
+                        throw new ObjectDisposedException(this.Name);
                     }
-                    else if (i < acceptedStates.Length - 1)
+                    else
                     {
-                        sb.Append(" or ");
+                        return;
                     }
                 }
 
-                sb.Append($" while actually it is '{state}'.");
+                var state = this.GetState();
+                if (state != WorkerState.Stopped)
+                {
+                    if (throwOnDisposedOrWrongState)
+                    {
+                        throw new InappropriateWorkerStateException(state);
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
 
-                throw new WorkingException(sb.ToString());
+                this.SetState(WorkerState.Starting);
+                this.OnStarting();
+
+                this.SetState(WorkerState.Running);
+                this.OnStarted();
             }
         }
 
-        // todo: CheckStateForOperation and CheckState are almost copy/paste.
-        protected void CheckState(params WorkerState[] acceptedStates)
+        protected virtual void OnStarting()
         {
-            var state = this.State;
+            // idle
+        }
 
-            if (!acceptedStates.Contains(state))
+        protected virtual void OnStarted()
+        {
+            // idle
+        }
+
+        protected void Stop(bool throwOnDisposedOrWrongState)
+        {
+            lock (_lock)
             {
-                var sb = new StringBuilder();
-                sb.Append($"'{nameof(State)}' is expected to be ");
-
-                for (var i = 0; i < acceptedStates.Length; i++)
+                if (this.GetIsDisposed())
                 {
-                    var acceptedState = acceptedStates[i];
-                    sb.Append($"'{acceptedState}'");
-
-                    if (i < acceptedStates.Length - 2)
+                    if (throwOnDisposedOrWrongState)
                     {
-                        sb.Append(", ");
+                        throw new ObjectDisposedException(this.Name);
                     }
-                    else if (i < acceptedStates.Length - 1)
+                    else
                     {
-                        sb.Append(" or ");
+                        return;
                     }
                 }
 
-                sb.Append($" while actually it is '{state}'.");
+                var state = this.GetState();
+                if (state != WorkerState.Running)
+                {
+                    if (throwOnDisposedOrWrongState)
+                    {
+                        throw new InappropriateWorkerStateException(state);
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
 
-                throw new WorkingException(sb.ToString());
+                this.SetState(WorkerState.Stopping);
+                this.OnStopping();
+
+                this.SetState(WorkerState.Stopped);
+                this.OnStopped();
             }
+        }
+
+        protected virtual void OnStopping()
+        {
+            // idle
+        }
+
+        protected virtual void OnStopped()
+        {
+            // idle
+        }
+        
+        protected virtual void OnDisposed()
+        {
+            // idle
         }
 
         #endregion
@@ -168,124 +168,32 @@ namespace TauCode.Working
         {
             get
             {
-                lock (_stateLock)
+                lock (_nameLock)
                 {
                     return _name;
                 }
             }
             set
             {
-                lock (_stateLock)
+                if (this.GetIsDisposed())
+                {
+                    throw new ObjectDisposedException(this.Name);
+                }
+
+                lock (_nameLock)
                 {
                     _name = value;
                 }
             }
         }
 
-        public WorkerState State
-        {
-            get
-            {
-                lock (_stateLock)
-                {
-                    return _state;
-                }
-            }
-        }
+        public WorkerState State => this.GetState();
 
-        public void Start()
-        {
-            this.LogDebug("Start requested");
+        public void Start() => this.Start(true);
 
-            lock (_controlLock)
-            {
-                this.CheckStateForOperation(WorkerState.Stopped);
-                this.StartImpl();
-                this.CheckState(WorkerState.Running);
-            }
-        }
+        public void Stop() => this.Stop(true);
 
-        public void Pause()
-        {
-            this.LogDebug("Pause requested");
-
-            lock (_controlLock)
-            {
-                this.CheckStateForOperation(WorkerState.Running);
-                this.PauseImpl();
-                this.CheckState(WorkerState.Paused);
-            }
-        }
-
-        public void Resume()
-        {
-            this.LogDebug("Resume requested");
-
-            lock (_controlLock)
-            {
-                this.CheckStateForOperation(WorkerState.Paused);
-                this.ResumeImpl();
-                this.CheckState(WorkerState.Running);
-            }
-        }
-
-        public void Stop()
-        {
-            this.LogDebug("Stop requested");
-
-            lock (_controlLock)
-            {
-                this.CheckStateForOperation(WorkerState.Running, WorkerState.Paused);
-                this.StopImpl();
-                this.CheckState(WorkerState.Stopped);
-            }
-        }
-
-        public WorkerState? WaitForStateChange(int millisecondsTimeout, params WorkerState[] states)
-        {
-            if (states.Length == 0)
-            {
-                throw new ArgumentException($"'{nameof(states)}' cannot be empty.");
-            }
-
-            var state = this.State;
-            if (state == WorkerState.Disposed || state == WorkerState.Disposing)
-            {
-                var objectName = $"{this.GetType()} Name: {this.Name ?? "null"}";
-
-                throw new ObjectDisposedException(objectName,
-                    $"Cannot wait for state change of a worker which has state '{state}'.");
-            }
-
-            // Between previous check and following code 'State' might be changed to 'Disposed' or 'Disposing'.
-            // Therefore, handles might be disposed.
-            // But that's not our problem anymore. We've tried to warn!
-
-
-            var distinctStates = states
-                .Distinct()
-                .ToArray();
-
-            var handles = distinctStates
-                .Select(x => _stateSignals[x])
-                .Cast<WaitHandle>()
-                .ToArray();
-
-            var tuples = Enumerable
-                .Range(0, distinctStates.Length)
-                .ToDictionary(x => x, x => Tuple.Create(x, distinctStates[x], _stateSignals[distinctStates[x]]));
-
-            var handleIndex = WaitHandle.WaitAny(handles, millisecondsTimeout);
-
-            if (handleIndex == WaitHandle.WaitTimeout)
-            {
-                // timeout.
-                return null;
-            }
-
-            var gotState = tuples[handleIndex].Item2;
-            return gotState;
-        }
+        public bool IsDisposed => this.GetIsDisposed();
 
         #endregion
 
@@ -293,20 +201,18 @@ namespace TauCode.Working
 
         public void Dispose()
         {
-            this.LogDebug("Dispose requested");
-
-            lock (_controlLock)
+            lock (_lock)
             {
-                this.CheckStateForOperation(WorkerState.Stopped, WorkerState.Running, WorkerState.Paused);
-                this.DisposeImpl();
-                this.CheckState(WorkerState.Disposed);
-
-                foreach (var signal in _stateSignals.Values)
+                if (this.GetIsDisposed())
                 {
-                    signal.Dispose();
+                    return; // won't dispose twice
                 }
 
-                _stateSignals.Clear();
+                this.Stop(false);
+
+                this.SetIsDisposed(true);
+
+                this.OnDisposed();
             }
         }
 
