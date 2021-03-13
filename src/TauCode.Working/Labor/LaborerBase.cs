@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Threading;
-using TauCode.Working.Exceptions;
+using TauCode.Working.Labor.Exceptions;
 
-namespace TauCode.Working
+namespace TauCode.Working.Labor
 {
-    // todo: abstract?
-    public class WorkerBase : IWorker
+    public abstract class LaborerBase : ILaborer
     {
         #region Fields
 
@@ -15,18 +14,18 @@ namespace TauCode.Working
         private string _name;
         private readonly object _nameLock;
 
-        private readonly object _lock;
+        private readonly object _controlLock;
 
         #endregion
 
         #region Constructor
 
-        public WorkerBase()
+        protected LaborerBase()
         {
-            _lock = new object();
             _nameLock = new object();
+            _controlLock = new object();
 
-            this.SetState(WorkerState.Stopped);
+            this.SetState(LaborerState.Stopped);
             this.SetIsDisposed(false);
         }
 
@@ -34,13 +33,13 @@ namespace TauCode.Working
 
         #region Private
 
-        private WorkerState GetState()
+        private LaborerState GetState()
         {
             var stateValue = Interlocked.Read(ref _stateValue);
-            return (WorkerState)stateValue;
+            return (LaborerState)stateValue;
         }
 
-        private void SetState(WorkerState state)
+        private void SetState(LaborerState state)
         {
             var stateValue = (long)state;
             Interlocked.Exchange(ref _stateValue, stateValue);
@@ -64,7 +63,7 @@ namespace TauCode.Working
 
         protected void Start(bool throwOnDisposedOrWrongState)
         {
-            lock (_lock)
+            lock (_controlLock)
             {
                 if (this.GetIsDisposed())
                 {
@@ -79,11 +78,11 @@ namespace TauCode.Working
                 }
 
                 var state = this.GetState();
-                if (state != WorkerState.Stopped)
+                if (state != LaborerState.Stopped)
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw new InappropriateWorkerStateException(state);
+                        throw new InappropriateLaborerStateException(state);
                     }
                     else
                     {
@@ -91,10 +90,10 @@ namespace TauCode.Working
                     }
                 }
 
-                this.SetState(WorkerState.Starting);
+                this.SetState(LaborerState.Starting);
                 this.OnStarting();
 
-                this.SetState(WorkerState.Running);
+                this.SetState(LaborerState.Running);
                 this.OnStarted();
             }
         }
@@ -111,7 +110,7 @@ namespace TauCode.Working
 
         protected void Stop(bool throwOnDisposedOrWrongState)
         {
-            lock (_lock)
+            lock (_controlLock)
             {
                 if (this.GetIsDisposed())
                 {
@@ -126,11 +125,11 @@ namespace TauCode.Working
                 }
 
                 var state = this.GetState();
-                if (state != WorkerState.Running)
+                if (state != LaborerState.Running)
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw new InappropriateWorkerStateException(state);
+                        throw new InappropriateLaborerStateException(state);
                     }
                     else
                     {
@@ -138,10 +137,10 @@ namespace TauCode.Working
                     }
                 }
 
-                this.SetState(WorkerState.Stopping);
+                this.SetState(LaborerState.Stopping);
                 this.OnStopping();
 
-                this.SetState(WorkerState.Stopped);
+                this.SetState(LaborerState.Stopped);
                 this.OnStopped();
             }
         }
@@ -155,7 +154,7 @@ namespace TauCode.Working
         {
             // idle
         }
-        
+
         protected virtual void OnDisposed()
         {
             // idle
@@ -163,7 +162,7 @@ namespace TauCode.Working
 
         #endregion
 
-        #region IWorker Members
+        #region ILaborer Members
 
         public string Name
         {
@@ -188,11 +187,27 @@ namespace TauCode.Working
             }
         }
 
-        public WorkerState State => this.GetState();
+        public LaborerState State => this.GetState();
 
-        public void Start() => this.Start(true);
+        public void Start()
+        {
+            throw new NotImplementedException();
+        }
 
-        public void Stop() => this.Stop(true);
+        public void Stop()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Pause()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Resume()
+        {
+            throw new NotImplementedException();
+        }
 
         public bool IsDisposed => this.GetIsDisposed();
 
@@ -202,19 +217,7 @@ namespace TauCode.Working
 
         public void Dispose()
         {
-            lock (_lock)
-            {
-                if (this.GetIsDisposed())
-                {
-                    return; // won't dispose twice
-                }
-
-                this.Stop(false);
-
-                this.SetIsDisposed(true);
-
-                this.OnDisposed();
-            }
+            throw new NotImplementedException();
         }
 
         #endregion

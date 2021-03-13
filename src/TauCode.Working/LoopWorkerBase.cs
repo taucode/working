@@ -26,9 +26,11 @@ namespace TauCode.Working
 
         private long _workGeneration; // increments each time new work arrived, or existing work is completed.
 
-        private bool _debugIsInVacation; // todo
-        private TimeSpan? _debugVacationLength; // todo
-        private bool _debugThreadExited; // todo
+
+
+        //private bool _debugIsInVacation; // todo
+        //private TimeSpan? _debugVacationLength; // todo
+        //private bool _debugThreadExited; // todo
 
         #endregion
 
@@ -131,7 +133,7 @@ namespace TauCode.Working
                     // can try do some work.
                     var task = this.DoWork(source.Token); // todo: try/catch, not null etc.
 
-                    if (task.IsCompleted)
+                    if (task.IsCompleted) // todo: other statuses?
                     {
                         // todo: log warning if task status is not 'RanToCompletion'
                         var wantedVacation = task.Result;
@@ -148,7 +150,7 @@ namespace TauCode.Working
                 }
 
                 // todo: what if 'endTask' ended here? or WorkGeneration changed 'tipa'?
-                var workStateBeforeVacation = this.GetCurrentWorkGeneration();
+                var generationBeforeVacation = this.GetCurrentWorkGeneration();
 
                 lock (_threadLock)
                 {
@@ -158,20 +160,20 @@ namespace TauCode.Working
                         break;
                     }
 
-                    var workStateRightAfterVacationStarted = this.GetCurrentWorkGeneration();
-                    if (workStateBeforeVacation != workStateRightAfterVacationStarted)
+                    var generationRightAfterVacationStarted = this.GetCurrentWorkGeneration();
+                    if (generationBeforeVacation != generationRightAfterVacationStarted)
                     {
                         // vacation is terminated, let's get back to work :(
                         continue;
                     }
 
-                    _debugIsInVacation = true;
-                    _debugVacationLength = vacation;
+                    //_debugIsInVacation = true;
+                    //_debugVacationLength = vacation;
 
                     Monitor.Wait(_threadLock, vacation);
 
-                    _debugIsInVacation = false;
-                    _debugVacationLength = null;
+                    //_debugIsInVacation = false;
+                    //_debugVacationLength = null;
                 }
 
                 var state2 = this.State;
@@ -185,7 +187,7 @@ namespace TauCode.Working
             endTask.Wait();
             source.Dispose();
 
-            _debugThreadExited = true;
+            //_debugThreadExited = true;
         }
 
         private void EndWork(Task initialTask, object state)
