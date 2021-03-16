@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Serilog;
 
 namespace TauCode.Working
 {
@@ -66,7 +65,8 @@ namespace TauCode.Working
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Method '{nameof(DoAssignment)}' threw an exception.");
+                    // todo
+                    //Log.Error(ex, $"Method '{nameof(DoAssignment)}' threw an exception.");
                     // let's continue working on assignments (if still any).
                 }
             }

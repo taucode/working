@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 
 namespace TauCode.Working.Labor
 {
@@ -11,5 +12,6 @@ namespace TauCode.Working.Labor
         void Pause();
         void Resume();
         bool IsDisposed { get; }
+        ILogger Logger { get; set; }
     }
 }
