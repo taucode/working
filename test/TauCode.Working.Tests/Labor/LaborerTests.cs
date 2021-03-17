@@ -1,4 +1,5 @@
 ﻿using NUnit.Framework;
+using System;
 using TauCode.Working.Labor;
 
 namespace TauCode.Working.Tests.Labor
@@ -37,15 +38,105 @@ namespace TauCode.Working.Tests.Labor
 
         #region Start
 
-        // todo: Stopped => ok
-        // todo: Starting => waits, ex
-        // todo: Running => ex
-        // todo: Stopping => waits, ok
-        // todo: Pausing => waits, ex
-        // todo: Paused => ex
-        // todo: Resuming => waits, ex
-        // todo: Start, stop, start => ok
-        // todo: <disposed> => ex
+        [Test]
+        public void Start_Stopped_Starts()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Start_Starting_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Start_Running_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Start_Stopping_WaitsThenStarts()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+
+        [Test]
+        public void Start_Pausing_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Start_Paused_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Start_Resuming_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Start_WasStartedStopped_Starts()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Start_Disposed_ThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
 
         #endregion
 
@@ -102,14 +193,6 @@ namespace TauCode.Working.Tests.Labor
         // todo: Resuming => waits, ok
         // todo: Start, pause, resume, pause, resume => ok
         // todo: <disposed> => does nothing, ok
-
-        #endregion
-
-        #region Name
-
-        // todo: changed to non-null => ok
-        // todo: changed to null => ok
-        // todo: <disposed> => can get, can't set
 
         #endregion
 
