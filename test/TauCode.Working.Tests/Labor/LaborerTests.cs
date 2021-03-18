@@ -82,7 +82,6 @@ namespace TauCode.Working.Tests.Labor
             throw new NotImplementedException();
         }
 
-
         [Test]
         public void Start_Pausing_WaitsThenThrowsException()
         {
@@ -142,15 +141,104 @@ namespace TauCode.Working.Tests.Labor
 
         #region Stop
 
-        // todo: Stopped => ex
-        // todo: Starting => waits, ok
-        // todo: Running => ok
-        // todo: Stopping => waits, ex
-        // todo: Pausing => waits, ok
-        // todo: Paused => ok
-        // todo: Resuming => waits, ex
-        // todo: Start, stop, start, stop => ok
-        // todo: <disposed> => ex
+        [Test]
+        public void Stop_Stopped_ThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Stop_Starting_WaitsThenStops()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Stop_Running_Stops()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Stop_Stopping_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Stop_Pausing_WaitsThenStops()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Stop_Paused_WaitsThenStops()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Stop_Resuming_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Stop_WasStartedStoppedStarted_Stops()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Stop_Disposed_ThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
 
         #endregion
 
@@ -205,3 +293,4 @@ namespace TauCode.Working.Tests.Labor
         #endregion
     }
 }
+
