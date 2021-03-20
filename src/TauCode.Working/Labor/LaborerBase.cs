@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Threading;
 using TauCode.Working.Labor.Exceptions;
@@ -82,6 +83,8 @@ namespace TauCode.Working.Labor
 
         #region Protected
 
+        protected ILogger GetSafeLogger() => this.Logger ?? NullLogger.Instance;
+
         protected void Stop(bool throwOnDisposedOrWrongState)
         {
             lock (_controlLock)
@@ -90,6 +93,7 @@ namespace TauCode.Working.Labor
                 {
                     if (throwOnDisposedOrWrongState)
                     {
+                        this.GetSafeLogger().LogError($"Cannot '{nameof(Stop)}' laborer '{this.Name}' because it was disposed."); // todo ut, copy/paste
                         throw new ObjectDisposedException(this.Name);
                     }
                     else
@@ -112,9 +116,11 @@ namespace TauCode.Working.Labor
                 }
 
                 this.SetState(LaborerState.Stopping);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is stopping.");
                 this.OnStopping();
 
                 this.SetState(LaborerState.Stopped);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is stopped.");
                 this.OnStopped();
             }
         }
@@ -160,13 +166,15 @@ namespace TauCode.Working.Labor
                 var state = this.GetState();
                 if (state != LaborerState.Stopped)
                 {
-                    throw new InappropriateLaborerStateException(state);
+                    throw new InvalidOperationException($"Cannot '{nameof(Start)}' laborer '{this.Name}' because it is in the '{state}' state."); // todo ut, copy/paste
                 }
 
                 this.SetState(LaborerState.Starting);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is starting.");
                 this.OnStarting();
 
                 this.SetState(LaborerState.Running);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is started.");
                 this.OnStarted();
             }
         }

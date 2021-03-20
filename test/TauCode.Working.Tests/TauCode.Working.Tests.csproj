@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TauCode.Working\TauCode.Working.csproj" />
+    <ProjectReference Include="..\..\tau-lab\TauCode.Lab.Infrastructure\TauCode.Lab.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

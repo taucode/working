@@ -1,8 +1,11 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
+using TauCode.Lab.Infrastructure;
 using TauCode.Working.Labor;
 
 namespace TauCode.Working.Tests.Labor
@@ -10,11 +13,13 @@ namespace TauCode.Working.Tests.Labor
     [TestFixture]
     public class LaborerTests
     {
+        private StringBuilder _log;
         private static readonly DateTimeOffset FakeNow = "2021-01-01Z".ToUtcDateOffset();
 
         [SetUp]
         public void SetUp()
         {
+            _log = new StringBuilder();
             TimeProvider.Reset();
         }
 
@@ -51,11 +56,15 @@ namespace TauCode.Working.Tests.Labor
         public void Start_Stopped_Starts()
         {
             // Arrange
-            using var laborer = new DemoLaborer();
-            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(FakeNow);
+            using var laborer = new DemoLaborer
+            {
+                Logger = new StringLogger(_log),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
 
             // Act
-            TimeProvider.Override(timeMachine);
             laborer.Start();
 
             // Assert
@@ -76,22 +85,54 @@ namespace TauCode.Working.Tests.Labor
         public void Start_Starting_WaitsThenThrowsException()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Logger = new StringLogger(_log),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
 
             // Act
+            laborer.Start();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Running));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running
+                }));
         }
 
         [Test]
-        public void Start_Running_ThrowsException()
+        public async Task Start_Running_ThrowsException()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnStartingTimeout = TimeSpan.FromSeconds(1),
+            };
 
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            var startTask = new Task(() => laborer.Start());
+            startTask.Start();
+            await Task.Delay(100); // let task start
+            
             // Act
+            var ex = Assert.Throws<InvalidOperationException>(() => laborer.Start());
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(ex, Has.Message.EqualTo("Cannot 'Start' laborer 'Psi' because it is in the 'Running' state."));
         }
 
         [Test]
