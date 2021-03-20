@@ -1,30 +1,76 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using TauCode.Working.Labor;
 
 namespace TauCode.Working.Tests.Labor
 {
     public class DemoLaborer : LaborerBase
     {
+        private readonly object _historyLock;
+        private readonly List<LaborerState> _history;
+
+        public DemoLaborer()
+        {
+            _historyLock = new object();
+            _history = new List<LaborerState>();
+
+            this.AddStateToHistory();
+        }
+
+        public IReadOnlyList<LaborerState> History
+        {
+            get
+            {
+                lock (_historyLock)
+                {
+                    return _history.ToList();
+                }
+            }
+        }
+
+        private void AddStateToHistory()
+        {
+            lock (_historyLock)
+            {
+                _history.Add(this.State);
+            }
+        }
+
         public override bool IsPausingSupported => true;
+
+        public TimeSpan OnStartingTimeout { get; set; }
+        public TimeSpan OnStartedTimeout { get; set; }
+
+        public TimeSpan OnStoppingTimeout { get; set; }
+        public TimeSpan OnStoppedTimeout { get; set; }
+
+
+        public TimeSpan OnDisposedTimeout { get; set; }
 
         protected override void OnStarting()
         {
-            throw new NotImplementedException();
+            this.AddStateToHistory();
+            Thread.Sleep(this.OnStartingTimeout);
         }
 
         protected override void OnStarted()
         {
-            throw new NotImplementedException();
+            this.AddStateToHistory();
+            Thread.Sleep(this.OnStartedTimeout);
         }
 
         protected override void OnStopping()
         {
-            throw new NotImplementedException();
+            this.AddStateToHistory();
+            Thread.Sleep(this.OnStoppingTimeout);
         }
 
         protected override void OnStopped()
         {
-            throw new NotImplementedException();
+            this.AddStateToHistory();
+            Thread.Sleep(this.OnStoppedTimeout);
         }
 
         protected override void OnPausing()
@@ -49,7 +95,8 @@ namespace TauCode.Working.Tests.Labor
 
         protected override void OnDisposed()
         {
-            throw new NotImplementedException();
+            this.AddStateToHistory();
+            Thread.Sleep(this.OnDisposedTimeout);
         }
     }
 }

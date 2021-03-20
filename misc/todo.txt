@@ -69,4 +69,9 @@ x   1. Rename 'Lab' demo project to 'Playground'.
     6. https://csharp.christiannagel.com/2018/11/13/iloggertofile/
 
 
+2021-03-20
+==========
+    1. Time Machine in infrastructure.
+
+
     

@@ -1,5 +1,8 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Linq;
+using TauCode.Extensions;
+using TauCode.Infrastructure.Time;
 using TauCode.Working.Labor;
 
 namespace TauCode.Working.Tests.Labor
@@ -7,9 +10,15 @@ namespace TauCode.Working.Tests.Labor
     [TestFixture]
     public class LaborerTests
     {
-        #region Constructor
+        private static readonly DateTimeOffset FakeNow = "2021-01-01Z".ToUtcDateOffset();
 
-        // todo: happy path on ctor
+        [SetUp]
+        public void SetUp()
+        {
+            TimeProvider.Reset();
+        }
+
+        #region Constructor
 
         [Test]
         public void Constructor_NoArguments_RunsOk()
@@ -18,7 +27,7 @@ namespace TauCode.Working.Tests.Labor
 
             // Act
             ILaborer laborer = new DemoLaborer();
- 
+
             // Assert
             Assert.That(laborer.Name, Is.Null);
             Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
@@ -42,11 +51,25 @@ namespace TauCode.Working.Tests.Labor
         public void Start_Stopped_Starts()
         {
             // Arrange
+            using var laborer = new DemoLaborer();
+            var timeMachine = ShiftedTimeProvider.CreateTimeMachine(FakeNow);
 
             // Act
+            TimeProvider.Override(timeMachine);
+            laborer.Start();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Running));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running
+                }));
         }
 
         [Test]
@@ -61,7 +84,7 @@ namespace TauCode.Working.Tests.Labor
         }
 
         [Test]
-        public void Start_Running_WaitsThenThrowsException()
+        public void Start_Running_ThrowsException()
         {
             // Arrange
 
@@ -94,7 +117,7 @@ namespace TauCode.Working.Tests.Labor
         }
 
         [Test]
-        public void Start_Paused_WaitsThenThrowsException()
+        public void Start_Paused_ThrowsException()
         {
             // Arrange
 
@@ -197,7 +220,7 @@ namespace TauCode.Working.Tests.Labor
         }
 
         [Test]
-        public void Stop_Paused_WaitsThenStops()
+        public void Stop_Paused_Stops()
         {
             // Arrange
 
@@ -208,7 +231,7 @@ namespace TauCode.Working.Tests.Labor
         }
 
         [Test]
-        public void Stop_Resuming_WaitsThenThrowsException()
+        public void Stop_Resuming_WaitsThenStops()
         {
             // Arrange
 
@@ -244,51 +267,335 @@ namespace TauCode.Working.Tests.Labor
 
         #region Pause
 
-        // todo: Stopped => ex
-        // todo: Starting => waits, ok
-        // todo: Running => ok
-        // todo: Stopping => waits, ex
-        // todo: Pausing => waits, ex
-        // todo: Paused => ex
-        // todo: Resuming => waits, ok
-        // todo: Start, pause, resume, pause => ok
-        // todo: <disposed> => ex
+        [Test]
+        public void Pause_Stopped_ThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Pause_Starting_WaitsThenPauses()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Pause_Running_Pauses()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Pause_Stopping_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Pause_Pausing_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Pause_Paused_ThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Pause_Resuming_WaitsThenPauses()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Pause_WasStartedPausedResumed_Pauses()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Pause_Disposed_ThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
 
         #endregion
 
         #region Resume
 
-        // todo: Stopped => ex
-        // todo: Starting => waits, ex
-        // todo: Running => ex
-        // todo: Stopping => waits, ex
-        // todo: Pausing => waits, ok
-        // todo: Paused => ok
-        // todo: Resuming => waits, ex
-        // todo: Start, pause, resume, pause, resume => ok
-        // todo: <disposed> => ex
+        [Test]
+        public void Resume_Stopped_ThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Resume_Starting_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Resume_Running_ThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Resume_Stopping_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Resume_Pausing_WaitsThenResumes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Resume_Paused_Resumes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Resume_Resuming_WaitsThenThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Resume_WasStartedPausedResumedPaused_Resumes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Resume_Disposed_ThrowsException()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
 
         #endregion
 
         #region Dispose
 
-        // todo: Stopped => ok
-        // todo: Starting => waits, ok
-        // todo: Running => ok
-        // todo: Stopping => waits, ok
-        // todo: Pausing => waits, ok
-        // todo: Paused => ok
-        // todo: Resuming => waits, ok
-        // todo: Start, pause, resume, pause, resume => ok
-        // todo: <disposed> => does nothing, ok
+        [Test]
+        public void Dispose_Stopped_Disposes()
+        {
+            // Arrange
 
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Dispose_Starting_WaitsThenDisposes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Dispose_Running_Disposes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Dispose_Stopping_WaitsThenDisposes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Dispose_Pausing_WaitsThenDisposes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Dispose_Paused_Disposes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Dispose_Resuming_WaitsThenDisposes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Dispose_WasStartedPausedResumedPaused_Resumes()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Dispose_Disposed_DoesNothing()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
         #endregion
 
-        #region ILogger
+        #region Logger
 
-        // todo: changed to non-null => ok
-        // todo: changed to null => ok
-        // todo: <disposed> => can get, can't set
+        [Test]
+        public void Logger_NoArguments_SetCorrectly()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
+
+        [Test]
+        public void Logger_Disposed_CanBeGot()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+            throw new NotImplementedException();
+        }
 
         #endregion
     }
