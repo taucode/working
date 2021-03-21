@@ -476,7 +476,7 @@ namespace TauCode.Working.Tests.Labor
 
             var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
             TimeProvider.Override(timeMachine);
-            
+
             var startTask = new Task(() => laborer.Start());
             startTask.Start();
             await Task.Delay(100); // let task start
@@ -508,33 +508,127 @@ namespace TauCode.Working.Tests.Labor
         public void Stop_Running_Stops()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Logger = new StringLogger(_log),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Stop();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Running));
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
-        public void Stop_Stopping_WaitsThenThrowsException()
+        public async Task Stop_Stopping_WaitsThenThrowsException()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnStoppingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+
+            var stopTask = new Task(() => laborer.Stop());
+            stopTask.Start();
+            await Task.Delay(100); // let task start
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            var ex = Assert.Throws<InvalidLaborerOperationException>(() => laborer.Stop());
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Stopping));
+
+            Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Stop'. Laborer state is 'Stopped'. Laborer name is 'Psi'."));
+            Assert.That(ex, Has.Property(nameof(InvalidLaborerOperationException.LaborerName)).EqualTo("Psi"));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
-        public void Stop_Pausing_WaitsThenStops()
+        public async Task Stop_Pausing_WaitsThenStops()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnPausingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+
+            var startTask = new Task(() => laborer.Pause());
+            startTask.Start();
+            await Task.Delay(100); // let task start
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Stop();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Pausing));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Pausing,
+                    LaborerState.Paused,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
@@ -580,36 +674,133 @@ namespace TauCode.Working.Tests.Labor
         }
 
         [Test]
-        public void Stop_Resuming_WaitsThenStops()
+        public async Task Stop_Resuming_WaitsThenStops()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnResumingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+            laborer.Pause();
+            
+            var resumeTask = new Task(() => laborer.Resume());
+            resumeTask.Start();
+            await Task.Delay(100); // let task start
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Stop();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Resuming));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Pausing,
+                    LaborerState.Paused,
+                    LaborerState.Resuming,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
         public void Stop_WasStartedStoppedStarted_Stops()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+            };
+
+            laborer.Start();
+            laborer.Stop();
+            laborer.Start();
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Stop();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Running));
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
         public void Stop_Disposed_ThrowsException()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+            laborer.Dispose();
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            var ex = Assert.Throws<ObjectDisposedException>(() => laborer.Stop());
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Stopped));
+
+            Assert.That(ex, Has.Message.StartsWith($"Cannot perform operation 'Stop' because laborer is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo("Psi"));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.True);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         #endregion
