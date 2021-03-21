@@ -138,7 +138,7 @@ namespace TauCode.Working.Labor
                     case LaborerState.Running:
                         try
                         {
-                            var task = this.DoLabor(_signal.Token);
+                            var task = this.DoLabor(_signal.Token); // todo: _laborSignal, _vacationSignal. Think of QueueLaborer.
 
                             // do job
                             var vacationLength = await task;

@@ -104,7 +104,6 @@ namespace TauCode.Working.Tests.Labor
 
         protected override void OnDisposed()
         {
-            this.AddStateToHistory();
             Thread.Sleep(this.OnDisposedTimeout);
         }
     }
