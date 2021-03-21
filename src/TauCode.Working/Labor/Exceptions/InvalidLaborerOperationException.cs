@@ -20,10 +20,18 @@ namespace TauCode.Working.Labor.Exceptions
         {
         }
 
+        public InvalidLaborerOperationException(string message, string laborerName)
+            : base(message)
+        {
+            this.LaborerName = laborerName;
+        }
+
         protected InvalidLaborerOperationException(
             SerializationInfo info,
             StreamingContext context) : base(info, context)
         {
         }
+
+        public string LaborerName { get; }
     }
 }

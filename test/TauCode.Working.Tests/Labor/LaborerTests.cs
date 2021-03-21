@@ -7,6 +7,7 @@ using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
 using TauCode.Lab.Infrastructure;
 using TauCode.Working.Labor;
+using TauCode.Working.Labor.Exceptions;
 
 // todo: need those time machines inside tests? they're confusing since not being used.
 namespace TauCode.Working.Tests.Labor
@@ -106,12 +107,13 @@ namespace TauCode.Working.Tests.Labor
             var stateBeforeAction = laborer.State;
 
             // Act
-            var ex = Assert.Throws<InvalidOperationException>(() => laborer.Start());
+            var ex = Assert.Throws<InvalidLaborerOperationException>(() => laborer.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Starting));
 
-            Assert.That(ex, Has.Message.EqualTo("Cannot 'Start' laborer 'Psi' because it is in the 'Running' state."));
+            Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Laborer state is 'Running'. Laborer name is 'Psi'."));
+            Assert.That(ex, Has.Property(nameof(InvalidLaborerOperationException.LaborerName)).EqualTo("Psi"));
 
             Assert.That(laborer.State, Is.EqualTo(LaborerState.Running));
             Assert.That(laborer.IsDisposed, Is.False);
@@ -144,12 +146,13 @@ namespace TauCode.Working.Tests.Labor
             var stateBeforeAction = laborer.State;
 
             // Act
-            var ex = Assert.Throws<InvalidOperationException>(() => laborer.Start());
+            var ex = Assert.Throws<InvalidLaborerOperationException>(() => laborer.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Running));
 
-            Assert.That(ex, Has.Message.EqualTo("Cannot 'Start' laborer 'Psi' because it is in the 'Running' state."));
+            Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Laborer state is 'Running'. Laborer name is 'Psi'."));
+            Assert.That(ex, Has.Property(nameof(InvalidLaborerOperationException.LaborerName)).EqualTo("Psi"));
 
             Assert.That(laborer.State, Is.EqualTo(LaborerState.Running));
             Assert.That(laborer.IsDisposed, Is.False);
@@ -232,12 +235,13 @@ namespace TauCode.Working.Tests.Labor
             var stateBeforeAction = laborer.State;
 
             // Act
-            var ex = Assert.Throws<InvalidOperationException>(() => laborer.Start());
+            var ex = Assert.Throws<InvalidLaborerOperationException>(() => laborer.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Pausing));
 
-            Assert.That(ex, Has.Message.EqualTo("Cannot 'Start' laborer 'Psi' because it is in the 'Paused' state."));
+            Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Laborer state is 'Paused'. Laborer name is 'Psi'."));
+            Assert.That(ex, Has.Property(nameof(InvalidLaborerOperationException.LaborerName)).EqualTo("Psi"));
 
             Assert.That(laborer.State, Is.EqualTo(LaborerState.Paused));
             Assert.That(laborer.IsDisposed, Is.False);
@@ -273,12 +277,13 @@ namespace TauCode.Working.Tests.Labor
             var stateBeforeAction = laborer.State;
 
             // Act
-            var ex = Assert.Throws<InvalidOperationException>(() => laborer.Start());
+            var ex = Assert.Throws<InvalidLaborerOperationException>(() => laborer.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Paused));
 
-            Assert.That(ex, Has.Message.EqualTo("Cannot 'Start' laborer 'Psi' because it is in the 'Paused' state."));
+            Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Laborer state is 'Paused'. Laborer name is 'Psi'."));
+            Assert.That(ex, Has.Property(nameof(InvalidLaborerOperationException.LaborerName)).EqualTo("Psi"));
 
             Assert.That(laborer.State, Is.EqualTo(LaborerState.Paused));
             Assert.That(laborer.IsDisposed, Is.False);
@@ -319,12 +324,13 @@ namespace TauCode.Working.Tests.Labor
             var stateBeforeAction = laborer.State;
 
             // Act
-            var ex = Assert.Throws<InvalidOperationException>(() => laborer.Start());
+            var ex = Assert.Throws<InvalidLaborerOperationException>(() => laborer.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Resuming));
 
-            Assert.That(ex, Has.Message.EqualTo("Cannot 'Start' laborer 'Psi' because it is in the 'Running' state."));
+            Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Laborer state is 'Running'. Laborer name is 'Psi'."));
+            Assert.That(ex, Has.Property(nameof(InvalidLaborerOperationException.LaborerName)).EqualTo("Psi"));
 
             Assert.That(laborer.State, Is.EqualTo(LaborerState.Running));
             Assert.That(laborer.IsDisposed, Is.False);
@@ -404,7 +410,7 @@ namespace TauCode.Working.Tests.Labor
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Stopped));
 
-            Assert.That(ex, Has.Message.StartsWith("Cannot 'Start' laborer 'Psi' because it is disposed."));
+            Assert.That(ex, Has.Message.StartsWith($"Cannot perform operation 'Start' because laborer is disposed."));
             Assert.That(ex.ObjectName, Is.EqualTo("Psi"));
 
             Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
@@ -438,12 +444,13 @@ namespace TauCode.Working.Tests.Labor
             var stateBeforeAction = laborer.State;
 
             // Act
-            var ex = Assert.Throws<InvalidOperationException>(() => laborer.Stop());
+            var ex = Assert.Throws<InvalidLaborerOperationException>(() => laborer.Stop());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Stopped));
 
-            Assert.That(ex, Has.Message.EqualTo("Cannot 'Stop' laborer 'Psi' because it is in the 'Stopped' state."));
+            Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Stop'. Laborer state is 'Stopped'. Laborer name is 'Psi'."));
+            Assert.That(ex, Has.Property(nameof(InvalidLaborerOperationException.LaborerName)).EqualTo("Psi"));
 
             Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
             Assert.That(laborer.IsDisposed, Is.False);
@@ -457,14 +464,44 @@ namespace TauCode.Working.Tests.Labor
         }
 
         [Test]
-        public void Stop_Starting_WaitsThenStops()
+        public async Task Stop_Starting_WaitsThenStops()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnStartingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+            
+            var startTask = new Task(() => laborer.Start());
+            startTask.Start();
+            await Task.Delay(100); // let task start
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Stop();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Starting));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped
+                }));
         }
 
         [Test]
@@ -504,11 +541,42 @@ namespace TauCode.Working.Tests.Labor
         public void Stop_Paused_Stops()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnStartingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+            laborer.Pause();
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Stop();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Paused));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Pausing,
+                    LaborerState.Paused,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]

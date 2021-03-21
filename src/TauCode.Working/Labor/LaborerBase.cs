@@ -71,17 +71,13 @@ namespace TauCode.Working.Labor
 
             var message = sb.ToString();
 
-            return new InvalidLaborerOperationException(message);
+            return new InvalidLaborerOperationException(message, this.Name);
         }
 
         private ObjectDisposedException CreateObjectDisposedException(string requestedOperation)
         {
             var sb = new StringBuilder();
-            sb.Append($"Cannot perform operation '{requestedOperation}'. because laborer is disposed.");
-            if (this.Name != null)
-            {
-                sb.Append($" Laborer name is '{this.Name}'.");
-            }
+            sb.Append($"Cannot perform operation '{requestedOperation}' because laborer is disposed.");
 
             var message = sb.ToString();
             return new ObjectDisposedException(this.Name, message);
@@ -135,7 +131,11 @@ namespace TauCode.Working.Labor
                 }
 
                 var state = this.GetState();
-                if (state != LaborerState.Running)
+                var isValidState =
+                    state == LaborerState.Running ||
+                    state == LaborerState.Paused;
+
+                if (!isValidState)
                 {
                     if (throwOnDisposedOrWrongState)
                     {
