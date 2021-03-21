@@ -82,36 +82,7 @@ namespace TauCode.Working.Tests.Labor
         }
 
         [Test]
-        public void Start_Starting_WaitsThenThrowsException()
-        {
-            // Arrange
-            using var laborer = new DemoLaborer
-            {
-                Logger = new StringLogger(_log),
-            };
-
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
-            TimeProvider.Override(timeMachine);
-
-            // Act
-            laborer.Start();
-
-            // Assert
-            Assert.That(laborer.State, Is.EqualTo(LaborerState.Running));
-            Assert.That(laborer.IsDisposed, Is.False);
-
-            Assert.That(
-                laborer.History.ToArray(),
-                Is.EquivalentTo(new[]
-                {
-                    LaborerState.Stopped,
-                    LaborerState.Starting,
-                    LaborerState.Running
-                }));
-        }
-
-        [Test]
-        public async Task Start_Running_ThrowsException()
+        public async Task Start_Starting_WaitsThenThrowsException()
         {
             // Arrange
             using var laborer = new DemoLaborer
@@ -127,23 +98,99 @@ namespace TauCode.Working.Tests.Labor
             var startTask = new Task(() => laborer.Start());
             startTask.Start();
             await Task.Delay(100); // let task start
+
+            // Act
+            var ex = Assert.Throws<InvalidOperationException>(() => laborer.Start());
+
+            // Assert
+            Assert.That(ex, Has.Message.EqualTo("Cannot 'Start' laborer 'Psi' because it is in the 'Running' state."));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Running));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running
+                }));
+        }
+
+        [Test]
+        public void Start_Running_ThrowsException()
+        {
+            // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
             
             // Act
             var ex = Assert.Throws<InvalidOperationException>(() => laborer.Start());
 
             // Assert
             Assert.That(ex, Has.Message.EqualTo("Cannot 'Start' laborer 'Psi' because it is in the 'Running' state."));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Running));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running
+                }));
         }
 
         [Test]
-        public void Start_Stopping_WaitsThenStarts()
+        public async Task Start_Stopping_WaitsThenStarts()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnStoppingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+
+            var stopTask = new Task(() => laborer.Stop());
+            stopTask.Start();
+            await Task.Delay(100); // let task start
 
             // Act
+            laborer.Start();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Running));
+            Assert.That(laborer.IsDisposed, Is.False);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                }));
         }
 
         [Test]
