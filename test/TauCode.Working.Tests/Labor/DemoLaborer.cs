@@ -45,8 +45,13 @@ namespace TauCode.Working.Tests.Labor
 
         public TimeSpan OnStoppingTimeout { get; set; }
         public TimeSpan OnStoppedTimeout { get; set; }
+        
+        public TimeSpan OnPausingTimeout { get; set; }
+        public TimeSpan OnPausedTimeout { get; set; }
 
-
+        public TimeSpan OnResumingTimeout { get; set; }
+        public TimeSpan OnResumedTimeout { get; set; }
+        
         public TimeSpan OnDisposedTimeout { get; set; }
 
         protected override void OnStarting()
@@ -75,22 +80,26 @@ namespace TauCode.Working.Tests.Labor
 
         protected override void OnPausing()
         {
-            throw new NotImplementedException();
+            this.AddStateToHistory();
+            Thread.Sleep(this.OnPausingTimeout);
         }
 
         protected override void OnPaused()
         {
-            throw new NotImplementedException();
+            this.AddStateToHistory();
+            Thread.Sleep(this.OnPausedTimeout);
         }
 
         protected override void OnResuming()
         {
-            throw new NotImplementedException();
+            this.AddStateToHistory();
+            Thread.Sleep(this.OnResumingTimeout);
         }
 
         protected override void OnResumed()
         {
-            throw new NotImplementedException();
+            this.AddStateToHistory();
+            Thread.Sleep(this.OnResumedTimeout);
         }
 
         protected override void OnDisposed()
