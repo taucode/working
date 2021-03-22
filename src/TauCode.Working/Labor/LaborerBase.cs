@@ -15,7 +15,9 @@ namespace TauCode.Working.Labor
         private long _isDisposedValue;
 
         private string _name;
-        private readonly object _nameLock;
+        private ILogger _logger;
+
+        private readonly object _dataLock;
 
         private readonly object _controlLock;
 
@@ -25,7 +27,7 @@ namespace TauCode.Working.Labor
 
         protected LaborerBase()
         {
-            _nameLock = new object();
+            _dataLock = new object();
             _controlLock = new object();
 
             this.SetState(LaborerState.Stopped);
@@ -165,7 +167,7 @@ namespace TauCode.Working.Labor
         {
             get
             {
-                lock (_nameLock)
+                lock (_dataLock)
                 {
                     return _name;
                 }
@@ -174,10 +176,10 @@ namespace TauCode.Working.Labor
             {
                 if (this.GetIsDisposed())
                 {
-                    throw new ObjectDisposedException(this.Name);
+                    throw this.CreateObjectDisposedException($"set {nameof(Name)}");
                 }
 
-                lock (_nameLock)
+                lock (_dataLock)
                 {
                     _name = value;
                 }
@@ -271,7 +273,28 @@ namespace TauCode.Working.Labor
         }
 
         public bool IsDisposed => this.GetIsDisposed();
-        public ILogger Logger { get; set; } // todo thread safe
+        public ILogger Logger
+        {
+            get
+            {
+                lock (_dataLock)
+                {
+                    return _logger;
+                }
+            }
+            set
+            {
+                if (this.GetIsDisposed())
+                {
+                    throw this.CreateObjectDisposedException($"set {nameof(Logger)}");
+                }
+
+                lock (_dataLock)
+                {
+                    _logger = value;
+                }
+            }
+        }
 
         #endregion
 

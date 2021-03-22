@@ -1,4 +1,6 @@
-﻿using NUnit.Framework;
+﻿using Microsoft.Extensions.Logging;
+using Moq;
+using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Text;
@@ -46,9 +48,44 @@ namespace TauCode.Working.Tests.Labor
 
         #region Name
 
-        // todo: changed to non-null => Ok
-        // todo: changed to null => ok
-        // todo: <disposed> => name not changed, can read, not write
+        [Test]
+        public void Name_NoArguments_SetAndGot()
+        {
+            // Arrange
+            var laborer = new DemoLaborer();
+
+            // Act
+            laborer.Name = "some_name";
+            var name1 = laborer.Name;
+
+            laborer.Name = null;
+            var name2 = laborer.Name;
+
+            // Assert
+            Assert.That(name1, Is.EqualTo("some_name"));
+            Assert.That(name2, Is.Null);
+        }
+
+        [Test]
+        public void Name_Disposed_CanBeGot()
+        {
+            // Arrange
+            var laborer = new DemoLaborer
+            {
+                Name = "some_name",
+            };
+
+            laborer.Dispose();
+
+            // Act
+            var gotName = laborer.Name;
+            var ex = Assert.Throws<ObjectDisposedException>(() => laborer.Name = null);
+
+            // Assert
+            Assert.That(gotName, Is.EqualTo("some_name"));
+            Assert.That(ex, Has.Message.StartsWith("Cannot perform operation 'set Name' because laborer is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo("some_name"));
+        }
 
         #endregion
 
@@ -689,7 +726,7 @@ namespace TauCode.Working.Tests.Labor
 
             laborer.Start();
             laborer.Pause();
-            
+
             var resumeTask = new Task(() => laborer.Resume());
             resumeTask.Start();
             await Task.Delay(100); // let task start
@@ -855,7 +892,7 @@ namespace TauCode.Working.Tests.Labor
 
             var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
             TimeProvider.Override(timeMachine);
-            
+
             var startTask = new Task(() => laborer.Start());
             startTask.Start();
             await Task.Delay(100); // let task start
@@ -1069,7 +1106,7 @@ namespace TauCode.Working.Tests.Labor
 
             laborer.Start();
             laborer.Pause();
-            
+
             var resumeTask = new Task(() => laborer.Resume());
             resumeTask.Start();
             await Task.Delay(100); // let task start
@@ -1114,7 +1151,7 @@ namespace TauCode.Working.Tests.Labor
             laborer.Start();
             laborer.Pause();
             laborer.Resume();
-            
+
             var stateBeforeAction = laborer.State;
 
             // Act
@@ -1575,100 +1612,318 @@ namespace TauCode.Working.Tests.Labor
         public void Dispose_Stopped_Disposes()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Logger = new StringLogger(_log),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Dispose();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.True);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
-        public void Dispose_Starting_WaitsThenDisposes()
+        public async Task Dispose_Starting_WaitsThenDisposes()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnStoppingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+
+            var stopTask = new Task(() => laborer.Stop());
+            stopTask.Start();
+            await Task.Delay(100); // let task start
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Dispose();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Stopping));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.True);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
         public void Dispose_Running_Disposes()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Logger = new StringLogger(_log),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Dispose();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Running));
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.True);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
-        public void Dispose_Stopping_WaitsThenDisposes()
+        public async Task Dispose_Stopping_WaitsThenDisposes()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnStoppingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+
+            var stopTask = new Task(() => laborer.Stop());
+            stopTask.Start();
+            await Task.Delay(100); // let task start
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Dispose();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Stopping));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.True);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
-        public void Dispose_Pausing_WaitsThenDisposes()
+        public async Task Dispose_Pausing_WaitsThenDisposes()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnPausingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+
+            var pauseTask = new Task(() => laborer.Pause());
+            pauseTask.Start();
+            await Task.Delay(100); // let task start
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Dispose();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Pausing));
+
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.True);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Pausing,
+                    LaborerState.Paused,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
         public void Dispose_Paused_Disposes()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Logger = new StringLogger(_log),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+            laborer.Pause();
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Dispose();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Paused));
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.True);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Pausing,
+                    LaborerState.Paused,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
-        public void Dispose_Resuming_WaitsThenDisposes()
+        public async Task Dispose_Resuming_WaitsThenDisposes()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+                Logger = new StringLogger(_log),
+                OnResumingTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Start();
+            laborer.Pause();
+
+            var pauseTask = new Task(() => laborer.Resume());
+            pauseTask.Start();
+            await Task.Delay(100); // let task start
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Dispose();
 
             // Assert
-            throw new NotImplementedException();
-        }
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Resuming));
 
-        [Test]
-        public void Dispose_WasStartedPausedResumedPaused_Resumes()
-        {
-            // Arrange
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.True);
 
-            // Act
-
-            // Assert
-            throw new NotImplementedException();
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                    LaborerState.Starting,
+                    LaborerState.Running,
+                    LaborerState.Pausing,
+                    LaborerState.Paused,
+                    LaborerState.Resuming,
+                    LaborerState.Running,
+                    LaborerState.Stopping,
+                    LaborerState.Stopped,
+                }));
         }
 
         [Test]
         public void Dispose_Disposed_DoesNothing()
         {
             // Arrange
+            using var laborer = new DemoLaborer
+            {
+                Logger = new StringLogger(_log),
+            };
+
+            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            TimeProvider.Override(timeMachine);
+
+            laborer.Dispose();
+
+            var stateBeforeAction = laborer.State;
 
             // Act
+            laborer.Dispose();
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(stateBeforeAction, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.State, Is.EqualTo(LaborerState.Stopped));
+            Assert.That(laborer.IsDisposed, Is.True);
+
+            Assert.That(
+                laborer.History.ToArray(),
+                Is.EquivalentTo(new[]
+                {
+                    LaborerState.Stopped,
+                }));
         }
+
         #endregion
 
         #region Logger
@@ -1677,25 +1932,44 @@ namespace TauCode.Working.Tests.Labor
         public void Logger_NoArguments_SetCorrectly()
         {
             // Arrange
+            var laborer = new DemoLaborer();
+            var logger = new Mock<ILogger>().Object;
 
             // Act
+            laborer.Logger = logger;
+            var logger1 = laborer.Logger;
+
+            laborer.Logger = null;
+            var logger2 = laborer.Logger;
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(logger1, Is.SameAs(logger));
+            Assert.That(logger2, Is.Null);
         }
 
         [Test]
         public void Logger_Disposed_CanBeGot()
         {
             // Arrange
+            var laborer = new DemoLaborer
+            {
+                Name = "Psi",
+            };
+            var logger = new Mock<ILogger>().Object;
+            laborer.Logger = logger;
+
+            laborer.Dispose();
 
             // Act
+            var gotLogger = laborer.Logger;
+            var ex = Assert.Throws<ObjectDisposedException>(() => laborer.Logger = null);
 
             // Assert
-            throw new NotImplementedException();
+            Assert.That(gotLogger, Is.SameAs(logger));
+            Assert.That(ex, Has.Message.StartsWith("Cannot perform operation 'set Logger' because laborer is disposed."));
+            Assert.That(ex.ObjectName, Is.EqualTo("Psi"));
         }
 
         #endregion
     }
 }
-
