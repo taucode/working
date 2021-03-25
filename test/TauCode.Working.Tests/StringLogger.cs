@@ -49,5 +49,7 @@ namespace TauCode.Working.Tests
             //    streamWriter.WriteLine(logRecord);
             //}
         }
+
+        public override string ToString() => _stringBuilder.ToString();
     }
 }
