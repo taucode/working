@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using TauCode.Infrastructure.Time;
 
@@ -9,10 +10,12 @@ namespace TauCode.Working.Tests
     public class StringLogger : ILogger
     {
         private readonly StringBuilder _stringBuilder;
+        private readonly List<LogEntry> _entries;
 
         public StringLogger(StringBuilder stringBuilder)
         {
             _stringBuilder = stringBuilder ?? throw new ArgumentNullException(nameof(stringBuilder));
+            _entries = new List<LogEntry>();
         }
 
         public StringLogger()
@@ -37,18 +40,20 @@ namespace TauCode.Working.Tests
                 return;
             }
 
+            var timeStamp = TimeProvider.GetCurrentTime();
+            var timeStampString = timeStamp.ToString("yyyy-MM-dd HH:mm:ss+00:00");
+            var message = formatter(state, exception);
+            var exceptionString = exception == null ? "" : exception.StackTrace;
 
-            //var fullFilePath = _roundTheCodeLoggerFileProvider.Options.FolderPath + "/" + _roundTheCodeLoggerFileProvider.Options.FilePath.Replace("{date}", DateTimeOffset.UtcNow.ToString("yyyyMMdd"));
-            var logRecord =
-                $"{"[" + TimeProvider.GetCurrentTime().ToString("yyyy-MM-dd HH:mm:ss+00:00") + "]"} [{logLevel.ToString()}] {formatter(state, exception)} {(exception != null ? exception.StackTrace : "")}";
-
+            var logRecord = $"[{timeStampString}] [{logLevel}] {message} {exceptionString}";
             _stringBuilder.AppendLine(logRecord);
 
-            //using (var streamWriter = new StreamWriter(fullFilePath, true))
-            //{
-            //    streamWriter.WriteLine(logRecord);
-            //}
+            var entry = new LogEntry(timeStamp, logLevel, message, exception);
+
+            _entries.Add(entry);
         }
+
+        public IReadOnlyList<LogEntry> Entries => _entries;
 
         public override string ToString() => _stringBuilder.ToString();
     }

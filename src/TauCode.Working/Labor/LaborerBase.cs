@@ -237,9 +237,11 @@ namespace TauCode.Working.Labor
                 }
 
                 this.SetState(LaborerState.Pausing);
+                this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is pausing.");
                 this.OnPausing();
 
                 this.SetState(LaborerState.Paused);
+                this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is paused.");
                 this.OnPaused();
             }
         }
@@ -265,9 +267,11 @@ namespace TauCode.Working.Labor
                 }
 
                 this.SetState(LaborerState.Resuming);
+                this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is resuming.");
                 this.OnResuming(); // todo: try/catch, here & anywhere? implementation of abstract method might throw...
 
                 this.SetState(LaborerState.Running);
+                this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is resumed.");
                 this.OnResumed();
             }
         }

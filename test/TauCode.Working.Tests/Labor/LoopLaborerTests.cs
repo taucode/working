@@ -23,7 +23,7 @@ namespace TauCode.Working.Tests.Labor
         public async Task TodoFoo()
         {
             // Arrange
-            var laborer = new DemoLoopLaborer
+            using var laborer = new DemoLoopLaborer
             {
                 Name = "Psi",
             };
@@ -43,8 +43,44 @@ namespace TauCode.Working.Tests.Labor
 
             // Assert
             laborer.Dispose();
-
-            throw new NotImplementedException();
         }
+
+        [Test]
+        public async Task TodoFoo2()
+        {
+            // Arrange
+            using var laborer = new DemoLoopLaborer
+            {
+                Name = "Psi",
+            };
+
+            laborer.Logger = _logger;
+            laborer.LaborAction = async (@base, token) =>
+            {
+                @base.Logger.LogInformation("hello");
+                await Task.Delay(200, token);
+                return TimeSpan.FromMilliseconds(300);
+            };
+
+            // Act
+            laborer.Start();
+
+            await Task.Delay(100);
+            laborer.Pause();
+
+            await Task.Delay(100);
+            laborer.Resume();
+
+            await Task.Delay(250);
+
+
+            var log = _logger.ToString();
+
+            var kk = 3;
+
+            // Assert
+            laborer.Dispose();
+        }
+
     }
 }
