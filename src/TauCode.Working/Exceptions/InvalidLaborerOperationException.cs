@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace TauCode.Working.Labor.Exceptions
+namespace TauCode.Working.Exceptions
 {
     [Serializable]
     public class InvalidLaborerOperationException : InvalidOperationException

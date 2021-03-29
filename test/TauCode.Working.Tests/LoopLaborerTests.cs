@@ -3,7 +3,7 @@ using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
 
-namespace TauCode.Working.Tests.Labor
+namespace TauCode.Working.Tests
 {
     [TestFixture]
     public class LoopLaborerTests

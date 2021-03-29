@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
+using Microsoft.Extensions.Logging;
 
-namespace TauCode.Working.Labor
+namespace TauCode.Working
 {
     public interface ILaborer : IDisposable
     {

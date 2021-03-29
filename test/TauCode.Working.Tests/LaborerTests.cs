@@ -1,18 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
-using Moq;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Moq;
+using NUnit.Framework;
 using TauCode.Extensions;
 using TauCode.Infrastructure.Time;
 using TauCode.Lab.Infrastructure;
-using TauCode.Working.Labor;
-using TauCode.Working.Labor.Exceptions;
+using TauCode.Working.Exceptions;
 
 // todo: need those time machines inside tests? they're confusing since not being used.
-namespace TauCode.Working.Tests.Labor
+namespace TauCode.Working.Tests
 {
     [TestFixture]
     public class LaborerTests

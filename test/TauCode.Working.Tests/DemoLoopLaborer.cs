@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using TauCode.Working.Labor;
 
-namespace TauCode.Working.Tests.Labor
+namespace TauCode.Working.Tests
 {
     public class DemoLoopLaborer : LoopLaborerBase
     {

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TauCode.Working.Labor
+namespace TauCode.Working
 {
     public abstract class QueueLaborerBase<TAssignment> : LoopLaborerBase
     {

@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using TauCode.Working.Labor;
 
-namespace TauCode.Working.Tests.Labor
+namespace TauCode.Working.Tests
 {
     public class DemoLaborer : LaborerBase
     {

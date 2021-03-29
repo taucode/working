@@ -3,9 +3,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Text;
 using System.Threading;
-using TauCode.Working.Labor.Exceptions;
+using TauCode.Working.Exceptions;
 
-namespace TauCode.Working.Labor
+namespace TauCode.Working
 {
     public abstract class LaborerBase : ILaborer
     {
