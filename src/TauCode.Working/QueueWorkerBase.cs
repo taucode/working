@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Serilog;
 
 namespace TauCode.Working
 {
@@ -19,6 +19,17 @@ namespace TauCode.Working
 
         public void AddAssignment(TAssignment assignment)
         {
+            if (this.IsDisposed)
+            {
+                throw this.CreateObjectDisposedException(nameof(AddAssignment));
+            }
+
+            var state = this.State;
+            if (state == WorkerState.Stopped || state == WorkerState.Stopping)
+            {
+                throw this.CreateInvalidWorkerOperationException(nameof(AddAssignment), state);
+            }
+
             this.CheckAssignment(assignment);
 
             lock (_lock)
@@ -26,7 +37,7 @@ namespace TauCode.Working
                 _assignments.Enqueue(assignment);
             }
 
-            this.AdvanceWorkGeneration();
+            this.AbortVacation();
         }
 
         protected abstract Task DoAssignment(TAssignment assignment, CancellationToken cancellationToken);
@@ -35,6 +46,18 @@ namespace TauCode.Working
         {
             // idle.
         }
+
+        protected override void OnStopped()
+        {
+            base.OnStopped();
+
+            lock (_lock)
+            {
+                _assignments.Clear();
+            }
+        }
+
+        public override bool IsPausingSupported => true;
 
         protected override async Task<TimeSpan> DoWork(CancellationToken cancellationToken)
         {
@@ -66,8 +89,7 @@ namespace TauCode.Working
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, $"Method '{nameof(DoAssignment)}' threw an exception.");
-                    // let's continue working on assignments (if still any).
+                    this.GetSafeLogger().LogError(ex, "Exception thrown while processing the assignment.");
                 }
             }
         }

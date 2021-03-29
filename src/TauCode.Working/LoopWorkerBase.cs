@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using TauCode.Extensions;
 
-// todo clean
 namespace TauCode.Working
 {
     public abstract class LoopWorkerBase : WorkerBase
@@ -12,23 +12,22 @@ namespace TauCode.Working
 
         protected readonly TimeSpan VeryLongVacation = TimeSpan.FromMilliseconds(int.MaxValue);
         protected readonly TimeSpan TimeQuantum = TimeSpan.FromMilliseconds(1);
+        protected readonly TimeSpan DefaultErrorTimeout = TimeSpan.FromSeconds(5);
 
         #endregion
 
         #region Fields
 
-        private readonly object _runningLock;
-        private readonly object _startingLock;
-        private readonly object _threadLock;
+        private TimeSpan _errorTimeout;
+        private readonly object _errorTimeoutLock;
 
-        private Thread _thread;
-        
+        private readonly object _initLoopLock;
+        private readonly object _loopIsInitedLock;
 
-        private long _workGeneration; // increments each time new work arrived, or existing work is completed.
+        private Task _loopTask;
 
-        private bool _debugIsInVacation; // todo
-        private TimeSpan? _debugVacationLength; // todo
-        private bool _debugThreadExited; // todo
+        private CancellationTokenSource _controlSignal;
+        private readonly AutoResetEvent _abortVacationSignal;
 
         #endregion
 
@@ -36,9 +35,13 @@ namespace TauCode.Working
 
         protected LoopWorkerBase()
         {
-            _runningLock = new object();
-            _startingLock = new object();
-            _threadLock = new object();
+            _initLoopLock = new object();
+            _loopIsInitedLock = new object();
+
+            _errorTimeout = DefaultErrorTimeout;
+            _errorTimeoutLock = new object();
+
+            _abortVacationSignal = new AutoResetEvent(false);
         }
 
         #endregion
@@ -51,146 +54,195 @@ namespace TauCode.Working
 
         #region Overridden
 
-        protected override void OnStarting()
+        protected override void OnStarting() => this.InitLoop();
+
+        protected override void OnStarted() => this.OnLoopInited();
+
+        protected override void OnStopping() => this.StopLoop();
+
+        protected override void OnStopped() => this.OnLoopStopped();
+
+        protected override void OnPausing() => this.StopLoop();
+
+        protected override void OnPaused() => this.OnLoopStopped();
+
+        protected override void OnResuming() => this.InitLoop();
+
+        protected override void OnResumed() => this.OnLoopInited();
+
+        protected override void OnDisposed()
         {
-            // todo: check '_thread' is null
-            _thread = new Thread(LoopRoutine);
-
-            lock (_startingLock)
-            {
-                _thread.Start();
-                Monitor.Wait(_startingLock);
-            }
-        }
-
-        protected override void OnStarted()
-        {
-            lock (_runningLock)
-            {
-                Monitor.Pulse(_runningLock);
-            }
-        }
-
-        protected override void OnStopping()
-        {
-            lock (_threadLock)
-            {
-                Monitor.Pulse(_threadLock);
-            }
-
-            _thread.Join();
-            _thread = null;
-        }
-
-        #endregion
-
-        #region Protected
-
-        protected void AdvanceWorkGeneration()
-        {
-            lock (_threadLock)
-            {
-                _workGeneration++;
-                Monitor.Pulse(_threadLock);
-            }
-        }
-
-        protected long GetCurrentWorkGeneration()
-        {
-            lock (_threadLock)
-            {
-                return _workGeneration;
-            }
+            _abortVacationSignal.Dispose();
         }
 
         #endregion
 
         #region Private
 
-        private void LoopRoutine()
+        private void InitLoop()
         {
-            lock (_runningLock)
+            lock (_initLoopLock)
             {
-                lock (_startingLock)
-                {
-                    Monitor.Pulse(_startingLock);
-                }
-
-                Monitor.Wait(_runningLock);
+                _loopTask = Task.Run(this.LoopRoutine);
+                Monitor.Wait(_initLoopLock);
             }
-
-            var source = new CancellationTokenSource();
-            var endTask = Task.CompletedTask;
-
-            while (true)
-            {
-                var vacation = VeryLongVacation;
-
-                if (endTask.IsCompleted)
-                {
-                    // can try do some work.
-                    var task = this.DoWork(source.Token); // todo: try/catch, not null etc.
-
-                    if (task.IsCompleted)
-                    {
-                        // todo: log warning if task status is not 'RanToCompletion'
-                        var wantedVacation = task.Result;
-                        vacation = TimeSpanExtensions.MinMax(
-                            TimeQuantum,
-                            VeryLongVacation,
-                            wantedVacation);
-                    }
-                    else
-                    {
-                        // task is not ended yet
-                        endTask = task.ContinueWith(this.EndWork, source.Token, source.Token);
-                    }
-                }
-
-                // todo: what if 'endTask' ended here? or WorkGeneration changed 'tipa'?
-                var workStateBeforeVacation = this.GetCurrentWorkGeneration();
-
-                lock (_threadLock)
-                {
-                    var state = this.State;
-                    if (state != WorkerState.Running)
-                    {
-                        break;
-                    }
-
-                    var workStateRightAfterVacationStarted = this.GetCurrentWorkGeneration();
-                    if (workStateBeforeVacation != workStateRightAfterVacationStarted)
-                    {
-                        // vacation is terminated, let's get back to work :(
-                        continue;
-                    }
-
-                    _debugIsInVacation = true;
-                    _debugVacationLength = vacation;
-
-                    Monitor.Wait(_threadLock, vacation);
-
-                    _debugIsInVacation = false;
-                    _debugVacationLength = null;
-                }
-
-                var state2 = this.State;
-                if (state2 != WorkerState.Running)
-                {
-                    break;
-                }
-            }
-
-            source.Cancel();
-            endTask.Wait();
-            source.Dispose();
-
-            _debugThreadExited = true;
         }
 
-        private void EndWork(Task initialTask, object state)
+        private void OnLoopInited()
         {
-            this.AdvanceWorkGeneration();
+            _controlSignal = new CancellationTokenSource();
+
+            lock (_loopIsInitedLock)
+            {
+                Monitor.Pulse(_loopIsInitedLock);
+            }
+        }
+
+        private void StopLoop()
+        {
+            _controlSignal.Cancel();
+
+            try
+            {
+                _loopTask.Wait();
+            }
+            catch (AggregateException)
+            {
+                // looks like task was canceled, that was the intent.
+            }
+
+            _loopTask.Dispose();
+            _loopTask = null;
+        }
+
+        private void OnLoopStopped()
+        {
+            try
+            {
+                _controlSignal.Dispose();
+            }
+            catch
+            {
+                // dismiss
+            }
+
+            _controlSignal = null;
+
+        }
+
+        private async Task LoopRoutine()
+        {
+            lock (_loopIsInitedLock)
+            {
+                lock (_initLoopLock)
+                {
+                    Monitor.Pulse(_initLoopLock);
+                }
+
+                Monitor.Wait(_loopIsInitedLock);
+            }
+
+            var goOn = true;
+
+            var handleArray = new[]
+            {
+                _controlSignal.Token.WaitHandle,
+                _abortVacationSignal,
+            };
+
+            while (goOn)
+            {
+                var state = this.State;
+
+                switch (state)
+                {
+                    case WorkerState.Running:
+                        var vacationLength = TimeSpan.Zero;
+
+                        Exception thrownException;
+                        string messageForThrownException;
+
+                        try
+                        {
+                            vacationLength = await this.DoWork(_controlSignal.Token);
+
+                            // success.
+                            thrownException = null;
+                            messageForThrownException = null;
+                        }
+                        catch (OperationCanceledException ex)
+                        {
+                            if (_controlSignal.IsCancellationRequested)
+                            {
+                                throw; // control signal was requested
+                            }
+
+                            // 'DoWork' has thrown a 'OperationCanceledException' without prompted to. Bad of him!
+                            thrownException = ex;
+                            messageForThrownException =
+                                $"Unexpected 'OperationCanceledException'. Worker name: '{this.Name}'.";
+                        }
+                        catch (Exception ex)
+                        {
+                            thrownException = ex;
+                            messageForThrownException = $"Exception occurred. Worker name: '{this.Name}'.";
+                        }
+
+                        if (thrownException != null)
+                        {
+                            this.GetSafeLogger().LogError(thrownException, messageForThrownException);
+                            await Task.Delay(this.ErrorTimeout, _controlSignal.Token); // todo: can throw 'OperationCanceledException', ut it.
+                            continue;
+                        }
+
+                        vacationLength = TimeSpanExtensions.MinMax(TimeQuantum, VeryLongVacation, vacationLength);
+                        WaitHandle.WaitAny(handleArray, vacationLength);
+                        _controlSignal.Token.ThrowIfCancellationRequested();
+
+                        break;
+
+                    case WorkerState.Stopping:
+                    case WorkerState.Pausing:
+                        goOn = false;
+                        break;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Protected
+
+        protected void AbortVacation()
+        {
+            _abortVacationSignal.Set(); // can throw 'ObjectDisposedException', so be it.
+        }
+
+        #endregion
+
+        #region Public
+
+        public TimeSpan ErrorTimeout
+        {
+            get
+            {
+                lock (_errorTimeoutLock)
+                {
+                    return _errorTimeout;
+                }
+            }
+            set
+            {
+                lock (_errorTimeoutLock)
+                {
+                    if (value < TimeQuantum || value > VeryLongVacation)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+
+                    _errorTimeout = value;
+                }
+            }
         }
 
         #endregion

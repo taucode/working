@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using System;
+using System.Text;
 using System.Threading;
 using TauCode.Working.Exceptions;
 
 namespace TauCode.Working
 {
-    public class WorkerBase : IWorker
+    public abstract class WorkerBase : IWorker
     {
         #region Fields
 
@@ -12,18 +15,20 @@ namespace TauCode.Working
         private long _isDisposedValue;
 
         private string _name;
-        private readonly object _nameLock;
+        private ILogger _logger;
 
-        private readonly object _lock;
+        private readonly object _dataLock;
+
+        private readonly object _controlLock;
 
         #endregion
 
         #region Constructor
 
-        public WorkerBase()
+        protected WorkerBase()
         {
-            _lock = new object();
-            _nameLock = new object();
+            _dataLock = new object();
+            _controlLock = new object();
 
             this.SetState(WorkerState.Stopped);
             this.SetIsDisposed(false);
@@ -57,66 +62,46 @@ namespace TauCode.Working
             Interlocked.Exchange(ref _isDisposedValue, isDisposedValue);
         }
 
+        private NotSupportedException CreatePausingNotSupportedException()
+        {
+            return new NotSupportedException("Pausing/resuming is not supported.");
+        }
+
+        #endregion
+
+        #region Abstract
+
+        public abstract bool IsPausingSupported { get; }
+
+        protected abstract void OnStarting();
+        protected abstract void OnStarted();
+
+        protected abstract void OnStopping();
+        protected abstract void OnStopped();
+
+        protected abstract void OnPausing();
+        protected abstract void OnPaused();
+
+        protected abstract void OnResuming();
+        protected abstract void OnResumed();
+
+        protected abstract void OnDisposed();
+
         #endregion
 
         #region Protected
 
-        protected void Start(bool throwOnDisposedOrWrongState)
-        {
-            lock (_lock)
-            {
-                if (this.GetIsDisposed())
-                {
-                    if (throwOnDisposedOrWrongState)
-                    {
-                        throw new ObjectDisposedException(this.Name);
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-
-                var state = this.GetState();
-                if (state != WorkerState.Stopped)
-                {
-                    if (throwOnDisposedOrWrongState)
-                    {
-                        throw new InappropriateWorkerStateException(state);
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-
-                this.SetState(WorkerState.Starting);
-                this.OnStarting();
-
-                this.SetState(WorkerState.Running);
-                this.OnStarted();
-            }
-        }
-
-        protected virtual void OnStarting()
-        {
-            // idle
-        }
-
-        protected virtual void OnStarted()
-        {
-            // idle
-        }
+        protected ILogger GetSafeLogger() => this.Logger ?? NullLogger.Instance;
 
         protected void Stop(bool throwOnDisposedOrWrongState)
         {
-            lock (_lock)
+            lock (_controlLock)
             {
                 if (this.GetIsDisposed())
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw new ObjectDisposedException(this.Name);
+                        throw this.CreateObjectDisposedException(nameof(Stop));
                     }
                     else
                     {
@@ -125,11 +110,15 @@ namespace TauCode.Working
                 }
 
                 var state = this.GetState();
-                if (state != WorkerState.Running)
+                var isValidState =
+                    state == WorkerState.Running ||
+                    state == WorkerState.Paused;
+
+                if (!isValidState)
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw new InappropriateWorkerStateException(state);
+                        throw this.CreateInvalidWorkerOperationException(nameof(Stop), state);
                     }
                     else
                     {
@@ -138,26 +127,36 @@ namespace TauCode.Working
                 }
 
                 this.SetState(WorkerState.Stopping);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is stopping.");
                 this.OnStopping();
 
                 this.SetState(WorkerState.Stopped);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is stopped.");
                 this.OnStopped();
             }
         }
 
-        protected virtual void OnStopping()
+        protected ObjectDisposedException CreateObjectDisposedException(string requestedOperation)
         {
-            // idle
+            var sb = new StringBuilder();
+            sb.Append($"Cannot perform operation '{requestedOperation}' because worker is disposed.");
+
+            var message = sb.ToString();
+            return new ObjectDisposedException(this.Name, message);
         }
 
-        protected virtual void OnStopped()
+        protected InvalidWorkerOperationException CreateInvalidWorkerOperationException(string requestedOperation, WorkerState state)
         {
-            // idle
-        }
-        
-        protected virtual void OnDisposed()
-        {
-            // idle
+            var sb = new StringBuilder();
+            sb.Append($"Cannot perform operation '{requestedOperation}'. Worker state is '{state}'.");
+            if (this.Name != null)
+            {
+                sb.Append($" Worker name is '{this.Name}'.");
+            }
+
+            var message = sb.ToString();
+
+            return new InvalidWorkerOperationException(message, this.Name);
         }
 
         #endregion
@@ -168,7 +167,7 @@ namespace TauCode.Working
         {
             get
             {
-                lock (_nameLock)
+                lock (_dataLock)
                 {
                     return _name;
                 }
@@ -177,10 +176,10 @@ namespace TauCode.Working
             {
                 if (this.GetIsDisposed())
                 {
-                    throw new ObjectDisposedException(this.Name);
+                    throw this.CreateObjectDisposedException($"set {nameof(Name)}");
                 }
 
-                lock (_nameLock)
+                lock (_dataLock)
                 {
                     _name = value;
                 }
@@ -189,11 +188,117 @@ namespace TauCode.Working
 
         public WorkerState State => this.GetState();
 
-        public void Start() => this.Start(true);
+        public void Start()
+        {
+            lock (_controlLock)
+            {
+                if (this.GetIsDisposed())
+                {
+                    throw this.CreateObjectDisposedException(nameof(Start));
+                }
+
+                var state = this.GetState();
+                if (state != WorkerState.Stopped)
+                {
+                    throw this.CreateInvalidWorkerOperationException(nameof(Start), state);
+
+                }
+
+                this.SetState(WorkerState.Starting);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is starting.");
+                this.OnStarting();
+
+                this.SetState(WorkerState.Running);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is started.");
+                this.OnStarted();
+            }
+        }
 
         public void Stop() => this.Stop(true);
 
+        public void Pause()
+        {
+            if (!IsPausingSupported)
+            {
+                throw this.CreatePausingNotSupportedException();
+            }
+
+            lock (_controlLock)
+            {
+                if (this.GetIsDisposed())
+                {
+                    throw this.CreateObjectDisposedException(nameof(Pause));
+                }
+
+                var state = this.GetState();
+                if (state != WorkerState.Running)
+                {
+                    throw this.CreateInvalidWorkerOperationException(nameof(Pause), state);
+                }
+
+                this.SetState(WorkerState.Pausing);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is pausing.");
+                this.OnPausing();
+
+                this.SetState(WorkerState.Paused);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is paused.");
+                this.OnPaused();
+            }
+        }
+
+        public void Resume()
+        {
+            if (!IsPausingSupported)
+            {
+                throw this.CreatePausingNotSupportedException();
+            }
+
+            lock (_controlLock)
+            {
+                if (this.GetIsDisposed())
+                {
+                    throw this.CreateObjectDisposedException(nameof(Resume));
+                }
+
+                var state = this.GetState();
+                if (state != WorkerState.Paused)
+                {
+                    throw this.CreateInvalidWorkerOperationException(nameof(Resume), state);
+                }
+
+                this.SetState(WorkerState.Resuming);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is resuming.");
+                this.OnResuming();
+
+                this.SetState(WorkerState.Running);
+                this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is resumed.");
+                this.OnResumed();
+            }
+        }
+
         public bool IsDisposed => this.GetIsDisposed();
+        public ILogger Logger
+        {
+            get
+            {
+                lock (_dataLock)
+                {
+                    return _logger;
+                }
+            }
+            set
+            {
+                if (this.GetIsDisposed())
+                {
+                    throw this.CreateObjectDisposedException($"set {nameof(Logger)}");
+                }
+
+                lock (_dataLock)
+                {
+                    _logger = value;
+                }
+            }
+        }
 
         #endregion
 
@@ -201,7 +306,7 @@ namespace TauCode.Working
 
         public void Dispose()
         {
-            lock (_lock)
+            lock (_controlLock)
             {
                 if (this.GetIsDisposed())
                 {
