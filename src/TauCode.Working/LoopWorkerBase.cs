@@ -157,21 +157,41 @@ namespace TauCode.Working
                 switch (state)
                 {
                     case WorkerState.Running:
-                        TimeSpan vacationLength;
+                        var vacationLength = TimeSpan.Zero;
+
+                        Exception thrownException;
+                        string messageForThrownException;
 
                         try
                         {
                             vacationLength = await this.DoWork(_controlSignal.Token);
+
+                            // success.
+                            thrownException = null;
+                            messageForThrownException = null;
                         }
-                        catch (OperationCanceledException)
+                        catch (OperationCanceledException ex)
                         {
-                            throw; // todo: consider checking _controlSignal.IsCancellationRequested
+                            if (_controlSignal.IsCancellationRequested)
+                            {
+                                throw; // control signal was requested
+                            }
+
+                            // 'DoWork' has thrown a 'OperationCanceledException' without prompted to. Bad of him!
+                            thrownException = ex;
+                            messageForThrownException =
+                                $"Unexpected 'OperationCanceledException'. Worker name: '{this.Name}'.";
                         }
                         catch (Exception ex)
                         {
-                            this.GetSafeLogger().LogError(ex, $"Exception occurred. Worker name: '{this.Name}'.");
-                            await Task.Delay(this.ErrorTimeout, _controlSignal.Token); // todo: can throw 'OperationCanceledException', ut it.
+                            thrownException = ex;
+                            messageForThrownException = $"Exception occurred. Worker name: '{this.Name}'.";
+                        }
 
+                        if (thrownException != null)
+                        {
+                            this.GetSafeLogger().LogError(thrownException, messageForThrownException);
+                            await Task.Delay(this.ErrorTimeout, _controlSignal.Token); // todo: can throw 'OperationCanceledException', ut it.
                             continue;
                         }
 
