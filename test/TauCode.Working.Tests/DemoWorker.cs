@@ -5,12 +5,12 @@ using System.Threading;
 
 namespace TauCode.Working.Tests
 {
-    public class DemoLaborer : WorkerBase
+    public class DemoWorker : WorkerBase
     {
         private readonly object _historyLock;
         private readonly List<WorkerState> _history;
 
-        public DemoLaborer()
+        public DemoWorker()
         {
             _historyLock = new object();
             _history = new List<WorkerState>();

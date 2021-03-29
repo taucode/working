@@ -27,7 +27,7 @@ namespace TauCode.Working
             var state = this.State;
             if (state == WorkerState.Stopped || state == WorkerState.Stopping)
             {
-                throw this.CreateInvalidLaborerOperationException(nameof(AddAssignment), state);
+                throw this.CreateInvalidWorkerOperationException(nameof(AddAssignment), state);
             }
 
             this.CheckAssignment(assignment);
@@ -59,7 +59,7 @@ namespace TauCode.Working
 
         public override bool IsPausingSupported => true;
 
-        protected override async Task<TimeSpan> DoLabor(CancellationToken cancellationToken)
+        protected override async Task<TimeSpan> DoWork(CancellationToken cancellationToken)
         {
             while (true)
             {

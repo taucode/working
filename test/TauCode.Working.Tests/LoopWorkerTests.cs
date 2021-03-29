@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace TauCode.Working.Tests
 {
     [TestFixture]
-    public class LoopLaborerTests
+    public class LoopWorkerTests
     {
         private StringLogger _logger;
 
@@ -23,13 +23,13 @@ namespace TauCode.Working.Tests
         public async Task TodoFoo()
         {
             // Arrange
-            using var laborer = new DemoLoopLaborer
+            using var worker = new DemoLoopWorker
             {
                 Name = "Psi",
             };
 
-            laborer.Logger = _logger;
-            laborer.LaborAction = async (@base, token) =>
+            worker.Logger = _logger;
+            worker.WorkAction = async (@base, token) =>
             {
                 @base.Logger.LogInformation("hello");
                 await Task.Delay(100, token);
@@ -37,25 +37,25 @@ namespace TauCode.Working.Tests
             };
 
             // Act
-            laborer.Start();
+            worker.Start();
             await Task.Delay(400);
-            laborer.Stop();
+            worker.Stop();
 
             // Assert
-            laborer.Dispose();
+            worker.Dispose();
         }
 
         [Test]
         public async Task TodoFoo2()
         {
             // Arrange
-            using var laborer = new DemoLoopLaborer
+            using var worker = new DemoLoopWorker
             {
                 Name = "Psi",
             };
 
-            laborer.Logger = _logger;
-            laborer.LaborAction = async (@base, token) =>
+            worker.Logger = _logger;
+            worker.WorkAction = async (@base, token) =>
             {
                 @base.Logger.LogInformation("hello");
                 await Task.Delay(200, token);
@@ -63,13 +63,13 @@ namespace TauCode.Working.Tests
             };
 
             // Act
-            laborer.Start();
+            worker.Start();
 
             await Task.Delay(100);
-            laborer.Pause();
+            worker.Pause();
 
             await Task.Delay(100);
-            laborer.Resume();
+            worker.Resume();
 
             await Task.Delay(250);
 
@@ -78,7 +78,7 @@ namespace TauCode.Working.Tests
 
 
             // Assert
-            laborer.Dispose();
+            worker.Dispose();
         }
 
     }

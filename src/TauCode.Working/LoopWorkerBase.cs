@@ -48,7 +48,7 @@ namespace TauCode.Working
 
         #region Abstract
 
-        protected abstract Task<TimeSpan> DoLabor(CancellationToken cancellationToken);
+        protected abstract Task<TimeSpan> DoWork(CancellationToken cancellationToken);
 
         #endregion
 
@@ -161,7 +161,7 @@ namespace TauCode.Working
 
                         try
                         {
-                            vacationLength = await this.DoLabor(_controlSignal.Token);
+                            vacationLength = await this.DoWork(_controlSignal.Token);
                         }
                         catch (OperationCanceledException)
                         {
@@ -169,7 +169,7 @@ namespace TauCode.Working
                         }
                         catch (Exception ex)
                         {
-                            this.GetSafeLogger().LogError(ex, $"Exception occurred. Laborer name: '{this.Name}'.");
+                            this.GetSafeLogger().LogError(ex, $"Exception occurred. Worker name: '{this.Name}'.");
                             await Task.Delay(this.ErrorTimeout, _controlSignal.Token); // todo: can throw 'OperationCanceledException', ut it.
 
                             continue;

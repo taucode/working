@@ -20,10 +20,10 @@ namespace TauCode.Working.Exceptions
         {
         }
 
-        public InvalidWorkerOperationException(string message, string laborerName)
+        public InvalidWorkerOperationException(string message, string workerName)
             : base(message)
         {
-            this.LaborerName = laborerName;
+            this.WorkerName = workerName;
         }
 
         protected InvalidWorkerOperationException(
@@ -32,6 +32,6 @@ namespace TauCode.Working.Exceptions
         {
         }
 
-        public string LaborerName { get; }
+        public string WorkerName { get; }
     }
 }
