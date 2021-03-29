@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace TauCode.Working.Tests
 {
-    public class DemoLoopLaborer : LoopLaborerBase
+    public class DemoLoopLaborer : LoopWorkerBase
     {
         public override bool IsPausingSupported => true;
 
@@ -13,6 +13,6 @@ namespace TauCode.Working.Tests
             return await this.LaborAction(this, cancellationToken);
         }
 
-        public Func<LoopLaborerBase, CancellationToken, Task<TimeSpan>> LaborAction { get; set; }
+        public Func<LoopWorkerBase, CancellationToken, Task<TimeSpan>> LaborAction { get; set; }
     }
 }

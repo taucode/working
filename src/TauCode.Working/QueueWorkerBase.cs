@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace TauCode.Working
 {
-    public abstract class QueueLaborerBase<TAssignment> : LoopLaborerBase
+    public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
     {
         private readonly Queue<TAssignment> _assignments;
         private readonly object _lock;
 
-        protected QueueLaborerBase()
+        protected QueueWorkerBase()
         {
             _assignments = new Queue<TAssignment>();
             _lock = new object();
@@ -25,7 +25,7 @@ namespace TauCode.Working
             }
 
             var state = this.State;
-            if (state == LaborerState.Stopped || state == LaborerState.Stopping)
+            if (state == WorkerState.Stopped || state == WorkerState.Stopping)
             {
                 throw this.CreateInvalidLaborerOperationException(nameof(AddAssignment), state);
             }

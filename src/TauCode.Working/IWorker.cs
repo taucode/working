@@ -1,12 +1,12 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using System;
 
 namespace TauCode.Working
 {
-    public interface ILaborer : IDisposable
+    public interface IWorker : IDisposable
     {
         string Name { get; set; }
-        LaborerState State { get; }
+        WorkerState State { get; }
         void Start();
         void Stop();
         void Pause();

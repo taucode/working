@@ -5,20 +5,20 @@ using System.Threading;
 
 namespace TauCode.Working.Tests
 {
-    public class DemoLaborer : LaborerBase
+    public class DemoLaborer : WorkerBase
     {
         private readonly object _historyLock;
-        private readonly List<LaborerState> _history;
+        private readonly List<WorkerState> _history;
 
         public DemoLaborer()
         {
             _historyLock = new object();
-            _history = new List<LaborerState>();
+            _history = new List<WorkerState>();
 
             this.AddStateToHistory();
         }
 
-        public IReadOnlyList<LaborerState> History
+        public IReadOnlyList<WorkerState> History
         {
             get
             {

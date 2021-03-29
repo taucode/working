@@ -1,6 +1,6 @@
 ﻿namespace TauCode.Working
 {
-    public enum LaborerState
+    public enum WorkerState
     {
         Stopped = 1,
         Starting = 2,

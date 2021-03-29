@@ -6,7 +6,7 @@ using TauCode.Extensions;
 
 namespace TauCode.Working
 {
-    public abstract class LoopLaborerBase : LaborerBase
+    public abstract class LoopWorkerBase : WorkerBase
     {
         #region Constants
 
@@ -33,7 +33,7 @@ namespace TauCode.Working
 
         #region Constructor
 
-        protected LoopLaborerBase()
+        protected LoopWorkerBase()
         {
             _initLoopLock = new object();
             _loopIsInitedLock = new object();
@@ -156,7 +156,7 @@ namespace TauCode.Working
 
                 switch (state)
                 {
-                    case LaborerState.Running:
+                    case WorkerState.Running:
                         TimeSpan vacationLength;
 
                         try
@@ -181,8 +181,8 @@ namespace TauCode.Working
 
                         break;
 
-                    case LaborerState.Stopping:
-                    case LaborerState.Pausing:
+                    case WorkerState.Stopping:
+                    case WorkerState.Pausing:
                         goOn = false;
                         break;
                 }

@@ -7,7 +7,7 @@ using TauCode.Working.Exceptions;
 
 namespace TauCode.Working
 {
-    public abstract class LaborerBase : ILaborer
+    public abstract class WorkerBase : IWorker
     {
         #region Fields
 
@@ -25,12 +25,12 @@ namespace TauCode.Working
 
         #region Constructor
 
-        protected LaborerBase()
+        protected WorkerBase()
         {
             _dataLock = new object();
             _controlLock = new object();
 
-            this.SetState(LaborerState.Stopped);
+            this.SetState(WorkerState.Stopped);
             this.SetIsDisposed(false);
         }
 
@@ -38,13 +38,13 @@ namespace TauCode.Working
 
         #region Private
 
-        private LaborerState GetState()
+        private WorkerState GetState()
         {
             var stateValue = Interlocked.Read(ref _stateValue);
-            return (LaborerState)stateValue;
+            return (WorkerState)stateValue;
         }
 
-        private void SetState(LaborerState state)
+        private void SetState(WorkerState state)
         {
             var stateValue = (long)state;
             Interlocked.Exchange(ref _stateValue, stateValue);
@@ -111,8 +111,8 @@ namespace TauCode.Working
 
                 var state = this.GetState();
                 var isValidState =
-                    state == LaborerState.Running ||
-                    state == LaborerState.Paused;
+                    state == WorkerState.Running ||
+                    state == WorkerState.Paused;
 
                 if (!isValidState)
                 {
@@ -126,11 +126,11 @@ namespace TauCode.Working
                     }
                 }
 
-                this.SetState(LaborerState.Stopping);
+                this.SetState(WorkerState.Stopping);
                 this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is stopping.");
                 this.OnStopping();
 
-                this.SetState(LaborerState.Stopped);
+                this.SetState(WorkerState.Stopped);
                 this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is stopped.");
                 this.OnStopped();
             }
@@ -145,7 +145,7 @@ namespace TauCode.Working
             return new ObjectDisposedException(this.Name, message);
         }
 
-        protected InvalidLaborerOperationException CreateInvalidLaborerOperationException(string requestedOperation, LaborerState state)
+        protected InvalidWorkerOperationException CreateInvalidLaborerOperationException(string requestedOperation, WorkerState state)
         {
             var sb = new StringBuilder();
             sb.Append($"Cannot perform operation '{requestedOperation}'. Laborer state is '{state}'.");
@@ -156,7 +156,7 @@ namespace TauCode.Working
 
             var message = sb.ToString();
 
-            return new InvalidLaborerOperationException(message, this.Name);
+            return new InvalidWorkerOperationException(message, this.Name);
         }
 
         #endregion
@@ -186,7 +186,7 @@ namespace TauCode.Working
             }
         }
 
-        public LaborerState State => this.GetState();
+        public WorkerState State => this.GetState();
 
         public void Start()
         {
@@ -198,17 +198,17 @@ namespace TauCode.Working
                 }
 
                 var state = this.GetState();
-                if (state != LaborerState.Stopped)
+                if (state != WorkerState.Stopped)
                 {
                     throw this.CreateInvalidLaborerOperationException(nameof(Start), state);
 
                 }
 
-                this.SetState(LaborerState.Starting);
+                this.SetState(WorkerState.Starting);
                 this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is starting.");
                 this.OnStarting();
 
-                this.SetState(LaborerState.Running);
+                this.SetState(WorkerState.Running);
                 this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is started.");
                 this.OnStarted();
             }
@@ -231,16 +231,16 @@ namespace TauCode.Working
                 }
 
                 var state = this.GetState();
-                if (state != LaborerState.Running)
+                if (state != WorkerState.Running)
                 {
                     throw this.CreateInvalidLaborerOperationException(nameof(Pause), state);
                 }
 
-                this.SetState(LaborerState.Pausing);
+                this.SetState(WorkerState.Pausing);
                 this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is pausing.");
                 this.OnPausing();
 
-                this.SetState(LaborerState.Paused);
+                this.SetState(WorkerState.Paused);
                 this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is paused.");
                 this.OnPaused();
             }
@@ -261,16 +261,16 @@ namespace TauCode.Working
                 }
 
                 var state = this.GetState();
-                if (state != LaborerState.Paused)
+                if (state != WorkerState.Paused)
                 {
                     throw this.CreateInvalidLaborerOperationException(nameof(Resume), state);
                 }
 
-                this.SetState(LaborerState.Resuming);
+                this.SetState(WorkerState.Resuming);
                 this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is resuming.");
                 this.OnResuming(); // todo: try/catch, here & anywhere? implementation of abstract method might throw...
 
-                this.SetState(LaborerState.Running);
+                this.SetState(WorkerState.Running);
                 this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is resumed.");
                 this.OnResumed();
             }
