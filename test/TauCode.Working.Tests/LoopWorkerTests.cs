@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using System;
 using System.Threading.Tasks;
+using TauCode.Infrastructure.Logging;
 
 namespace TauCode.Working.Tests
 {
@@ -19,6 +20,7 @@ namespace TauCode.Working.Tests
             await Task.Delay(5); // let TPL initiate
         }
 
+        // todo: make a full-scale test with good name
         [Test]
         public async Task TodoFoo()
         {
@@ -45,6 +47,7 @@ namespace TauCode.Working.Tests
             worker.Dispose();
         }
 
+        // todo: make a full-scale test with good name
         [Test]
         public async Task TodoFoo2()
         {
@@ -72,10 +75,6 @@ namespace TauCode.Working.Tests
             worker.Resume();
 
             await Task.Delay(250);
-
-
-            var log = _logger.ToString();
-
 
             // Assert
             worker.Dispose();

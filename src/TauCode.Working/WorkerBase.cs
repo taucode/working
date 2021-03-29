@@ -268,7 +268,7 @@ namespace TauCode.Working
 
                 this.SetState(WorkerState.Resuming);
                 this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is resuming.");
-                this.OnResuming(); // todo: try/catch, here & anywhere? implementation of abstract method might throw...
+                this.OnResuming();
 
                 this.SetState(WorkerState.Running);
                 this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is resumed.");

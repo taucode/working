@@ -6,8 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TauCode.Extensions;
+using TauCode.Infrastructure.Logging;
 using TauCode.Infrastructure.Time;
-using TauCode.Lab.Infrastructure;
 using TauCode.Working.Exceptions;
 
 // todo: need those time machines inside tests? they're confusing since not being used.
@@ -99,7 +99,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             var stateBeforeAction = worker.State;
@@ -133,7 +133,7 @@ namespace TauCode.Working.Tests
                 OnStartingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             var startTask = new Task(() => worker.Start());
@@ -174,7 +174,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -214,7 +214,7 @@ namespace TauCode.Working.Tests
                 OnStoppingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -259,7 +259,7 @@ namespace TauCode.Working.Tests
                 OnPausingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -304,7 +304,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -347,7 +347,7 @@ namespace TauCode.Working.Tests
                 OnResumingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -433,7 +433,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Dispose();
@@ -474,7 +474,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             var stateBeforeAction = worker.State;
@@ -510,7 +510,7 @@ namespace TauCode.Working.Tests
                 OnStartingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             var startTask = new Task(() => worker.Start());
@@ -549,7 +549,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -587,7 +587,7 @@ namespace TauCode.Working.Tests
                 OnStoppingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -633,7 +633,7 @@ namespace TauCode.Working.Tests
                 OnPausingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -678,7 +678,7 @@ namespace TauCode.Working.Tests
                 OnStartingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -720,7 +720,7 @@ namespace TauCode.Working.Tests
                 OnResumingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -807,7 +807,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -853,7 +853,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             var stateBeforeAction = worker.State;
@@ -889,7 +889,7 @@ namespace TauCode.Working.Tests
                 OnStartingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             var startTask = new Task(() => worker.Start());
@@ -928,7 +928,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -966,7 +966,7 @@ namespace TauCode.Working.Tests
                 OnStoppingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1012,7 +1012,7 @@ namespace TauCode.Working.Tests
                 OnStoppingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1057,7 +1057,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1100,7 +1100,7 @@ namespace TauCode.Working.Tests
                 OnResumingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1187,7 +1187,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1233,7 +1233,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             var stateBeforeAction = worker.State;
@@ -1269,7 +1269,7 @@ namespace TauCode.Working.Tests
                 OnStartingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             var startTask = new Task(() => worker.Start());
@@ -1310,7 +1310,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1350,7 +1350,7 @@ namespace TauCode.Working.Tests
                 OnStoppingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1396,7 +1396,7 @@ namespace TauCode.Working.Tests
                 OnPausingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1439,7 +1439,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1480,7 +1480,7 @@ namespace TauCode.Working.Tests
                 OnResumingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1571,7 +1571,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1616,7 +1616,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             var stateBeforeAction = worker.State;
@@ -1648,7 +1648,7 @@ namespace TauCode.Working.Tests
                 OnStoppingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1689,7 +1689,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1727,7 +1727,7 @@ namespace TauCode.Working.Tests
                 OnStoppingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1770,7 +1770,7 @@ namespace TauCode.Working.Tests
                 OnPausingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1813,7 +1813,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1854,7 +1854,7 @@ namespace TauCode.Working.Tests
                 OnResumingTimeout = TimeSpan.FromSeconds(1),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Start();
@@ -1900,7 +1900,7 @@ namespace TauCode.Working.Tests
                 Logger = new StringLogger(_log),
             };
 
-            var timeMachine = new TimeMachineTimeProviderLab(FakeNow);
+            var timeMachine = new TimeMachineTimeProvider(FakeNow);
             TimeProvider.Override(timeMachine);
 
             worker.Dispose();
