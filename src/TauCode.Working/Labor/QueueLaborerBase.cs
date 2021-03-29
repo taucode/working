@@ -1,16 +1,17 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TauCode.Working
+namespace TauCode.Working.Labor
 {
-    public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
+    public abstract class QueueLaborerBase<TAssignment> : LoopLaborerBase
     {
         private readonly Queue<TAssignment> _assignments;
         private readonly object _lock;
 
-        protected QueueWorkerBase()
+        protected QueueLaborerBase()
         {
             _assignments = new Queue<TAssignment>();
             _lock = new object();
@@ -18,6 +19,17 @@ namespace TauCode.Working
 
         public void AddAssignment(TAssignment assignment)
         {
+            if (this.IsDisposed)
+            {
+                throw this.CreateObjectDisposedException(nameof(AddAssignment));
+            }
+
+            var state = this.State;
+            if (state == LaborerState.Stopped || state == LaborerState.Stopping)
+            {
+                throw this.CreateInvalidLaborerOperationException(nameof(AddAssignment), state);
+            }
+
             this.CheckAssignment(assignment);
 
             lock (_lock)
@@ -25,7 +37,7 @@ namespace TauCode.Working
                 _assignments.Enqueue(assignment);
             }
 
-            this.AdvanceWorkGeneration();
+            this.AbortVacation();
         }
 
         protected abstract Task DoAssignment(TAssignment assignment, CancellationToken cancellationToken);
@@ -35,7 +47,19 @@ namespace TauCode.Working
             // idle.
         }
 
-        protected override async Task<TimeSpan> DoWork(CancellationToken cancellationToken)
+        protected override void OnStopped()
+        {
+            base.OnStopped();
+
+            lock (_lock)
+            {
+                _assignments.Clear();
+            }
+        }
+
+        public override bool IsPausingSupported => true;
+
+        protected override async Task<TimeSpan> DoLabor(CancellationToken cancellationToken)
         {
             while (true)
             {
@@ -65,9 +89,7 @@ namespace TauCode.Working
                 }
                 catch (Exception ex)
                 {
-                    // todo
-                    //Log.Error(ex, $"Method '{nameof(DoAssignment)}' threw an exception.");
-                    // let's continue working on assignments (if still any).
+                    this.GetSafeLogger().LogError(ex, "Exception thrown while processing the assignment.");
                 }
             }
         }

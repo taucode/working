@@ -165,7 +165,7 @@ namespace TauCode.Working.Labor
                         }
                         catch (OperationCanceledException)
                         {
-                            throw;
+                            throw; // todo: consider checking _controlSignal.IsCancellationRequested
                         }
                         catch (Exception ex)
                         {

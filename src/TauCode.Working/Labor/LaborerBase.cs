@@ -62,29 +62,6 @@ namespace TauCode.Working.Labor
             Interlocked.Exchange(ref _isDisposedValue, isDisposedValue);
         }
 
-        private InvalidLaborerOperationException CreateInvalidLaborerOperationException(string requestedOperation, LaborerState state)
-        {
-            var sb = new StringBuilder();
-            sb.Append($"Cannot perform operation '{requestedOperation}'. Laborer state is '{state}'.");
-            if (this.Name != null)
-            {
-                sb.Append($" Laborer name is '{this.Name}'.");
-            }
-
-            var message = sb.ToString();
-
-            return new InvalidLaborerOperationException(message, this.Name);
-        }
-
-        private ObjectDisposedException CreateObjectDisposedException(string requestedOperation)
-        {
-            var sb = new StringBuilder();
-            sb.Append($"Cannot perform operation '{requestedOperation}' because laborer is disposed.");
-
-            var message = sb.ToString();
-            return new ObjectDisposedException(this.Name, message);
-        }
-
         private NotSupportedException CreatePausingNotSupportedException()
         {
             return new NotSupportedException("Pausing/resuming is not supported.");
@@ -157,6 +134,29 @@ namespace TauCode.Working.Labor
                 this.GetSafeLogger().LogDebug($"Laborer '{this.Name}' is stopped.");
                 this.OnStopped();
             }
+        }
+
+        protected ObjectDisposedException CreateObjectDisposedException(string requestedOperation)
+        {
+            var sb = new StringBuilder();
+            sb.Append($"Cannot perform operation '{requestedOperation}' because laborer is disposed.");
+
+            var message = sb.ToString();
+            return new ObjectDisposedException(this.Name, message);
+        }
+
+        protected InvalidLaborerOperationException CreateInvalidLaborerOperationException(string requestedOperation, LaborerState state)
+        {
+            var sb = new StringBuilder();
+            sb.Append($"Cannot perform operation '{requestedOperation}'. Laborer state is '{state}'.");
+            if (this.Name != null)
+            {
+                sb.Append($" Laborer name is '{this.Name}'.");
+            }
+
+            var message = sb.ToString();
+
+            return new InvalidLaborerOperationException(message, this.Name);
         }
 
         #endregion

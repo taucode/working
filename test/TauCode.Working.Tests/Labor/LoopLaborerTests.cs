@@ -76,7 +76,6 @@ namespace TauCode.Working.Tests.Labor
 
             var log = _logger.ToString();
 
-            var kk = 3;
 
             // Assert
             laborer.Dispose();
