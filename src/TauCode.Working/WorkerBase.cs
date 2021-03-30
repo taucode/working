@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Text;
 using System.Threading;
-using TauCode.Working.Exceptions;
 
 namespace TauCode.Working
 {
@@ -118,7 +117,7 @@ namespace TauCode.Working
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw this.CreateInvalidWorkerOperationException(nameof(Stop), state);
+                        throw this.CreateInvalidOperationException(nameof(Stop), state);
                     }
                     else
                     {
@@ -145,7 +144,7 @@ namespace TauCode.Working
             return new ObjectDisposedException(this.Name, message);
         }
 
-        protected InvalidWorkerOperationException CreateInvalidWorkerOperationException(string requestedOperation, WorkerState state)
+        protected InvalidOperationException CreateInvalidOperationException(string requestedOperation, WorkerState state)
         {
             var sb = new StringBuilder();
             sb.Append($"Cannot perform operation '{requestedOperation}'. Worker state is '{state}'.");
@@ -156,7 +155,7 @@ namespace TauCode.Working
 
             var message = sb.ToString();
 
-            return new InvalidWorkerOperationException(message, this.Name);
+            return new InvalidOperationException(message);
         }
 
         #endregion
@@ -200,7 +199,7 @@ namespace TauCode.Working
                 var state = this.GetState();
                 if (state != WorkerState.Stopped)
                 {
-                    throw this.CreateInvalidWorkerOperationException(nameof(Start), state);
+                    throw this.CreateInvalidOperationException(nameof(Start), state);
 
                 }
 
@@ -233,7 +232,7 @@ namespace TauCode.Working
                 var state = this.GetState();
                 if (state != WorkerState.Running)
                 {
-                    throw this.CreateInvalidWorkerOperationException(nameof(Pause), state);
+                    throw this.CreateInvalidOperationException(nameof(Pause), state);
                 }
 
                 this.SetState(WorkerState.Pausing);
@@ -263,7 +262,7 @@ namespace TauCode.Working
                 var state = this.GetState();
                 if (state != WorkerState.Paused)
                 {
-                    throw this.CreateInvalidWorkerOperationException(nameof(Resume), state);
+                    throw this.CreateInvalidOperationException(nameof(Resume), state);
                 }
 
                 this.SetState(WorkerState.Resuming);

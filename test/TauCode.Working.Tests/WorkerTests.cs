@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using TauCode.Extensions;
 using TauCode.Infrastructure.Logging;
 using TauCode.Infrastructure.Time;
-using TauCode.Working.Exceptions;
 
 // todo: need those time machines inside tests? they're confusing since not being used.
 namespace TauCode.Working.Tests
@@ -143,13 +142,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Start());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Starting));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Worker state is 'Running'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Running));
             Assert.That(worker.IsDisposed, Is.False);
@@ -182,13 +180,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Start());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Running));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Worker state is 'Running'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Running));
             Assert.That(worker.IsDisposed, Is.False);
@@ -271,13 +268,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Start());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Pausing));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Worker state is 'Paused'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Paused));
             Assert.That(worker.IsDisposed, Is.False);
@@ -313,13 +309,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Start());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Paused));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Worker state is 'Paused'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Paused));
             Assert.That(worker.IsDisposed, Is.False);
@@ -360,13 +355,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Start());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Start());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Resuming));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Start'. Worker state is 'Running'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Running));
             Assert.That(worker.IsDisposed, Is.False);
@@ -480,13 +474,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Stop());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Stop());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopped));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Stop'. Worker state is 'Stopped'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
             Assert.That(worker.IsDisposed, Is.False);
@@ -599,13 +592,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Stop());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Stop());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopping));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Stop'. Worker state is 'Stopped'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
             Assert.That(worker.IsDisposed, Is.False);
@@ -859,13 +851,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Pause());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Pause());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopped));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Pause'. Worker state is 'Stopped'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
             Assert.That(worker.IsDisposed, Is.False);
@@ -978,13 +969,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Pause());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Pause());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopping));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Pause'. Worker state is 'Stopped'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
             Assert.That(worker.IsDisposed, Is.False);
@@ -1024,13 +1014,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Stop());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Stop());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopping));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Stop'. Worker state is 'Stopped'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
             Assert.That(worker.IsDisposed, Is.False);
@@ -1066,13 +1055,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Pause());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Pause());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Paused));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Pause'. Worker state is 'Paused'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Paused));
             Assert.That(worker.IsDisposed, Is.False);
@@ -1239,13 +1227,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Resume());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Resume());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopped));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Resume'. Worker state is 'Stopped'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
             Assert.That(worker.IsDisposed, Is.False);
@@ -1279,13 +1266,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Resume());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Resume());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Starting));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Resume'. Worker state is 'Running'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Running));
             Assert.That(worker.IsDisposed, Is.False);
@@ -1318,13 +1304,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Resume());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Resume());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Running));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Resume'. Worker state is 'Running'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Running));
             Assert.That(worker.IsDisposed, Is.False);
@@ -1362,13 +1347,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Resume());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Resume());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopping));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Resume'. Worker state is 'Stopped'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
             Assert.That(worker.IsDisposed, Is.False);
@@ -1493,13 +1477,12 @@ namespace TauCode.Working.Tests
             var stateBeforeAction = worker.State;
 
             // Act
-            var ex = Assert.Throws<InvalidWorkerOperationException>(() => worker.Resume());
+            var ex = Assert.Throws<InvalidOperationException>(() => worker.Resume());
 
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Resuming));
 
             Assert.That(ex, Has.Message.EqualTo("Cannot perform operation 'Resume'. Worker state is 'Running'. Worker name is 'Psi'."));
-            Assert.That(ex, Has.Property(nameof(InvalidWorkerOperationException.WorkerName)).EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Running));
             Assert.That(worker.IsDisposed, Is.False);
