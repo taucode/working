@@ -100,7 +100,7 @@ namespace TauCode.Working
                 {
                     if (throwOnDisposedOrWrongState)
                     {
-                        throw this.CreateObjectDisposedException(nameof(Stop));
+                        throw new ObjectDisposedException(this.Name);
                     }
                     else
                     {
@@ -134,16 +134,7 @@ namespace TauCode.Working
                 this.OnStopped();
             }
         }
-
-        protected ObjectDisposedException CreateObjectDisposedException(string requestedOperation)
-        {
-            var sb = new StringBuilder();
-            sb.Append($"Cannot perform operation '{requestedOperation}' because worker is disposed.");
-
-            var message = sb.ToString();
-            return new ObjectDisposedException(this.Name, message);
-        }
-
+        
         protected InvalidOperationException CreateInvalidOperationException(string requestedOperation, WorkerState state)
         {
             var sb = new StringBuilder();
@@ -175,7 +166,7 @@ namespace TauCode.Working
             {
                 if (this.GetIsDisposed())
                 {
-                    throw this.CreateObjectDisposedException($"set {nameof(Name)}");
+                    throw new ObjectDisposedException(this.Name);
                 }
 
                 lock (_dataLock)
@@ -193,7 +184,7 @@ namespace TauCode.Working
             {
                 if (this.GetIsDisposed())
                 {
-                    throw this.CreateObjectDisposedException(nameof(Start));
+                    throw new ObjectDisposedException(this.Name);
                 }
 
                 var state = this.GetState();
@@ -226,7 +217,7 @@ namespace TauCode.Working
             {
                 if (this.GetIsDisposed())
                 {
-                    throw this.CreateObjectDisposedException(nameof(Pause));
+                    throw new ObjectDisposedException(this.Name);
                 }
 
                 var state = this.GetState();
@@ -256,7 +247,7 @@ namespace TauCode.Working
             {
                 if (this.GetIsDisposed())
                 {
-                    throw this.CreateObjectDisposedException(nameof(Resume));
+                    throw new ObjectDisposedException(this.Name);
                 }
 
                 var state = this.GetState();
@@ -289,7 +280,7 @@ namespace TauCode.Working
             {
                 if (this.GetIsDisposed())
                 {
-                    throw this.CreateObjectDisposedException($"set {nameof(Logger)}");
+                    throw new ObjectDisposedException(this.Name);
                 }
 
                 lock (_dataLock)

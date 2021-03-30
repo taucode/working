@@ -21,7 +21,7 @@ namespace TauCode.Working
         {
             if (this.IsDisposed)
             {
-                throw this.CreateObjectDisposedException(nameof(AddAssignment));
+                throw new ObjectDisposedException(this.Name);
             }
 
             var state = this.State;

@@ -70,7 +70,7 @@ namespace TauCode.Working.Tests
             // Arrange
             var worker = new DemoWorker
             {
-                Name = "some_name",
+                Name = "Psi",
             };
 
             worker.Dispose();
@@ -80,9 +80,9 @@ namespace TauCode.Working.Tests
             var ex = Assert.Throws<ObjectDisposedException>(() => worker.Name = null);
 
             // Assert
-            Assert.That(gotName, Is.EqualTo("some_name"));
-            Assert.That(ex, Has.Message.StartsWith("Cannot perform operation 'set Name' because worker is disposed."));
-            Assert.That(ex.ObjectName, Is.EqualTo("some_name"));
+            Assert.That(gotName, Is.EqualTo("Psi"));
+            Assert.That(ex, Has.Message.StartWith("Cannot access a disposed object."));
+            Assert.That(ex.ObjectName, Is.EqualTo("Psi"));
         }
 
         #endregion
@@ -440,7 +440,7 @@ namespace TauCode.Working.Tests
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopped));
 
-            Assert.That(ex, Has.Message.StartsWith($"Cannot perform operation 'Start' because worker is disposed."));
+            Assert.That(ex, Has.Message.StartWith("Cannot access a disposed object."));
             Assert.That(ex.ObjectName, Is.EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
@@ -813,7 +813,7 @@ namespace TauCode.Working.Tests
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopped));
 
-            Assert.That(ex, Has.Message.StartsWith($"Cannot perform operation 'Stop' because worker is disposed."));
+            Assert.That(ex, Has.Message.StartWith("Cannot access a disposed object."));
             Assert.That(ex.ObjectName, Is.EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
@@ -1189,7 +1189,7 @@ namespace TauCode.Working.Tests
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopped));
 
-            Assert.That(ex, Has.Message.StartsWith($"Cannot perform operation 'Pause' because worker is disposed."));
+            Assert.That(ex, Has.Message.StartWith("Cannot access a disposed object."));
             Assert.That(ex.ObjectName, Is.EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
@@ -1568,7 +1568,7 @@ namespace TauCode.Working.Tests
             // Assert
             Assert.That(stateBeforeAction, Is.EqualTo(WorkerState.Stopped));
 
-            Assert.That(ex, Has.Message.StartsWith($"Cannot perform operation 'Resume' because worker is disposed."));
+            Assert.That(ex, Has.Message.StartWith("Cannot access a disposed object."));
             Assert.That(ex.ObjectName, Is.EqualTo("Psi"));
 
             Assert.That(worker.State, Is.EqualTo(WorkerState.Stopped));
@@ -1948,7 +1948,7 @@ namespace TauCode.Working.Tests
 
             // Assert
             Assert.That(gotLogger, Is.SameAs(logger));
-            Assert.That(ex, Has.Message.StartsWith("Cannot perform operation 'set Logger' because worker is disposed."));
+            Assert.That(ex, Has.Message.StartWith("Cannot access a disposed object."));
             Assert.That(ex.ObjectName, Is.EqualTo("Psi"));
         }
 
