@@ -27,7 +27,7 @@ namespace TauCode.Working
             var state = this.State;
             if (state == WorkerState.Stopped || state == WorkerState.Stopping)
             {
-                throw this.CreateInvalidWorkerOperationException(nameof(AddAssignment), state);
+                throw this.CreateInvalidOperationException(nameof(AddAssignment), state);
             }
 
             this.CheckAssignment(assignment);
