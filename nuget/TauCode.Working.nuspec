@@ -2,26 +2,27 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>TauCode.Working</id>
-    <version>1.3.2.7-dev-2021-04-22-08-10</version>
+    <version>1.3.7-alpha.1.2022-07-26.22-34</version>
     <authors>TauCode</authors>
     <owners>TauCode</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <license type="file">LICENSE.txt</license>
+    <license type="file">LICENSE</license>
     <projectUrl>https://github.com/taucode/taucode.working</projectUrl>
+    <repository type="git" url="https://github.com/taucode/taucode.working"/>
     <description>TauCode workers implementation library</description>
     <releaseNotes>
-      Resurrecting.
+      Developing release 1.3.7.
     </releaseNotes>
     <tags>taucode working workers</tags>
     <dependencies>
       <group targetFramework=".NETStandard2.1">
-        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="5.0.0" />
-        <dependency id="TauCode.Extensions" version="1.3.2.7-dev-2021-04-20-18-55" />
+        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="6.0.1" />
+        <dependency id="TauCode.Extensions" version="1.3.7" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="..\LICENSE.txt" target="" />
+    <file src="..\LICENSE*" target="" />
     <file src="..\src\TauCode.Working\bin\Release\netstandard2.1\TauCode.Working.dll" target="lib\netstandard2.1" />
     <file src="..\src\TauCode.Working\bin\Release\netstandard2.1\TauCode.Working.pdb" target="lib\netstandard2.1" />
   </files>
