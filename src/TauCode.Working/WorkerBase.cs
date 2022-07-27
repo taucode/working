@@ -196,7 +196,7 @@ namespace TauCode.Working
 
                 this.SetState(WorkerState.Starting);
                 this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is starting.");
-                this.OnStarting();
+                this.OnStarting(); // todo: if thrown, worker remains in 'Starting' state! critical error!
 
                 this.SetState(WorkerState.Running);
                 this.GetSafeLogger().LogDebug($"Worker '{this.Name}' is started.");
