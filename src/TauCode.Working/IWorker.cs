@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 
 namespace TauCode.Working
 {
@@ -8,6 +9,9 @@ namespace TauCode.Working
         WorkerState State { get; }
         void Start();
         void Stop();
+        void Pause();
+        void Resume();
         bool IsDisposed { get; }
+        ILogger Logger { get; set; }
     }
 }

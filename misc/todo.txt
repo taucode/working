@@ -7,8 +7,8 @@
 
 2020-09-06
 ==========
-    1. Get rid of old Wokrer Bases
-    2. UT-s.
++   1. Get rid of old Wokrer Bases
++   2. UT-s.
     3. Plug UT-s into Azure Pipelines
     4. Local .bat files for building and deploying
 
@@ -44,18 +44,34 @@ x   1. Rename 'Lab' demo project to 'Playground'.
 
 2020-09-28
 ==========
-    1. Consider removing all demos - gui, cui, etc
-    2. Consider moving ToUtcDayOffset to 'TauCode.Tests' or something
-    3. Add logging to workers.
++   1. Consider removing all demos - gui, cui, etc
++   2. Consider moving ToUtcDayOffset to 'TauCode.Tests' or something
++   3. Add logging to workers.
 
 2020-09-29
 ==========
-    1. Introduce Pause/Resume conecpt.
++   1. Introduce Pause/Resume conecpt.
 
 2020-10-07
 ==========
 +   1. Separate taucode.jobs
     2. What if scheduler ('Vice') was offline for a while? It should check whether there was no a due time for some job while he (Vice) was offline.
-    3. Persistent jor run infos
+    3. Persistent job run infos
     4. Get last run, for implementing "2.".
 
+2021-03-17
+==========
+    1. https://www.roundthecode.com/dotnet/create-your-own-logging-provider-to-log-to-text-files-in-net-core
+    2. https://visualstudiomagazine.com/articles/2019/03/22/logging-in-net-core.aspx
+    3. https://wakeupandcode.com/logging-in-asp-net-core-3-1/
+    4. https://www.tutorialsteacher.com/core/fundamentals-of-logging-in-dotnet-core
+    5. https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-5.0
+    6. https://csharp.christiannagel.com/2018/11/13/iloggertofile/
+
+
+2021-03-20
+==========
++   1. Time Machine in infrastructure.
+
+
+    
