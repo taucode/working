@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>TauCode.Working</id>
-    <version>1.3.7</version>
+    <version>1.5.0</version>
     <authors>TauCode</authors>
     <owners>TauCode</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -11,19 +11,18 @@
     <repository type="git" url="https://github.com/taucode/taucode.working"/>
     <description>TauCode workers implementation library</description>
     <releaseNotes>
-      Release 1.3.7.
+      Release 1.5.0.
     </releaseNotes>
     <tags>taucode working workers</tags>
     <dependencies>
-      <group targetFramework=".NETStandard2.1">
+      <group targetFramework=".NETCoreApp6.0">
         <dependency id="Microsoft.Extensions.Logging.Abstractions" version="6.0.1" />
-        <dependency id="TauCode.Extensions" version="1.3.7" />
+        <dependency id="TauCode.Extensions" version="1.5.0" />
       </group>
     </dependencies>
   </metadata>
   <files>
     <file src="..\LICENSE*" target="" />
-    <file src="..\src\TauCode.Working\bin\Release\netstandard2.1\TauCode.Working.dll" target="lib\netstandard2.1" />
-    <file src="..\src\TauCode.Working\bin\Release\netstandard2.1\TauCode.Working.pdb" target="lib\netstandard2.1" />
+    <file src="..\src\TauCode.Working\bin\Release\net6.0\TauCode.Working.dll" target="lib\net6.0" />
   </files>
 </package>
