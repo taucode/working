@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Serilog;
 
 namespace TauCode.Working;
 
@@ -7,7 +7,8 @@ public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
     private readonly Queue<TAssignment> _assignments;
     private readonly object _lock;
 
-    protected QueueWorkerBase()
+    protected QueueWorkerBase(ILogger? logger)
+        : base(logger)
     {
         _assignments = new Queue<TAssignment>();
         _lock = new object();
@@ -15,16 +16,15 @@ public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
 
     public void AddAssignment(TAssignment assignment)
     {
-        if (this.IsDisposed)
-        {
-            throw new ObjectDisposedException(this.Name);
-        }
+        this.CheckNotDisposed();
+        this.ProhibitIfStateIs(nameof(AddAssignment), WorkerState.Stopped, WorkerState.Stopping);
 
-        var state = this.State;
-        if (state == WorkerState.Stopped || state == WorkerState.Stopping)
-        {
-            throw this.CreateInvalidOperationException(nameof(AddAssignment), state);
-        }
+        // todo clean
+        //var state = this.State;
+        //if (state == WorkerState.Stopped || state == WorkerState.Stopping)
+        //{
+        //    throw this.CreateInvalidOperationException(nameof(AddAssignment), state);
+        //}
 
         this.CheckAssignment(assignment);
 
@@ -43,9 +43,9 @@ public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
         // idle.
     }
 
-    protected override void OnStopped()
+    protected override void OnAfterStopped()
     {
-        base.OnStopped();
+        base.OnAfterStopped();
 
         lock (_lock)
         {
@@ -85,7 +85,7 @@ public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
             }
             catch (Exception ex)
             {
-                this.GetSafeLogger().LogError(ex, "Exception thrown while processing the assignment.");
+                this.ContextLogger?.Error(ex, "Exception thrown while processing the assignment.");
             }
         }
     }

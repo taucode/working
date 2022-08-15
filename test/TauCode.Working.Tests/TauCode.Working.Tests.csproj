@@ -15,7 +15,7 @@
     <PackageReference Include="NUnit.Analyzers" Version="3.3.0" />
     <PackageReference Include="coverlet.collector" Version="3.1.2" />
     <PackageReference Include="Serilog.Sinks.TextWriter" Version="2.1.0" />
-    <PackageReference Include="TauCode.Infrastructure" Version="1.5.5-alpha.1.2022-08-11.23-47" />
+    <PackageReference Include="TauCode.IO" Version="1.6.0-alpha.1.2022-08-15.14-31" />
   </ItemGroup>
 
   <ItemGroup>

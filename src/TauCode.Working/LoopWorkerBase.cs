@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Serilog;
 using TauCode.Extensions;
 
 namespace TauCode.Working;
@@ -19,21 +19,22 @@ public abstract class LoopWorkerBase : WorkerBase
     private readonly object _errorTimeoutLock;
 
     private readonly object _initLoopLock;
-    private readonly object _loopIsInitedLock;
+    private readonly object _loopIsInitializedLock;
 
-    private Task _loopTask;
+    private Task? _loopTask;
 
-    private CancellationTokenSource _controlSignal;
+    private CancellationTokenSource? _controlSignal;
     private readonly AutoResetEvent _abortVacationSignal;
 
     #endregion
 
     #region Constructor
 
-    protected LoopWorkerBase()
+    protected LoopWorkerBase(ILogger? logger)
+        : base(logger)
     {
         _initLoopLock = new object();
-        _loopIsInitedLock = new object();
+        _loopIsInitializedLock = new object();
 
         _errorTimeout = DefaultErrorTimeout;
         _errorTimeoutLock = new object();
@@ -51,23 +52,23 @@ public abstract class LoopWorkerBase : WorkerBase
 
     #region Overridden
 
-    protected override void OnStarting() => this.InitLoop();
+    protected override void OnBeforeStarting() => this.InitLoop();
 
-    protected override void OnStarted() => this.OnLoopInited();
+    protected override void OnAfterStarted() => this.OnLoopInitialized();
 
-    protected override void OnStopping() => this.StopLoop();
+    protected override void OnBeforeStopping() => this.StopLoop();
 
-    protected override void OnStopped() => this.OnLoopStopped();
+    protected override void OnAfterStopped() => this.OnLoopStopped();
 
-    protected override void OnPausing() => this.StopLoop();
+    protected override void OnBeforePausing() => this.StopLoop();
 
-    protected override void OnPaused() => this.OnLoopStopped();
+    protected override void OnAfterPaused() => this.OnLoopStopped();
 
-    protected override void OnResuming() => this.InitLoop();
+    protected override void OnBeforeResuming() => this.InitLoop();
 
-    protected override void OnResumed() => this.OnLoopInited();
+    protected override void OnAfterResumed() => this.OnLoopInitialized();
 
-    protected override void OnDisposed()
+    protected override void OnAfterDisposed()
     {
         _abortVacationSignal.Dispose();
     }
@@ -85,30 +86,30 @@ public abstract class LoopWorkerBase : WorkerBase
         }
     }
 
-    private void OnLoopInited()
+    private void OnLoopInitialized()
     {
         _controlSignal = new CancellationTokenSource();
 
-        lock (_loopIsInitedLock)
+        lock (_loopIsInitializedLock)
         {
-            Monitor.Pulse(_loopIsInitedLock);
+            Monitor.Pulse(_loopIsInitializedLock);
         }
     }
 
     private void StopLoop()
     {
-        _controlSignal.Cancel();
+        _controlSignal?.Cancel();
 
         try
         {
-            _loopTask.Wait();
+            _loopTask?.Wait();
         }
         catch (AggregateException)
         {
             // looks like task was canceled, that was the intent.
         }
 
-        _loopTask.Dispose();
+        _loopTask?.Dispose();
         _loopTask = null;
     }
 
@@ -116,7 +117,7 @@ public abstract class LoopWorkerBase : WorkerBase
     {
         try
         {
-            _controlSignal.Dispose();
+            _controlSignal?.Dispose();
         }
         catch
         {
@@ -129,21 +130,21 @@ public abstract class LoopWorkerBase : WorkerBase
 
     private async Task LoopRoutine()
     {
-        lock (_loopIsInitedLock)
+        lock (_loopIsInitializedLock)
         {
             lock (_initLoopLock)
             {
                 Monitor.Pulse(_initLoopLock);
             }
 
-            Monitor.Wait(_loopIsInitedLock);
+            Monitor.Wait(_loopIsInitializedLock);
         }
 
         var goOn = true;
 
         var handleArray = new[]
         {
-            _controlSignal.Token.WaitHandle,
+            (_controlSignal ?? throw new Exception("Internal error.")) .Token.WaitHandle,
             _abortVacationSignal,
         };
 
@@ -156,8 +157,8 @@ public abstract class LoopWorkerBase : WorkerBase
                 case WorkerState.Running:
                     var vacationLength = TimeSpan.Zero;
 
-                    Exception thrownException;
-                    string messageForThrownException;
+                    Exception? thrownException;
+                    string? messageForThrownException;
 
                     try
                     {
@@ -177,17 +178,17 @@ public abstract class LoopWorkerBase : WorkerBase
                         // 'DoWork' has thrown a 'OperationCanceledException' without prompted to. Bad of him!
                         thrownException = ex;
                         messageForThrownException =
-                            $"Unexpected 'OperationCanceledException'. Worker name: '{this.Name}'.";
+                            $"Unexpected '{nameof(OperationCanceledException)}' in '{nameof(LoopRoutine)}'.";
                     }
                     catch (Exception ex)
                     {
                         thrownException = ex;
-                        messageForThrownException = $"Exception occurred. Worker name: '{this.Name}'.";
+                        messageForThrownException = $"Exception occurred in '{nameof(LoopRoutine)}'.";
                     }
 
                     if (thrownException != null)
                     {
-                        this.GetSafeLogger().LogError(thrownException, messageForThrownException);
+                        this.ContextLogger?.Error(thrownException, messageForThrownException!);
                         await Task.Delay(this.ErrorTimeout, _controlSignal.Token); // todo: can throw 'OperationCanceledException', ut it.
                         continue;
                     }
