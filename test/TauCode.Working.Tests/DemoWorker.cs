@@ -1,11 +1,14 @@
-﻿namespace TauCode.Working.Tests;
+﻿using Serilog;
+
+namespace TauCode.Working.Tests;
 
 public class DemoWorker : WorkerBase
 {
     private readonly object _historyLock;
     private readonly List<WorkerState> _history;
 
-    public DemoWorker()
+    public DemoWorker(ILogger? logger)
+        : base(logger)
     {
         _historyLock = new object();
         _history = new List<WorkerState>();
@@ -48,55 +51,55 @@ public class DemoWorker : WorkerBase
 
     public TimeSpan OnDisposedTimeout { get; set; }
 
-    protected override void OnStarting()
+    protected override void OnBeforeStarting()
     {
         this.AddStateToHistory();
         Thread.Sleep(this.OnStartingTimeout);
     }
 
-    protected override void OnStarted()
+    protected override void OnAfterStarted()
     {
         this.AddStateToHistory();
         Thread.Sleep(this.OnStartedTimeout);
     }
 
-    protected override void OnStopping()
+    protected override void OnBeforeStopping()
     {
         this.AddStateToHistory();
         Thread.Sleep(this.OnStoppingTimeout);
     }
 
-    protected override void OnStopped()
+    protected override void OnAfterStopped()
     {
         this.AddStateToHistory();
         Thread.Sleep(this.OnStoppedTimeout);
     }
 
-    protected override void OnPausing()
+    protected override void OnBeforePausing()
     {
         this.AddStateToHistory();
         Thread.Sleep(this.OnPausingTimeout);
     }
 
-    protected override void OnPaused()
+    protected override void OnAfterPaused()
     {
         this.AddStateToHistory();
         Thread.Sleep(this.OnPausedTimeout);
     }
 
-    protected override void OnResuming()
+    protected override void OnBeforeResuming()
     {
         this.AddStateToHistory();
         Thread.Sleep(this.OnResumingTimeout);
     }
 
-    protected override void OnResumed()
+    protected override void OnAfterResumed()
     {
         this.AddStateToHistory();
         Thread.Sleep(this.OnResumedTimeout);
     }
 
-    protected override void OnDisposed()
+    protected override void OnAfterDisposed()
     {
         Thread.Sleep(this.OnDisposedTimeout);
     }

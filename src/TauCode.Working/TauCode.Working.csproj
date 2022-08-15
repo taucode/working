@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
     <PackageReference Include="TauCode.Extensions" Version="1.5.5-alpha.1.2022-08-11.23-27" />
+    <PackageReference Include="TauCode.Infrastructure" Version="1.6.0-alpha.1.2022-08-15.14-31" />
   </ItemGroup>
 
 </Project>
