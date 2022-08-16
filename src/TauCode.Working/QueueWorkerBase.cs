@@ -19,13 +19,6 @@ public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
         this.CheckNotDisposed();
         this.ProhibitIfStateIs(nameof(AddAssignment), WorkerState.Stopped, WorkerState.Stopping);
 
-        // todo clean
-        //var state = this.State;
-        //if (state == WorkerState.Stopped || state == WorkerState.Stopping)
-        //{
-        //    throw this.CreateInvalidOperationException(nameof(AddAssignment), state);
-        //}
-
         this.CheckAssignment(assignment);
 
         lock (_lock)

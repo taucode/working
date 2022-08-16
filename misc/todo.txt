@@ -39,8 +39,8 @@ x   1. Rename 'Lab' demo project to 'Playground'.
     2. https://github.com/kevincolyar/CronNET/blob/master/CronNET/CronSchedule.cs
     3. https://nugetmusthaves.com/Package/Quidjibo; https://quidjibo.com/; https://github.com/smiggleworth/Quidjibo
     4. Check this out! https://www.postsharp.net/
-    5. todo.txt should not go to master anywhere.
-    6. update changelog.txt
+x   5. todo.txt should not go to master anywhere.
++   6. update changelog.txt
 
 2020-09-28
 ==========
@@ -73,5 +73,3 @@ x   1. Rename 'Lab' demo project to 'Playground'.
 ==========
 +   1. Time Machine in infrastructure.
 
-
-    

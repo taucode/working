@@ -5,15 +5,11 @@ using TauCode.IO;
 
 namespace TauCode.Working.Tests;
 
-// todo clean
-
 [TestFixture]
 public class LoopWorkerTests
 {
-    private ILogger _logger;
-    private StringWriterWithEncoding _writer;
-
-    //private string CurrentLog => _logger.ToString();
+    private ILogger _logger = null!;
+    private StringWriterWithEncoding _writer = null!;
 
     [SetUp]
     public async Task SetUp()
@@ -85,5 +81,4 @@ public class LoopWorkerTests
         var log = _writer.ToString();
         Assert.That(log, Does.Contain("hello"));
     }
-
 }
