@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>TauCode.Working</id>
-    <version>1.6.0-alpha.1.2022-08-15.14-31</version>
+    <version>1.6.1-alpha.1.2022-08-18.15-29</version>
     <authors>TauCode</authors>
     <owners>TauCode</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
