@@ -73,3 +73,7 @@ x   5. todo.txt should not go to master anywhere.
 ==========
 +   1. Time Machine in infrastructure.
 
+2022-08-18
+==========
++   1. Uncomment unit tests in dev YAML pipeline.
+
