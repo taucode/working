@@ -1,37 +1,39 @@
-﻿using Microsoft.Extensions.Logging;
-using NUnit.Framework;
-using TauCode.Infrastructure.Logging;
+﻿using NUnit.Framework;
+using Serilog;
+using System.Text;
+using TauCode.IO;
 
 namespace TauCode.Working.Tests;
 
 [TestFixture]
 public class LoopWorkerTests
 {
-    private StringLogger _logger;
-
-    private string CurrentLog => _logger.ToString();
+    private ILogger _logger = null!;
+    private StringWriterWithEncoding _writer = null!;
 
     [SetUp]
     public async Task SetUp()
     {
-        _logger = new StringLogger();
+        _writer = new StringWriterWithEncoding(Encoding.UTF8);
+        _logger = new LoggerConfiguration()
+            .WriteTo.TextWriter(_writer)
+            .CreateLogger();
+
         await Task.Delay(5); // let TPL initiate
     }
 
-    // todo: make a full-scale test with good name
     [Test]
-    public async Task TodoFoo()
+    public async Task Start_ValidInput_DoesWork()
     {
         // Arrange
-        using var worker = new DemoLoopWorker
+        using var worker = new DemoLoopWorker(_logger)
         {
             Name = "Psi",
         };
 
-        worker.Logger = _logger;
         worker.WorkAction = async (@base, token) =>
         {
-            @base.Logger.LogInformation("hello");
+            @base.WriteInformationToLog("hello");
             await Task.Delay(100, token);
             return TimeSpan.FromMilliseconds(200);
         };
@@ -40,25 +42,25 @@ public class LoopWorkerTests
         worker.Start();
         await Task.Delay(400);
         worker.Stop();
+        worker.Dispose();
 
         // Assert
-        worker.Dispose();
+        var log = _writer.ToString();
+        Assert.That(log, Does.Contain("hello"));
     }
 
-    // todo: make a full-scale test with good name
     [Test]
-    public async Task TodoFoo2()
+    public async Task Resume_ValidInput_DoesWork()
     {
         // Arrange
-        using var worker = new DemoLoopWorker
+        using var worker = new DemoLoopWorker(_logger)
         {
             Name = "Psi",
         };
 
-        worker.Logger = _logger;
         worker.WorkAction = async (@base, token) =>
         {
-            @base.Logger.LogInformation("hello");
+            @base.WriteInformationToLog("hello");
             await Task.Delay(200, token);
             return TimeSpan.FromMilliseconds(300);
         };
@@ -73,9 +75,10 @@ public class LoopWorkerTests
         worker.Resume();
 
         await Task.Delay(250);
+        worker.Dispose();
 
         // Assert
-        worker.Dispose();
+        var log = _writer.ToString();
+        Assert.That(log, Does.Contain("hello"));
     }
-
 }
