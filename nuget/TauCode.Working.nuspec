@@ -2,22 +2,22 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>TauCode.Working</id>
-    <version>1.7.1-alpha.1.2023-01-24.13-25</version>
+    <version>1.8.1-alpha.1.2023-04-10.17-01</version>
     <authors>TauCode</authors>
     <owners>TauCode</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="file">LICENSE</license>
-    <projectUrl>https://github.com/taucode/taucode.working</projectUrl>
-    <repository type="git" url="https://github.com/taucode/taucode.working"/>
+    <projectUrl>https://github.com/taucode/working</projectUrl>
+    <repository type="git" url="https://github.com/taucode/working"/>
     <description>TauCode workers implementation library</description>
     <releaseNotes>
-      Developing release 1.7.1.
+      Developing release 1.8.1.
     </releaseNotes>
     <tags>taucode working workers</tags>
     <dependencies>
       <group targetFramework=".NETCoreApp6.0">
-        <dependency id="TauCode.Extensions" version="1.7.0" />
-        <dependency id="TauCode.Infrastructure" version="1.7.0" />
+        <dependency id="TauCode.Extensions" version="1.8.1-alpha.1.2023-04-06.11-19" />
+        <dependency id="TauCode.Infrastructure" version="1.8.1-alpha.1.2023-04-08.16-21" />
       </group>
     </dependencies>
   </metadata>
