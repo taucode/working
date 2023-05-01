@@ -1,10 +1,11 @@
 ﻿using Serilog;
+using TauCode.Working.Slavery;
 
-namespace TauCode.Working.Tests;
+namespace TauCode.Working.Tests.Slavery;
 
-public class DemoLoopWorker : LoopWorkerBase
+public class DemoLoopSlave : LoopSlaveBase
 {
-    public DemoLoopWorker(ILogger? logger)
+    public DemoLoopSlave(ILogger? logger)
         : base(logger)
     {
     }
@@ -13,18 +14,18 @@ public class DemoLoopWorker : LoopWorkerBase
 
     protected override async Task<TimeSpan> DoWork(CancellationToken cancellationToken)
     {
-        if (this.WorkAction == null)
+        if (WorkAction == null)
         {
             throw new InvalidOperationException($"Cannot run: '{nameof(WorkAction)}' is null.");
         }
 
-        return await this.WorkAction(this, cancellationToken);
+        return await WorkAction(this, cancellationToken);
     }
 
     public void WriteInformationToLog(string text)
     {
-        this.ContextLogger?.Information(text);
+        ContextLogger?.Information(text);
     }
 
-    public Func<DemoLoopWorker, CancellationToken, Task<TimeSpan>>? WorkAction { get; set; }
+    public Func<DemoLoopSlave, CancellationToken, Task<TimeSpan>>? WorkAction { get; set; }
 }
