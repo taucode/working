@@ -1,14 +1,19 @@
-2020-10-04
+2023-05-01
 ==========
-    1. Complete refactoring.
+    1. Started refactoring for async workers.
 
-2021-03-12
+2023-04-10
 ==========
-    1. Resurrection.
+    1. Ported from lab.
 
-2021-03-29
+2023-01-23
 ==========
-    1. Refactored Workers.
+    1. Winter resurrection - 2023.
+
+2022-08-08
+==========
+    1. Moved to .NET 6.
+    2. Released 1.5.0
 
 2021-03-30
 ==========
@@ -22,15 +27,15 @@
 ==========
     1. Release 1.3.7.
 
-2022-08-08
+2021-03-29
 ==========
-    1. Moved to .NET 6.
-    2. Released 1.5.0
+    1. Refactored Workers.
 
-2023-01-23
+2021-03-12
 ==========
-    1. Winter resurrection - 2023.
+    1. Resurrection.
 
-2023-04-10
+2020-10-04
 ==========
-    1. Ported from lab.
+    1. Complete refactoring.
+

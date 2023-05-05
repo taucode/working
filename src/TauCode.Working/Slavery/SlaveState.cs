@@ -1,6 +1,6 @@
-﻿namespace TauCode.Working;
+﻿namespace TauCode.Working.Slavery;
 
-public enum WorkerState
+public enum SlaveState
 {
     Stopped = 1,
     Starting = 2,

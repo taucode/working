@@ -1,9 +1,9 @@
-﻿namespace TauCode.Working;
+﻿namespace TauCode.Working.Slavery;
 
-public interface IWorker : IDisposable
+public interface ISlave : IDisposable
 {
     string? Name { get; set; }
-    WorkerState State { get; }
+    SlaveState State { get; }
     void Start();
     void Stop();
     void Pause();
