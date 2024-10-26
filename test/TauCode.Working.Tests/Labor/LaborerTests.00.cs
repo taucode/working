@@ -3,8 +3,11 @@ using Serilog;
 using System.Text;
 using System.Text.RegularExpressions;
 using TauCode.Extensions;
-using TauCode.Infrastructure.Time;
 using TauCode.IO;
+
+#pragma warning disable NUnit1032
+
+using TimeProvider = TauCode.Infrastructure.Time.TimeProvider;
 
 namespace TauCode.Working.Tests.Labor;
 
