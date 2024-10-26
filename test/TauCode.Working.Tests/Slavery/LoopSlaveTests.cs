@@ -3,6 +3,8 @@ using Serilog;
 using System.Text;
 using TauCode.IO;
 
+#pragma warning disable NUnit1032
+
 namespace TauCode.Working.Tests.Slavery;
 
 [TestFixture]

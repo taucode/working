@@ -4,6 +4,9 @@ using Serilog;
 using TauCode.Infrastructure.Time;
 using TauCode.IO;
 
+using TimeProvider = TauCode.Infrastructure.Time.TimeProvider;
+#pragma warning disable NUnit1032
+
 namespace TauCode.Working.Tests.Slavery;
 
 [TestFixture]

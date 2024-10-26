@@ -1,3 +1,8 @@
+2024-10-26
+==========
+    1. Resurrected.
+    2. Ported to .NET 8
+
 2023-05-01
 ==========
     1. Started refactoring for async workers.
