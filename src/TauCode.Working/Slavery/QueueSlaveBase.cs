@@ -1,13 +1,13 @@
 ﻿using Serilog;
 
-namespace TauCode.Working;
+namespace TauCode.Working.Slavery;
 
-public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
+public abstract class QueueSlaveBase<TAssignment> : LoopSlaveBase
 {
     private readonly Queue<TAssignment> _assignments;
     private readonly object _lock;
 
-    protected QueueWorkerBase(ILogger? logger)
+    protected QueueSlaveBase(ILogger? logger)
         : base(logger)
     {
         _assignments = new Queue<TAssignment>();
@@ -16,17 +16,17 @@ public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
 
     public void AddAssignment(TAssignment assignment)
     {
-        this.CheckNotDisposed();
-        this.ProhibitIfStateIs(nameof(AddAssignment), WorkerState.Stopped, WorkerState.Stopping);
+        CheckNotDisposed();
+        ProhibitIfStateIs(nameof(AddAssignment), SlaveState.Stopped, SlaveState.Stopping);
 
-        this.CheckAssignment(assignment);
+        CheckAssignment(assignment);
 
         lock (_lock)
         {
             _assignments.Enqueue(assignment);
         }
 
-        this.AbortVacation();
+        AbortVacation();
     }
 
     protected abstract Task DoAssignment(TAssignment assignment, CancellationToken cancellationToken);
@@ -70,7 +70,7 @@ public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
 
             try
             {
-                await this.DoAssignment(assignment, cancellationToken);
+                await DoAssignment(assignment, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -78,7 +78,7 @@ public abstract class QueueWorkerBase<TAssignment> : LoopWorkerBase
             }
             catch (Exception ex)
             {
-                this.ContextLogger?.Error(ex, "Exception thrown while processing the assignment.");
+                ContextLogger?.Error(ex, "Exception thrown while processing the assignment.");
             }
         }
     }

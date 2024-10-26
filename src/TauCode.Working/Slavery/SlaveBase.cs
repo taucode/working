@@ -2,9 +2,9 @@
 using System.Text;
 using TauCode.Infrastructure.Logging;
 
-namespace TauCode.Working;
+namespace TauCode.Working.Slavery;
 
-public abstract class WorkerBase : IWorker
+public abstract class SlaveBase : ISlave
 {
     #region Fields
 
@@ -19,30 +19,30 @@ public abstract class WorkerBase : IWorker
 
     #region Constructor
 
-    protected WorkerBase(ILogger? logger)
+    protected SlaveBase(ILogger? logger)
     {
-        this.OriginalLogger = logger;
+        OriginalLogger = logger;
 
-        this.ContextLogger = logger?
-            .ForContext(new ObjectTagEnricher(this.GetTag));
+        ContextLogger = logger?
+            .ForContext(new SlaveObjectTagEnricher(GetTag));
 
         _controlLock = new object();
 
-        this.SetState(WorkerState.Stopped);
-        this.SetIsDisposed(false);
+        SetState(SlaveState.Stopped);
+        SetIsDisposed(false);
     }
 
     #endregion
 
     #region Private
 
-    private WorkerState GetState()
+    private SlaveState GetState()
     {
         var stateValue = Interlocked.Read(ref _stateValue);
-        return (WorkerState)stateValue;
+        return (SlaveState)stateValue;
     }
 
-    private void SetState(WorkerState state)
+    private void SetState(SlaveState state)
     {
         var stateValue = (long)state;
         Interlocked.Exchange(ref _stateValue, stateValue);
@@ -62,9 +62,9 @@ public abstract class WorkerBase : IWorker
 
     private void ChangeStableState(
         string actionName,
-        WorkerState[] allowedInitialStableStates,
-        WorkerState targetTransientState,
-        WorkerState targetStableState,
+        SlaveState[] allowedInitialStableStates,
+        SlaveState targetTransientState,
+        SlaveState targetStableState,
         Action beforeAction,
         string beforeActionName,
         Action innerAction,
@@ -74,12 +74,12 @@ public abstract class WorkerBase : IWorker
     {
         lock (_controlLock)
         {
-            this.CheckNotDisposed();
-            this.AllowIfStateIs(actionName, allowedInitialStableStates);
+            CheckNotDisposed();
+            AllowIfStateIs(actionName, allowedInitialStableStates);
 
-            var initialStableState = this.GetState();
+            var initialStableState = GetState();
 
-            this.VerboseLogOperation(actionName, "Initializing operation. ");
+            VerboseLogOperation(actionName, "Initializing operation. ");
 
             #region 'before'
 
@@ -87,20 +87,20 @@ public abstract class WorkerBase : IWorker
             {
                 beforeAction();
 
-                this.ContextLogger?.Verbose(
+                ContextLogger?.Verbose(
                     "'{0:l}'. '{1:l}' called successfully. State is '{2}'.",
                     actionName,
                     beforeActionName,
-                    this.GetState());
+                    GetState());
             }
             catch (Exception ex)
             {
-                this.ContextLogger?.Verbose(
+                ContextLogger?.Verbose(
                     ex,
                     "'{0:l}'. '{1:l}' has thrown an exception. State is '{2}'.",
                     actionName,
                     beforeActionName,
-                    this.GetState());
+                    GetState());
 
                 throw;
             }
@@ -110,29 +110,29 @@ public abstract class WorkerBase : IWorker
             #region 'inner'
 
             // change to transient state
-            this.SetState(targetTransientState);
+            SetState(targetTransientState);
 
             try
             {
                 innerAction();
 
-                this.ContextLogger?.Verbose(
+                ContextLogger?.Verbose(
                     "'{0:l}'. '{1:l}' called successfully. State is '{2}'.",
                     actionName,
                     innerActionName,
-                    this.GetState());
+                    GetState());
             }
             catch (Exception ex)
             {
-                this.ContextLogger?.Verbose(
+                ContextLogger?.Verbose(
                     ex,
                     "'{0:l}'. '{1:l}' has thrown an exception. State will be changed from current '{2}' to initial '{3}'.",
                     actionName,
                     innerActionName,
-                    this.GetState(),
+                    GetState(),
                     initialStableState);
 
-                this.SetState(initialStableState);
+                SetState(initialStableState);
 
                 throw;
             }
@@ -142,33 +142,33 @@ public abstract class WorkerBase : IWorker
             #region 'after'
 
             // change to target stable state
-            this.SetState(targetStableState);
+            SetState(targetStableState);
 
             try
             {
                 afterAction();
 
-                this.ContextLogger?.Verbose(
+                ContextLogger?.Verbose(
                     "'{0:l}'. '{1:l}' called successfully. State is '{2}'.",
                     actionName,
                     afterActionName,
-                    this.GetState());
+                    GetState());
             }
             catch (Exception ex)
             {
-                this.ContextLogger?.Verbose(
+                ContextLogger?.Verbose(
                     ex,
                     "'{0:l}'. '{1:l}' has thrown an exception. Current state is '{2}' and it will be kept.",
                     actionName,
                     afterActionName,
-                    this.GetState());
+                    GetState());
 
                 throw;
             }
 
             #endregion
 
-            this.VerboseLogOperation(actionName, "Operation completed successfully. ");
+            VerboseLogOperation(actionName, "Operation completed successfully. ");
         }
     }
 
@@ -179,13 +179,13 @@ public abstract class WorkerBase : IWorker
 
     private void VerboseLogOperation(string operationName, string additionalInfo = "")
     {
-        if (this.ContextLogger != null)
+        if (ContextLogger != null)
         {
-            this.ContextLogger.Verbose(
+            ContextLogger.Verbose(
                 "'{0:l}'. {1:l}State is '{2}'.",
                 operationName,
                 additionalInfo,
-                this.GetState());
+                GetState());
         }
     }
 
@@ -205,17 +205,17 @@ public abstract class WorkerBase : IWorker
 
     protected virtual void OnBeforeStarting()
     {
-        this.VerboseLogOperation(nameof(OnBeforeStarting));
+        VerboseLogOperation(nameof(OnBeforeStarting));
     }
 
     protected virtual void OnStarting()
     {
-        this.VerboseLogOperation(nameof(OnStarting));
+        VerboseLogOperation(nameof(OnStarting));
     }
 
     protected virtual void OnAfterStarted()
     {
-        this.VerboseLogOperation(nameof(OnAfterStarted));
+        VerboseLogOperation(nameof(OnAfterStarted));
     }
 
     #endregion
@@ -224,17 +224,17 @@ public abstract class WorkerBase : IWorker
 
     protected virtual void OnBeforeStopping()
     {
-        this.VerboseLogOperation(nameof(OnBeforeStopping));
+        VerboseLogOperation(nameof(OnBeforeStopping));
     }
 
     protected virtual void OnStopping()
     {
-        this.VerboseLogOperation(nameof(OnStopping));
+        VerboseLogOperation(nameof(OnStopping));
     }
 
     protected virtual void OnAfterStopped()
     {
-        this.VerboseLogOperation(nameof(OnAfterStopped));
+        VerboseLogOperation(nameof(OnAfterStopped));
     }
 
     #endregion
@@ -243,17 +243,17 @@ public abstract class WorkerBase : IWorker
 
     protected virtual void OnBeforePausing()
     {
-        this.VerboseLogOperation(nameof(OnBeforePausing));
+        VerboseLogOperation(nameof(OnBeforePausing));
     }
 
     protected virtual void OnPausing()
     {
-        this.VerboseLogOperation(nameof(OnPausing));
+        VerboseLogOperation(nameof(OnPausing));
     }
 
     protected virtual void OnAfterPaused()
     {
-        this.VerboseLogOperation(nameof(OnAfterPaused));
+        VerboseLogOperation(nameof(OnAfterPaused));
     }
 
     #endregion
@@ -262,17 +262,17 @@ public abstract class WorkerBase : IWorker
 
     protected virtual void OnBeforeResuming()
     {
-        this.VerboseLogOperation(nameof(OnBeforeResuming));
+        VerboseLogOperation(nameof(OnBeforeResuming));
     }
 
     protected virtual void OnResuming()
     {
-        this.VerboseLogOperation(nameof(OnResuming));
+        VerboseLogOperation(nameof(OnResuming));
     }
 
     protected virtual void OnAfterResumed()
     {
-        this.VerboseLogOperation(nameof(OnAfterResumed));
+        VerboseLogOperation(nameof(OnAfterResumed));
     }
 
     #endregion
@@ -281,7 +281,7 @@ public abstract class WorkerBase : IWorker
 
     protected virtual void OnAfterDisposed()
     {
-        this.VerboseLogOperation(nameof(OnAfterDisposed));
+        VerboseLogOperation(nameof(OnAfterDisposed));
     }
 
     #endregion
@@ -290,7 +290,7 @@ public abstract class WorkerBase : IWorker
 
     protected virtual ObjectTag GetTag()
     {
-        return new ObjectTag(this.GetType().Name!, this.Name);
+        return new ObjectTag(GetType().Name, Name, null);
     }
 
     protected ILogger? OriginalLogger { get; }
@@ -301,11 +301,11 @@ public abstract class WorkerBase : IWorker
     {
         lock (_controlLock)
         {
-            if (this.GetIsDisposed())
+            if (GetIsDisposed())
             {
                 if (throwOnDisposedOrWrongState)
                 {
-                    this.CheckNotDisposed(); // will throw
+                    CheckNotDisposed(); // will throw
                 }
                 else
                 {
@@ -313,19 +313,19 @@ public abstract class WorkerBase : IWorker
                 }
             }
 
-            var state = this.GetState();
+            var state = GetState();
             var isValidState =
-                state == WorkerState.Running ||
-                state == WorkerState.Paused;
+                state == SlaveState.Running ||
+                state == SlaveState.Paused;
 
             if (!isValidState)
             {
-                // actually, the only real option here is 'state == WorkerState.Stopped'
+                // actually, the only real option here is 'state == SlaveState.Stopped'
                 // transient states (Starting, Stopping, Pausing, Resuming) will never be here because of '_controlLock'
 
                 if (throwOnDisposedOrWrongState)
                 {
-                    throw this.CreateInvalidOperationException(nameof(Stop), state);
+                    throw CreateInvalidOperationException(nameof(Stop), state);
                 }
                 else
                 {
@@ -333,123 +333,123 @@ public abstract class WorkerBase : IWorker
                 }
             }
 
-            this.ChangeStableState(
+            ChangeStableState(
                 $"{nameof(Stop)}(bool)",
                 new[]
                 {
-                    WorkerState.Running,
-                    WorkerState.Paused,
+                    SlaveState.Running,
+                    SlaveState.Paused,
                 },
-                WorkerState.Stopping,
-                WorkerState.Stopped,
-                this.OnBeforeStopping,
+                SlaveState.Stopping,
+                SlaveState.Stopped,
+                OnBeforeStopping,
                 nameof(OnBeforeStopping),
-                this.OnStopping,
+                OnStopping,
                 nameof(OnStopping),
-                this.OnAfterStopped,
+                OnAfterStopped,
                 nameof(OnAfterStopped));
         }
     }
 
-    protected InvalidOperationException CreateInvalidOperationException(string requestedOperation, WorkerState actualState)
+    protected InvalidOperationException CreateInvalidOperationException(string requestedOperation, SlaveState actualState)
     {
         var sb = new StringBuilder();
-        sb.Append($"Cannot perform operation '{requestedOperation}'. Worker state is '{actualState}'. Worker name is '{this.GetNameForDiagnostics()}'.");
+        sb.Append($"Cannot perform operation '{requestedOperation}'. Slave state is '{actualState}'. Slave name is '{GetNameForDiagnostics()}'.");
 
         var message = sb.ToString();
 
         return new InvalidOperationException(message);
     }
 
-    protected void ProhibitIfStateIs(string requestedOperation, params WorkerState[] prohibitedStates)
+    protected void ProhibitIfStateIs(string requestedOperation, params SlaveState[] prohibitedStates)
     {
-        var actualState = this.GetState();
+        var actualState = GetState();
         if (prohibitedStates.Contains(actualState))
         {
-            throw this.CreateInvalidOperationException(requestedOperation, actualState);
+            throw CreateInvalidOperationException(requestedOperation, actualState);
         }
     }
 
-    protected void AllowIfStateIs(string requestedOperation, params WorkerState[] allowedStates)
+    protected void AllowIfStateIs(string requestedOperation, params SlaveState[] allowedStates)
     {
-        var actualState = this.GetState();
+        var actualState = GetState();
         if (allowedStates.Contains(actualState))
         {
             // ok
         }
         else
         {
-            throw this.CreateInvalidOperationException(requestedOperation, actualState);
+            throw CreateInvalidOperationException(requestedOperation, actualState);
         }
     }
 
-    protected string GetNameForDiagnostics() => _name ?? this.GetType().FullName!;
+    protected string GetNameForDiagnostics() => _name ?? GetType().FullName!;
 
     protected void CheckNotDisposed()
     {
-        if (this.GetIsDisposed())
+        if (GetIsDisposed())
         {
-            throw new ObjectDisposedException(this.GetNameForDiagnostics());
+            throw new ObjectDisposedException(GetNameForDiagnostics());
         }
     }
 
     #endregion
 
-    #region IWorker Members
+    #region ISlave Members
 
     public string? Name
     {
         get => _name;
         set
         {
-            this.CheckNotDisposed();
+            CheckNotDisposed();
 
             _name = value;
         }
     }
 
-    public WorkerState State => this.GetState();
+    public SlaveState State => GetState();
 
     public void Start()
     {
-        this.ChangeStableState(
+        ChangeStableState(
             nameof(Start),
             new[]
             {
-                WorkerState.Stopped
+                SlaveState.Stopped
             },
-            WorkerState.Starting,
-            WorkerState.Running,
-            this.OnBeforeStarting,
+            SlaveState.Starting,
+            SlaveState.Running,
+            OnBeforeStarting,
             nameof(OnBeforeStarting),
-            this.OnStarting,
+            OnStarting,
             nameof(OnStarting),
-            this.OnAfterStarted,
+            OnAfterStarted,
             nameof(OnAfterStarted));
     }
 
-    public void Stop() => this.Stop(true);
+    public void Stop() => Stop(true);
 
     public void Pause()
     {
         if (!IsPausingSupported)
         {
-            throw this.CreatePausingNotSupportedException();
+            throw CreatePausingNotSupportedException();
         }
 
-        this.ChangeStableState(
+        ChangeStableState(
             nameof(Pause),
             new[]
             {
-                WorkerState.Running,
+                SlaveState.Running,
             },
-            WorkerState.Pausing,
-            WorkerState.Paused,
-            this.OnBeforePausing,
+            SlaveState.Pausing,
+            SlaveState.Paused,
+            OnBeforePausing,
             nameof(OnBeforePausing),
-            this.OnPausing,
+            OnPausing,
             nameof(OnPausing),
-            this.OnAfterPaused,
+            OnAfterPaused,
             nameof(OnAfterPaused));
     }
 
@@ -457,26 +457,26 @@ public abstract class WorkerBase : IWorker
     {
         if (!IsPausingSupported)
         {
-            throw this.CreatePausingNotSupportedException();
+            throw CreatePausingNotSupportedException();
         }
 
-        this.ChangeStableState(
+        ChangeStableState(
             nameof(Resume),
             new[]
             {
-                WorkerState.Paused,
+                SlaveState.Paused,
             },
-            WorkerState.Resuming,
-            WorkerState.Running,
-            this.OnBeforeResuming,
+            SlaveState.Resuming,
+            SlaveState.Running,
+            OnBeforeResuming,
             nameof(OnBeforeResuming),
-            this.OnResuming,
+            OnResuming,
             nameof(OnResuming),
-            this.OnAfterResumed,
+            OnAfterResumed,
             nameof(OnAfterResumed));
     }
 
-    public bool IsDisposed => this.GetIsDisposed();
+    public bool IsDisposed => GetIsDisposed();
 
     #endregion
 
@@ -486,25 +486,25 @@ public abstract class WorkerBase : IWorker
     {
         lock (_controlLock)
         {
-            if (this.GetIsDisposed())
+            if (GetIsDisposed())
             {
                 return; // won't dispose twice
             }
 
-            this.VerboseLogOperation(nameof(Dispose));
+            VerboseLogOperation(nameof(Dispose));
 
-            this.Stop(false); // can throw; in this case, 'Dispose' will be incomplete.
+            Stop(false); // can throw; in this case, 'Dispose' will be incomplete.
 
-            this.SetIsDisposed(true);
+            SetIsDisposed(true);
 
             try
             {
-                this.OnAfterDisposed();
-                this.VerboseLogOperation(nameof(Dispose), "Disposed successfully. ");
+                OnAfterDisposed();
+                VerboseLogOperation(nameof(Dispose), "Disposed successfully. ");
             }
             catch (Exception ex)
             {
-                this.ContextLogger?.Verbose(
+                ContextLogger?.Verbose(
                     ex,
                     "'{0:l}'. '{1:l}' thrown an exception. Object is disposed anyways.",
                     nameof(Dispose),

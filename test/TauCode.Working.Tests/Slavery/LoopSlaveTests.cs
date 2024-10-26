@@ -3,10 +3,12 @@ using Serilog;
 using System.Text;
 using TauCode.IO;
 
-namespace TauCode.Working.Tests;
+#pragma warning disable NUnit1032
+
+namespace TauCode.Working.Tests.Slavery;
 
 [TestFixture]
-public class LoopWorkerTests
+public class LoopSlaveTests
 {
     private ILogger _logger = null!;
     private StringWriterWithEncoding _writer = null!;
@@ -26,12 +28,12 @@ public class LoopWorkerTests
     public async Task Start_ValidInput_DoesWork()
     {
         // Arrange
-        using var worker = new DemoLoopWorker(_logger)
+        using var slave = new DemoLoopSlave(_logger)
         {
             Name = "Psi",
         };
 
-        worker.WorkAction = async (@base, token) =>
+        slave.WorkAction = async (@base, token) =>
         {
             @base.WriteInformationToLog("hello");
             await Task.Delay(100, token);
@@ -39,10 +41,10 @@ public class LoopWorkerTests
         };
 
         // Act
-        worker.Start();
+        slave.Start();
         await Task.Delay(400);
-        worker.Stop();
-        worker.Dispose();
+        slave.Stop();
+        slave.Dispose();
 
         // Assert
         var log = _writer.ToString();
@@ -53,12 +55,12 @@ public class LoopWorkerTests
     public async Task Resume_ValidInput_DoesWork()
     {
         // Arrange
-        using var worker = new DemoLoopWorker(_logger)
+        using var slave = new DemoLoopSlave(_logger)
         {
             Name = "Psi",
         };
 
-        worker.WorkAction = async (@base, token) =>
+        slave.WorkAction = async (@base, token) =>
         {
             @base.WriteInformationToLog("hello");
             await Task.Delay(200, token);
@@ -66,16 +68,16 @@ public class LoopWorkerTests
         };
 
         // Act
-        worker.Start();
+        slave.Start();
 
         await Task.Delay(100);
-        worker.Pause();
+        slave.Pause();
 
         await Task.Delay(100);
-        worker.Resume();
+        slave.Resume();
 
         await Task.Delay(250);
-        worker.Dispose();
+        slave.Dispose();
 
         // Assert
         var log = _writer.ToString();

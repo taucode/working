@@ -1,9 +1,9 @@
 ﻿using Serilog;
 using TauCode.Extensions;
 
-namespace TauCode.Working;
+namespace TauCode.Working.Slavery;
 
-public abstract class LoopWorkerBase : WorkerBase
+public abstract class LoopSlaveBase : SlaveBase
 {
     #region Constants
 
@@ -30,7 +30,7 @@ public abstract class LoopWorkerBase : WorkerBase
 
     #region Constructor
 
-    protected LoopWorkerBase(ILogger? logger)
+    protected LoopSlaveBase(ILogger? logger)
         : base(logger)
     {
         _initLoopLock = new object();
@@ -52,21 +52,21 @@ public abstract class LoopWorkerBase : WorkerBase
 
     #region Overridden
 
-    protected override void OnBeforeStarting() => this.InitLoop();
+    protected override void OnBeforeStarting() => InitLoop();
 
-    protected override void OnAfterStarted() => this.OnLoopInitialized();
+    protected override void OnAfterStarted() => OnLoopInitialized();
 
-    protected override void OnBeforeStopping() => this.StopLoop();
+    protected override void OnBeforeStopping() => StopLoop();
 
-    protected override void OnAfterStopped() => this.OnLoopStopped();
+    protected override void OnAfterStopped() => OnLoopStopped();
 
-    protected override void OnBeforePausing() => this.StopLoop();
+    protected override void OnBeforePausing() => StopLoop();
 
-    protected override void OnAfterPaused() => this.OnLoopStopped();
+    protected override void OnAfterPaused() => OnLoopStopped();
 
-    protected override void OnBeforeResuming() => this.InitLoop();
+    protected override void OnBeforeResuming() => InitLoop();
 
-    protected override void OnAfterResumed() => this.OnLoopInitialized();
+    protected override void OnAfterResumed() => OnLoopInitialized();
 
     protected override void OnAfterDisposed()
     {
@@ -81,7 +81,7 @@ public abstract class LoopWorkerBase : WorkerBase
     {
         lock (_initLoopLock)
         {
-            _loopTask = Task.Run(this.LoopRoutine);
+            _loopTask = Task.Run(LoopRoutine);
             Monitor.Wait(_initLoopLock);
         }
     }
@@ -150,11 +150,11 @@ public abstract class LoopWorkerBase : WorkerBase
 
         while (goOn)
         {
-            var state = this.State;
+            var state = State;
 
             switch (state)
             {
-                case WorkerState.Running:
+                case SlaveState.Running:
                     var vacationLength = TimeSpan.Zero;
 
                     Exception? thrownException;
@@ -162,7 +162,7 @@ public abstract class LoopWorkerBase : WorkerBase
 
                     try
                     {
-                        vacationLength = await this.DoWork(_controlSignal.Token);
+                        vacationLength = await DoWork(_controlSignal.Token);
 
                         // success.
                         thrownException = null;
@@ -188,8 +188,8 @@ public abstract class LoopWorkerBase : WorkerBase
 
                     if (thrownException != null)
                     {
-                        this.ContextLogger?.Error(thrownException, messageForThrownException!);
-                        await Task.Delay(this.ErrorTimeout, _controlSignal.Token); // todo: can throw 'OperationCanceledException', ut it.
+                        ContextLogger?.Error(thrownException, messageForThrownException!);
+                        await Task.Delay(ErrorTimeout, _controlSignal.Token); // todo: can throw 'OperationCanceledException', ut it.
                         continue;
                     }
 
@@ -199,8 +199,8 @@ public abstract class LoopWorkerBase : WorkerBase
 
                     break;
 
-                case WorkerState.Stopping:
-                case WorkerState.Pausing:
+                case SlaveState.Stopping:
+                case SlaveState.Pausing:
                     goOn = false;
                     break;
             }

@@ -1,13 +1,16 @@
-﻿using NUnit.Framework;
+﻿using System.Text;
+using NUnit.Framework;
 using Serilog;
-using System.Text;
 using TauCode.Infrastructure.Time;
 using TauCode.IO;
 
-namespace TauCode.Working.Tests;
+using TimeProvider = TauCode.Infrastructure.Time.TimeProvider;
+#pragma warning disable NUnit1032
+
+namespace TauCode.Working.Tests.Slavery;
 
 [TestFixture]
-public partial class WorkerTests
+public partial class SlaveTests
 {
     private ILogger _logger = null!;
     private StringWriterWithEncoding _writer = null!;

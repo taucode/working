@@ -1,22 +1,23 @@
 ﻿using Serilog;
+using TauCode.Working.Slavery;
 
-namespace TauCode.Working.Tests;
+namespace TauCode.Working.Tests.Slavery;
 
-public class DemoWorker : WorkerBase
+public class DemoSlave : SlaveBase
 {
     private readonly object _historyLock;
-    private readonly List<WorkerState> _history;
+    private readonly List<SlaveState> _history;
 
-    public DemoWorker(ILogger? logger)
+    public DemoSlave(ILogger? logger)
         : base(logger)
     {
         _historyLock = new object();
-        _history = new List<WorkerState>();
+        _history = new List<SlaveState>();
 
-        this.AddStateToHistory();
+        AddStateToHistory();
     }
 
-    public IReadOnlyList<WorkerState> History
+    public IReadOnlyList<SlaveState> History
     {
         get
         {
@@ -31,7 +32,7 @@ public class DemoWorker : WorkerBase
     {
         lock (_historyLock)
         {
-            _history.Add(this.State);
+            _history.Add(State);
         }
     }
 
@@ -104,11 +105,11 @@ public class DemoWorker : WorkerBase
     {
         base.OnBeforeStarting();
 
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnBeforeStartingTimeout);
-        if (this.ThrowsOnBeforeStarting)
+        AddStateToHistory();
+        Thread.Sleep(OnBeforeStartingTimeout);
+        if (ThrowsOnBeforeStarting)
         {
-            throw this.CreateFailException(nameof(OnBeforeStarting));
+            throw CreateFailException(nameof(OnBeforeStarting));
         }
     }
 
@@ -116,11 +117,11 @@ public class DemoWorker : WorkerBase
     {
         base.OnStarting();
 
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnStartingTimeout);
-        if (this.ThrowsOnStarting)
+        AddStateToHistory();
+        Thread.Sleep(OnStartingTimeout);
+        if (ThrowsOnStarting)
         {
-            throw this.CreateFailException(nameof(OnStarting));
+            throw CreateFailException(nameof(OnStarting));
         }
     }
 
@@ -128,11 +129,11 @@ public class DemoWorker : WorkerBase
     {
         base.OnAfterStarted();
 
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnAfterStartedTimeout);
-        if (this.ThrowsOnAfterStarted)
+        AddStateToHistory();
+        Thread.Sleep(OnAfterStartedTimeout);
+        if (ThrowsOnAfterStarted)
         {
-            throw this.CreateFailException(nameof(OnAfterStarted));
+            throw CreateFailException(nameof(OnAfterStarted));
         }
     }
 
@@ -142,11 +143,11 @@ public class DemoWorker : WorkerBase
 
     protected override void OnBeforeStopping()
     {
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnBeforeStoppingTimeout);
-        if (this.ThrowsOnBeforeStopping)
+        AddStateToHistory();
+        Thread.Sleep(OnBeforeStoppingTimeout);
+        if (ThrowsOnBeforeStopping)
         {
-            throw this.CreateFailException(nameof(OnBeforeStopping));
+            throw CreateFailException(nameof(OnBeforeStopping));
         }
     }
 
@@ -154,21 +155,21 @@ public class DemoWorker : WorkerBase
     {
         base.OnStopping();
 
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnStoppingTimeout);
-        if (this.ThrowsOnStopping)
+        AddStateToHistory();
+        Thread.Sleep(OnStoppingTimeout);
+        if (ThrowsOnStopping)
         {
-            throw this.CreateFailException(nameof(OnStopping));
+            throw CreateFailException(nameof(OnStopping));
         }
     }
 
     protected override void OnAfterStopped()
     {
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnAfterStoppedTimeout);
-        if (this.ThrowsOnAfterStopped)
+        AddStateToHistory();
+        Thread.Sleep(OnAfterStoppedTimeout);
+        if (ThrowsOnAfterStopped)
         {
-            throw this.CreateFailException(nameof(OnAfterStopped));
+            throw CreateFailException(nameof(OnAfterStopped));
         }
     }
 
@@ -179,31 +180,31 @@ public class DemoWorker : WorkerBase
 
     protected override void OnBeforePausing()
     {
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnBeforePausingTimeout);
-        if (this.ThrowsOnBeforePausing)
+        AddStateToHistory();
+        Thread.Sleep(OnBeforePausingTimeout);
+        if (ThrowsOnBeforePausing)
         {
-            throw this.CreateFailException(nameof(OnBeforePausing));
+            throw CreateFailException(nameof(OnBeforePausing));
         }
     }
 
     protected override void OnPausing()
     {
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnPausingTimeout);
-        if (this.ThrowsOnPausing)
+        AddStateToHistory();
+        Thread.Sleep(OnPausingTimeout);
+        if (ThrowsOnPausing)
         {
-            throw this.CreateFailException(nameof(OnPausing));
+            throw CreateFailException(nameof(OnPausing));
         }
     }
 
     protected override void OnAfterPaused()
     {
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnAfterPausedTimeout);
-        if (this.ThrowsOnAfterPaused)
+        AddStateToHistory();
+        Thread.Sleep(OnAfterPausedTimeout);
+        if (ThrowsOnAfterPaused)
         {
-            throw this.CreateFailException(nameof(OnAfterPaused));
+            throw CreateFailException(nameof(OnAfterPaused));
         }
     }
 
@@ -213,31 +214,31 @@ public class DemoWorker : WorkerBase
 
     protected override void OnBeforeResuming()
     {
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnBeforeResumingTimeout);
-        if (this.ThrowsOnBeforeResuming)
+        AddStateToHistory();
+        Thread.Sleep(OnBeforeResumingTimeout);
+        if (ThrowsOnBeforeResuming)
         {
-            throw this.CreateFailException(nameof(OnBeforeResuming));
+            throw CreateFailException(nameof(OnBeforeResuming));
         }
     }
 
     protected override void OnResuming()
     {
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnResumingTimeout);
-        if (this.ThrowsOnResuming)
+        AddStateToHistory();
+        Thread.Sleep(OnResumingTimeout);
+        if (ThrowsOnResuming)
         {
-            throw this.CreateFailException(nameof(OnResuming));
+            throw CreateFailException(nameof(OnResuming));
         }
     }
 
     protected override void OnAfterResumed()
     {
-        this.AddStateToHistory();
-        Thread.Sleep(this.OnAfterResumedTimeout);
-        if (this.ThrowsOnAfterResumed)
+        AddStateToHistory();
+        Thread.Sleep(OnAfterResumedTimeout);
+        if (ThrowsOnAfterResumed)
         {
-            throw this.CreateFailException(nameof(OnAfterResumed));
+            throw CreateFailException(nameof(OnAfterResumed));
         }
     }
 
@@ -246,10 +247,10 @@ public class DemoWorker : WorkerBase
 
     protected override void OnAfterDisposed()
     {
-        Thread.Sleep(this.OnAfterDisposedTimeout);
-        if (this.ThrowsOnAfterDisposed)
+        Thread.Sleep(OnAfterDisposedTimeout);
+        if (ThrowsOnAfterDisposed)
         {
-            throw this.CreateFailException(nameof(OnAfterDisposed));
+            throw CreateFailException(nameof(OnAfterDisposed));
         }
     }
 

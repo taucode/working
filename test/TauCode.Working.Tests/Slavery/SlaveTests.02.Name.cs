@@ -1,24 +1,24 @@
 ﻿using NUnit.Framework;
 
-namespace TauCode.Working.Tests;
+namespace TauCode.Working.Tests.Slavery;
 
 [TestFixture]
-public partial class WorkerTests
+public partial class SlaveTests
 {
     [Test]
     public void Name_Disposed_CanBeGot()
     {
         // Arrange
-        var worker = new DemoWorker(_logger)
+        var slave = new DemoSlave(_logger)
         {
             Name = "Psi",
         };
 
-        worker.Dispose();
+        slave.Dispose();
 
         // Act
-        var gotName = worker.Name;
-        var ex = Assert.Throws<ObjectDisposedException>(() => worker.Name = null)!;
+        var gotName = slave.Name;
+        var ex = Assert.Throws<ObjectDisposedException>(() => slave.Name = null)!;
 
         // Assert
         Assert.That(gotName, Is.EqualTo("Psi"));

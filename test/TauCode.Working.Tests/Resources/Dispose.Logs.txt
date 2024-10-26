@@ -1,0 +1,13 @@
+﻿=== Dispose_LaborerJustCreated_Disposes ===
+
+[VRB](TestLaborer, Stopped) (Dispose) Entered.
+[VRB](TestLaborer, Stopped) (Dispose) 'DisposeImpl' invoked.
+[VRB](TestLaborer, Disposed) (Dispose) Disposed.
+
+=== Dispose_AlreadyDisposed_DoesNothing ===
+
+[VRB](TestLaborer, Stopped) (Dispose) Entered.
+[VRB](TestLaborer, Stopped) (Dispose) 'DisposeImpl' invoked.
+[VRB](TestLaborer, Disposed) (Dispose) Disposed.
+[VRB](TestLaborer, Disposed) (Dispose) Entered.
+[VRB](TestLaborer, Disposed) (Dispose) Already disposed, exiting.
